@@ -14,6 +14,7 @@ import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { BridgeCard } from './BridgeCard';
 import { BridgeClaimLookup, hasBridgeClaimLookup } from './BridgeClaimLookup';
 import { PendingBridges } from './PendingBridges';
+import { OpenTransactionMessage } from '@/modules/ui/components/OpenTransactionMessage';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
 
@@ -111,7 +112,9 @@ export function BridgePanel({ draft }: BridgePanelProps) {
     launchIn: launchActionIn,
     canLaunch: canLaunchAction,
     actionHint,
-    locked: actionLocked
+    locked: actionLocked,
+    restore: restoreAction,
+    claiming
   } = useDestinationActionLaunch();
   const { launch: continueBridge } = useCctpResumeLaunch(onBridged);
   const { launch: convertBridge } = useCctpSwapConvertLaunch();
@@ -127,7 +130,7 @@ export function BridgePanel({ draft }: BridgePanelProps) {
 
         {locked ? (
           <Text className="text-textSecondary text-sm" dataTestId="bridge-locked">
-            <Trans>A transaction is in progress. Open it to continue.</Trans>
+            <OpenTransactionMessage />
           </Text>
         ) : form.sourceUnavailable ? (
           <Text className="text-error text-sm" dataTestId="bridge-source-unavailable">
@@ -187,6 +190,8 @@ export function BridgePanel({ draft }: BridgePanelProps) {
         canAction={canLaunchAction}
         actionHint={actionHint}
         actionLocked={actionLocked}
+        onOpenTransaction={restoreAction}
+        claiming={claiming}
         onContinue={continueBridge}
         onConvert={convertBridge}
         lookup={hasBridgeClaimLookup() ? <BridgeClaimLookup /> : undefined}

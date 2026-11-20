@@ -25,7 +25,7 @@ export function buildContinueBridgeRows(
     ],
     [
       { kind: 'status', label: t`Status`, status: 'pending', value: t`Not sent` },
-      { kind: 'text', label: t`Estimated arrival`, value: t`${CCTP_ETA_MINUTES} min after sending` }
+      { kind: 'text', label: t`Estimated arrival`, value: t`~${CCTP_ETA_MINUTES} min after sending` }
     ],
     [{ kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel('cctp'), logo: 'cctp' }, swapTx],
     ...(sendsToOther(swap.recipient, account)

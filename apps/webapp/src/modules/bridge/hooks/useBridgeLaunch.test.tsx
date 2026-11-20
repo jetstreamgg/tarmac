@@ -10,7 +10,10 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { zeroAddress } from 'viem';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { cctpBurnAmount } from '../adapters/cctp/calls';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
+import { markSendIntent, recentSendIntents } from '../store/sendIntentStore';
+import { BatchFailedError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useBridgeForm } from './useBridgeForm';
 import { cctpWithdrawalRoute, nativeWithdrawalRoute } from '../model/resolveRoute';
 import { useBridgeLaunch } from './useBridgeLaunch';
@@ -71,6 +74,11 @@ const mocks = vi.hoisted(() => ({
       chainId: number | undefined;
       getCallbacks: () => TxCallbacks;
     }[]
+  },
+  burn: {
+    ready: false,
+    execute: vi.fn(),
+    getCallbacks: (() => ({})) as () => TxCallbacks
   },
   withdrawal: {
     ready: true,
@@ -157,21 +165,24 @@ vi.mock('../adapters/mockAdapter', () => ({
     return new Promise<string>(() => undefined);
   }
 }));
-// The CCTP burn engine stays idle on these routes.
-vi.mock('./useCctpBurnLegs', () => {
-  const idle = {
-    calls: [],
-    needsApprove: false,
-    isBatch: false,
-    ready: false,
-    error: null,
-    execute: () => {},
-    reset: () => {},
-    stop: () => {},
-    refetchAllowance: () => {}
-  };
-  return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
-});
+// The CCTP burn engine stays idle unless a test readies it.
+vi.mock('./useCctpBurnLegs', () => ({
+  CCTP_BURN_FUNCTION: 'depositForBurn',
+  useCctpBurnLegs: (args: { getCallbacks: () => TxCallbacks }) => {
+    mocks.burn.getCallbacks = args.getCallbacks;
+    return {
+      calls: mocks.burn.ready ? [{ to: '0xburn' }] : [],
+      needsApprove: false,
+      isBatch: false,
+      ready: mocks.burn.ready,
+      error: null,
+      execute: mocks.burn.execute,
+      reset: () => {},
+      stop: () => {},
+      refetchAllowance: () => {}
+    };
+  }
+}));
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => mocks.cctp }));
 vi.mock('@/modules/ui/hooks/useSettledAmount', async io => {
   const { useSettledAmount } = await io<typeof import('@/modules/ui/hooks/useSettledAmount')>();
@@ -825,7 +836,7 @@ describe('useBridgeLaunch Confirm gate', () => {
         enabled: true
       });
       const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
-      expect(content.props.networkFee).toBe('$0.42');
+      expect(content.props.networkFee).toBe('~$0.42');
     });
 
     it('reads no fee on Ethereum for a deposit, which has no steps there', async () => {
@@ -833,7 +844,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       await reviewDeposit();
       expect(mocks.feePerGas.every(read => !read.enabled)).toBe(true);
       const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
-      expect(content.props.networkFee).toBe('$0.42');
+      expect(content.props.networkFee).toBe('~$0.42');
     });
 
     it('shows no network fee before the legs are built', async () => {
@@ -906,6 +917,23 @@ describe('useBridgeLaunch Confirm gate', () => {
       });
     });
 
+    it('keeps the deposit signature for recovery until the page records the deposit, past the approve', async () => {
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith('bridgeSendIntent:')) localStorage.removeItem(key);
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+      await reviewDeposit('optimism');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(intents()).toEqual(['ethereum']);
+      const callbacks = mocks.deposit.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xopapprove');
+      expect(intents()).toEqual(['ethereum']);
+      callbacks.onMutate({ functionName: 'bridgeERC20To' });
+      callbacks.onStart('0xopdeposit');
+      expect(intents()).toEqual([]);
+    });
+
     it('shows no bridge fee', async () => {
       await reviewDeposit('base');
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
@@ -946,6 +974,87 @@ describe('useBridgeLaunch Confirm gate', () => {
       await review(nativeWithdrawalRoute('base'));
       await review(cctpWithdrawalRoute('base'));
       expect(mocks.fallbackNotices).toEqual([]);
+    });
+  });
+
+  describe('a CCTP bridge from an L2', () => {
+    async function reviewBurn() {
+      mocks.appChainId = 8453;
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: cctpWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+    }
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+
+    beforeEach(() => {
+      mocks.burn.ready = true;
+      mocks.burn.execute.mockClear();
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith('bridgeSendIntent:')) localStorage.removeItem(key);
+    });
+    afterEach(() => {
+      mocks.burn.ready = false;
+    });
+
+    it('keeps the amount the burn signs, so recovery reads no other burn', async () => {
+      await reviewBurn();
+      expect(recentSendIntents(scope, Date.now())).toEqual([
+        expect.objectContaining({ network: 'base', burnAmount: `${cctpBurnAmount(ONE)}` })
+      ]);
+    });
+
+    // A wallet that ran the bundle apart can fail it with receipts that miss a burn that mined.
+    it('reads for the burn again once its bundle failed with no burn among the receipts', async () => {
+      await reviewBurn();
+      const callbacks = mocks.burn.getCallbacks();
+      callbacks.onMutate(undefined as never);
+      callbacks.onStart(undefined);
+      expect(intents()).toEqual([]);
+      callbacks.onError(new BatchFailedError([]), undefined as never);
+      expect(recentSendIntents(scope, Date.now())).toEqual([
+        expect.objectContaining({ network: 'base', burnAmount: `${cctpBurnAmount(ONE)}` })
+      ]);
+    });
+
+    it('keeps the burn signature for recovery until the page records the burn, past the swap', async () => {
+      await reviewBurn();
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(1);
+      expect(intents()).toEqual(['base']);
+      const callbacks = mocks.burn.getCallbacks();
+      callbacks.onMutate({ functionName: 'swapExactIn' } as never);
+      callbacks.onStart('0xswap');
+      expect(intents()).toEqual(['base']);
+      callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+      callbacks.onStart('0xburn');
+      expect(intents()).toEqual([]);
+    });
+
+    it('forgets the burn signature once it is declined, and keeps it on any other failure', async () => {
+      await reviewBurn();
+      const declined = mocks.burn.getCallbacks();
+      declined.onMutate({ functionName: 'depositForBurn' } as never);
+      declined.onError(new Error('User rejected the request.'), '');
+      expect(intents()).toEqual([]);
+
+      await reviewBurn();
+      const failed = mocks.burn.getCallbacks();
+      failed.onMutate({ functionName: 'depositForBurn' } as never);
+      failed.onError(new Error('Request timed out'), '');
+      expect(intents()).toEqual(['base']);
     });
   });
 
@@ -1212,6 +1321,12 @@ describe('useBridgeLaunch Confirm gate', () => {
   });
 
   describe('a native withdrawal to Ethereum', () => {
+    // Earlier tests' Confirms leave their signatures stored.
+    beforeEach(() => {
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith('bridgeSendIntent:')) localStorage.removeItem(key);
+    });
+
     // The form's route, as the resolver builds it when CCTP can't carry the amount.
     async function reviewWithdrawal(from: 'base' | 'arbitrum') {
       mocks.appChainId = from === 'base' ? 8453 : 42161;
@@ -1274,6 +1389,61 @@ describe('useBridgeLaunch Confirm gate', () => {
         });
       }
     );
+
+    it('keeps the withdrawal signature for recovery until the page records the send', async () => {
+      await reviewWithdrawal('arbitrum');
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(intents()).toEqual(['arbitrum']);
+
+      const callbacks = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xapprove');
+      expect(intents()).toEqual(['arbitrum']);
+      callbacks.onMutate({ functionName: 'outboundTransfer' });
+      callbacks.onStart('0xwithdraw');
+      expect(intents()).toEqual([]);
+    });
+
+    it('forgets the withdrawal signature once it is declined, and keeps it on any other failure', async () => {
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+      await reviewWithdrawal('base');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const declined = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      declined.onMutate({ functionName: 'bridgeERC20To' });
+      declined.onError(new Error('User rejected the request.'), '');
+      expect(intents()).toEqual([]);
+
+      await reviewWithdrawal('base');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const failed = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      failed.onMutate({ functionName: 'bridgeERC20To' });
+      failed.onError(new Error('Request timed out'), '');
+      expect(intents()).toEqual(['base']);
+    });
+
+    it("keeps a lost signature's request when a later Confirm on its L2 is declined or sent", async () => {
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const lost = Date.now() - 60_000;
+      markSendIntent(scope, 'base', lost);
+      const kept = () => recentSendIntents(scope, Date.now()).some(intent => intent.at === lost);
+
+      await reviewWithdrawal('base');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const declined = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      declined.onMutate({ functionName: 'bridgeERC20To' });
+      declined.onError(new Error('User rejected the request.'), '');
+      expect(kept()).toBe(true);
+
+      await reviewWithdrawal('base');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const sent = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      sent.onMutate({ functionName: 'bridgeERC20To' });
+      sent.onStart('0xwithdraw');
+      expect(kept()).toBe(true);
+    });
 
     it('drops the Approve step when the allowance covers the amount', async () => {
       await reviewWithdrawal('base');

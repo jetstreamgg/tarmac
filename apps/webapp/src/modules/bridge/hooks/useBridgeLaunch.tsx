@@ -36,6 +36,8 @@ import { usdsToNumber } from '../model/usds';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { clearSendIntent, markSendIntent } from '../store/sendIntentStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { withSourceRecording } from '../tracking/sourceRecording';
@@ -50,7 +52,7 @@ import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
 import { useBridgeBatch } from './useBridgeBatch';
 import { useBridgeRouteCards } from './useBridgeRouteCards';
-import { CCTP_L2_CONVERT_FUNCTION } from '../adapters/cctp/calls';
+import { CCTP_L2_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
 import { destinationGas, routeFeeText } from '../model/routeCosts';
 import {
   bridgeEventContext,
@@ -479,8 +481,24 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
+      // When this Confirm asked to sign the bridge's send, and on which chain; recovery reads that chain early until the page hears back.
+      const intentFrom = depositTo ? 'ethereum' : (withdrawalFrom ?? burnFrom);
+      let intentAt: number | undefined;
+      // A failed bundle whose receipts show no revert: the send may have mined outside them.
+      let unexplainedFailure = false;
+      const dropIntent = () => {
+        if (intentFrom && intentAt !== undefined) clearSendIntent(scope, intentFrom, intentAt);
+      };
+      // A reload before the wallet answers loses the send: recovery reads this chain early.
+      const markIntent = () => {
+        if (!intentFrom) return;
+        intentAt = Date.now();
+        // A burn is read for by its amount only: the account's other CCTP burns aren't this app's.
+        markSendIntent(scope, intentFrom, intentAt, burnFrom ? cctpBurnAmount(record.amount) : undefined);
+      };
       // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
       const markSent = (id?: string) => {
+        dropIntent();
         if (confirmedLaunchRef.current > launchId) {
           if (id && !sentRef.current) unresolvedRef.current = id;
           return;
@@ -567,26 +585,45 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             }
             void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
           })(),
+        // A wallet that broke the bundle up can fail it after the send mined: its card follows that send.
+        onBundleSent: (bundleId, receipts) => {
+          const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bundleId);
+          const sent = bridge ? bundleDepositIn(bridge, receipts) : undefined;
+          unexplainedFailure = !sent && receipts.length > 0 && receipts.every(r => r.status === 'success');
+          if (!sent) return false;
+          pendingBridgeStore.resolveBundle(scope, bundleId, sent.txHash);
+          tracker.recordExecuted(sent.txHash);
+          // Mined, so no longer unresolved: Retry says it was sent.
+          if (unresolvedRef.current === bundleId) unresolvedRef.current = undefined;
+          return true;
+        },
         // Sped up in the wallet: the tracker reads the hash that will mine.
         onRepriced: (txHash, newTxHash) => {
           if (burnFrom) ownBurnsRef.current.push(newTxHash.toLowerCase());
           pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash }));
           tracker.recordRepriced(newTxHash);
         },
-        // The funds never left, so Retry may send again.
+        // The funds never left, so Retry may send again; unless the card didn't fail, or the bundle may have sent.
         onFailed: (id, reason) => {
-          if (unresolvedRef.current === id) {
-            sentRef.current = false;
-            unresolvedRef.current = undefined;
-          }
           pendingBridgeStore.update(scope, id, bridge =>
             bridge.bundleId
               ? failBundle(bridge, reason, Date.now())
               : applyProgress(bridge, { kind: 'failed', reason }, Date.now())
           );
+          const card = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === id);
+          const failed = !card || card.status === 'failed';
+          if (unresolvedRef.current === id && failed && !unexplainedFailure) {
+            sentRef.current = false;
+            unresolvedRef.current = undefined;
+          }
           // A wallet that broke the bundle up may have sent the deposit anyway.
           if (id.startsWith('bundle-'))
             void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
+          // Or the burn or withdrawal, with receipts that don't show it: recovery reads its L2 for it, as for a lost signature.
+          if (id.startsWith('bundle-') && !depositTo) {
+            markIntent();
+            void queryClient.invalidateQueries({ queryKey: ['bridge-withdrawal-recovery', scope] });
+          }
         }
       });
       const callbacks: TxCallbacks = tracker.wrap({
@@ -601,19 +638,27 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           if (pinnedChainId !== undefined)
             void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
           recording.onSuccess(hash, blockNumber);
+        },
+        onError: (error, hash) => {
+          // Declined: nothing was sent. Any other failure may still have sent it.
+          if (isUserRejectedRequestError(error)) dropIntent();
+          recording.onError(error, hash);
         }
       });
       if (depositTo) {
         legCallbacksRef.current = callbacks;
         setRunningTo(depositTo);
+        markIntent();
         deposit.execute();
       } else if (burnFrom) {
         legCallbacksRef.current = callbacks;
         setRunningBurn(burnFrom);
+        markIntent();
         burn.execute();
       } else if (withdrawalFrom) {
         legCallbacksRef.current = callbacks;
         setRunningWithdrawal(withdrawalFrom);
+        markIntent();
         withdrawal.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };
@@ -638,7 +683,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const networkFeeText =
     ethereumSteps && route
       ? routeFeeText({ route, sourceFeeWei: networkFee?.feeWei, ethFeePerGas, ethPrice })
-      : (networkFee?.formatted ?? NO_VALUE);
+      : networkFee?.formatted
+        ? `~${networkFee.formatted}`
+        : NO_VALUE;
   const routeSources = useMemo(
     () => ({
       cctp: { calls: isCctpBurn || previewBurnFrom ? burn.calls : [], isBatch: burn.isBatch },

@@ -217,6 +217,8 @@ export function useSequentialTransactionFlow(
     chainId,
     onRepriced: failOnReplaced
       ? (from, to) => {
+          // A released write's wait can outlive it: its speed-up belongs to no run here.
+          if (from !== txHash) return;
           repricedRef.current = { from, to };
           emitStart(to, writeVariables);
         }
@@ -229,6 +231,11 @@ export function useSequentialTransactionFlow(
   useEffect(() => {
     writeOutRef.current = writeOut;
   }, [writeOut]);
+  // A prompt still in the wallet reports its answer whatever the run does meanwhile.
+  const promptOpenRef = useRef(!!isWritePending);
+  useEffect(() => {
+    promptOpenRef.current = !!isWritePending;
+  }, [isWritePending]);
 
   // Check if current transaction is prepared
   const prepared = useMemo(() => {
@@ -411,6 +418,12 @@ export function useSequentialTransactionFlow(
     [clearRun]
   );
 
+  // The caller read the run's outcome on chain: the run clears with its receipt wait.
+  const release = useCallback(() => {
+    if (promptOpenRef.current) return reset();
+    finishDetachedRef.current();
+  }, [reset]);
+
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
     // Retrying a call the wallet rejected re-enters mid-sequence (currentIndex > 0)
@@ -546,6 +559,7 @@ export function useSequentialTransactionFlow(
     error: writeError || txFailure || simulationError,
     currentCallIndex: currentIndex,
     reset,
+    release,
     detached,
     nextCalls
   };

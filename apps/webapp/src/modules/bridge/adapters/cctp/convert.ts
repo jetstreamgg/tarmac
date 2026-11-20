@@ -16,10 +16,16 @@ import {
 import { math } from '@/utils';
 import { canConvert, canLaunchConvert } from '../../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../../model/types';
-import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { ChainReader } from '../types';
 import { cctpBurnAmount } from './calls';
-import { L1_USDC, L1_USDS, TOKEN_MESSENGER_V2, isCctpL2Network } from './contracts';
+import {
+  L1_USDC,
+  L1_USDS,
+  LITE_PSM,
+  TOKEN_MESSENGER_V2,
+  USDS_PSM_WRAPPER,
+  isCctpL2Network
+} from './contracts';
 import { MINT_AND_WITHDRAW, receivedCopies, sourceBurnMessages } from './message';
 
 /** The claim's transaction mints USDS to the recipient when it sold the received USDC (the wrapper mints it). */
@@ -53,6 +59,18 @@ const claimNextLegs = (bridge: PendingBridge) =>
 /** The leg a claim's run sent after the claim mined and hasn't confirmed: its sale, maybe mined after a reload. */
 export const claimNextLegTxHashes = (bridge: PendingBridge): string[] =>
   claimNextLegs(bridge).map(action => action.nextLegTxHash);
+
+/**
+ * A leg the chain still doesn't know this long after it was sent counts as dropped, sooner than geth's
+ * 3 hours: if it mines later anyway, it sells other USDC 1:1 or reverts.
+ */
+export const CLAIM_LEG_DROPPED_MS = 35 * 60_000;
+
+/** Until when the claim run's last leg may still mine unseen, if it sent one. */
+export function claimLegOpenUntil(bridge: PendingBridge): number | undefined {
+  const sent = claimNextLegs(bridge).map(leg => (leg.nextLegAt ?? leg.at) + CLAIM_LEG_DROPPED_MS);
+  return sent.length ? Math.max(...sent) : undefined;
+}
 
 /** The first hash this app's claim confirmed with; see `confirmedClaimTxHashes` for all of them. */
 export const confirmedClaimTxHash = (bridge: PendingBridge): string | undefined =>
@@ -127,7 +145,7 @@ export function cctpNothingToConvert({
 export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'readContract'> &
   Partial<Pick<PublicClient, 'getTransaction'>>;
 
-// A leg the chain still doesn't know `L1_SENT_ACTION_DROPPED_MS` after it was sent was dropped: it sold nothing.
+// A leg the chain still doesn't know `CLAIM_LEG_DROPPED_MS` after it was sent was dropped: it sold nothing.
 async function readNextLeg(
   client: ConvertOfferReader,
   leg: PendingBridgeAction & { nextLegTxHash: string },
@@ -140,7 +158,7 @@ async function readNextLeg(
     if (
       !client.getTransaction ||
       !(error instanceof TransactionReceiptNotFoundError) ||
-      now - (leg.nextLegAt ?? leg.at) < L1_SENT_ACTION_DROPPED_MS
+      now - (leg.nextLegAt ?? leg.at) < CLAIM_LEG_DROPPED_MS
     )
       throw error;
     try {
@@ -314,4 +332,69 @@ export async function othersClaimSold({
       return true;
   }
   return false;
+}
+
+/** About an hour of Ethereum blocks: a lost sale is read for only while its 35-minute intent lasts. */
+export const LOST_SALE_BLOCKS = 300n;
+// Blocks read before the prompt opened, for clock skew.
+const LOST_SALE_SLACK_BLOCKS = 25n;
+const ETHEREUM_BLOCK_MS = 12_000;
+
+/**
+ * The hash of a sale of the card's USDC a reload lost: USDC from `recipient`
+ * to the USDS wrapper or the LitePSM in Ethereum's last hour, of exactly
+ * `amount` when the prompt said it (a convert), else of no more than the claim
+ * minted, sent since the prompt opened at `since`, other than one any of
+ * `cards` already knows. The latest one, or null. A failed read rejects.
+ */
+export async function findLostSale({
+  l1,
+  bridge,
+  recipient,
+  amount,
+  since,
+  cards = []
+}: {
+  l1: Pick<ChainReader, 'getBlockNumber' | 'getLogs'>;
+  bridge: PendingBridge;
+  recipient: Address;
+  amount?: bigint;
+  /** When the prompt opened: an earlier sale isn't its. */
+  since?: number;
+  /** The scope's other cards: a sale one of them knows is theirs. */
+  cards?: readonly PendingBridge[];
+}): Promise<Hex | null> {
+  const head = await l1.getBlockNumber();
+  const back =
+    since === undefined
+      ? LOST_SALE_BLOCKS
+      : BigInt(Math.ceil(Math.max(Date.now() - since, 0) / ETHEREUM_BLOCK_MS)) + LOST_SALE_SLACK_BLOCKS;
+  const blocks = back < LOST_SALE_BLOCKS ? back : LOST_SALE_BLOCKS;
+  const transfers = await l1.getLogs({
+    address: L1_USDC,
+    event: TRANSFER,
+    args: { from: recipient, to: [USDS_PSM_WRAPPER, LITE_PSM] },
+    fromBlock: head > blocks ? head - blocks : 0n,
+    toBlock: head
+  });
+  const minted = cctpBurnAmount(bridge.amount);
+  const known = new Set(
+    [bridge, ...cards]
+      .flatMap(card => [
+        ...confirmedClaimTxHashes(card),
+        ...claimNextLegTxHashes(card),
+        ...card.actions.flatMap(action => [action.txHash, ...(action.bundleTxHashes ?? [])])
+      ])
+      .map(hash => hash.toLowerCase())
+  );
+  const sale = transfers
+    .filter(
+      log =>
+        !!log.transactionHash &&
+        !known.has(log.transactionHash.toLowerCase()) &&
+        (log.args.value ?? 0n) > 0n &&
+        (amount === undefined ? (log.args.value ?? 0n) <= minted : log.args.value === amount)
+    )
+    .at(-1);
+  return sale?.transactionHash ?? null;
 }

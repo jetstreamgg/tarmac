@@ -115,6 +115,7 @@ export function useCctpClaimLegs({
     error: missing || (active && allowance.error) || built?.error || legs.error || null,
     execute: legs.execute,
     reset: legs.reset,
+    release: legs.release,
     dropCheck: legs.dropCheck,
     /** Ethereum's reader, for what a claim whose sale failed left behind. */
     client

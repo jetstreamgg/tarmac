@@ -46,8 +46,11 @@ const mocks = vi.hoisted(() => ({
     execute: (() => undefined) as () => void,
     reset: (() => undefined) as () => void,
     dropCheck: (() => undefined) as () => void
-  }
+  },
+  capture: vi.fn()
 }));
+
+vi.mock('posthog-js/react', () => ({ usePostHog: () => ({ capture: mocks.capture }) }));
 
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address, chainId: mocks.walletChainId }),
@@ -132,6 +135,7 @@ describe('useCctpSwapConvertLaunch', () => {
       reset: () => undefined,
       dropCheck: () => undefined
     });
+    mocks.capture.mockClear();
     seed();
   });
 
@@ -223,6 +227,30 @@ describe('useCctpSwapConvertLaunch', () => {
     mocks.modalOpen = false;
     rerender();
     expect(dropCheck).toHaveBeenCalled();
+  });
+
+  it("reports a bundled convert's mined hash, and no second hash for a single transaction", () => {
+    const sentHashes = () =>
+      mocks.capture.mock.calls
+        .filter(([event]) => event === 'app_bridge_tx_sent')
+        .map(([, props]) => [props.hash_kind, props.tx_hash]);
+    const { result } = renderHook(() => useCctpSwapConvertLaunch());
+    act(() => result.current.launch(SWAP));
+    act(() => mocks.launched[0].onConfirm?.());
+    const callbacks = mocks.convert.params!.getCallbacks();
+    cctpSwapStore.markConvert(scope(), '0x5a', '0xb1');
+    act(() => callbacks.onStart(undefined));
+    act(() => callbacks.onSuccess('0xc0', 5n));
+    expect(sentHashes()).toContainEqual(['tx', '0xc0']);
+
+    mocks.capture.mockClear();
+    seed();
+    act(() => result.current.launch(SWAP));
+    act(() => mocks.launched.at(-1)!.onConfirm?.());
+    const single = mocks.convert.params!.getCallbacks();
+    act(() => single.onStart('0xc1'));
+    act(() => single.onSuccess('0xc1', 6n));
+    expect(sentHashes().filter(([, hash]) => hash === '0xc1')).toHaveLength(1);
   });
 
   it('shows the card again when its bundle reverts, only while the bundle is still its convert', () => {

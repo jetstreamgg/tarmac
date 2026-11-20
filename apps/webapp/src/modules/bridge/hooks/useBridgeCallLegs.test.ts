@@ -423,3 +423,55 @@ describe('useBridgeCallLegs late send', () => {
     expect(callbacks.onStart).toHaveBeenCalledWith('0xdeposit');
   });
 });
+
+describe('useBridgeCallLegs onBundlePrompt', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: true });
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  const renderBundling = (onBundlePrompt: (context?: unknown) => (() => void) | undefined) =>
+    renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight: async () => undefined,
+        batch: true,
+        onBundlePrompt,
+        getCallbacks: () => callbacks
+      })
+    );
+  type BundleArgs = FlowArgs & { onError: (error: Error, hash?: string) => void };
+
+  it("opens with its run's context, and releases once the wallet accepts the bundle", async () => {
+    const release = vi.fn();
+    const onBundlePrompt = vi.fn(() => release);
+    const { result } = renderBundling(onBundlePrompt);
+    await act(async () => result.current.execute({ run: 1 }));
+    const bundle = mocks.batch.at(-1)!;
+    act(() => bundle.onMutate());
+    expect(onBundlePrompt).toHaveBeenCalledWith({ run: 1 });
+    expect(release).not.toHaveBeenCalled();
+    act(() => bundle.onStart());
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases once the wallet rejects the bundle', () => {
+    const release = vi.fn();
+    renderBundling(() => release);
+    const bundle = mocks.batch.at(-1)! as BundleArgs;
+    act(() => bundle.onMutate());
+    act(() => bundle.onError(new Error('User rejected the request.')));
+    expect(release).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens no prompt for a single leg', () => {
+    const onBundlePrompt = vi.fn(() => undefined);
+    renderBundling(onBundlePrompt);
+    act(() => mocks.sequential.at(-1)!.onMutate(BURN));
+    expect(onBundlePrompt).not.toHaveBeenCalled();
+  });
+});

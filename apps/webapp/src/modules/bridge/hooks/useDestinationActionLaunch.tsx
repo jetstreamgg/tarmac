@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
@@ -37,13 +46,14 @@ import {
   forgetNextLeg,
   recordNextLeg,
   isSettled,
+  actionLandedOnChain,
   showsActionButton
 } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
-import { openCctpSpend } from '../store/openCctpSpends';
+import { openClaimedSale } from '../store/saleIntentStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
 import { readsBalanceOn } from './balanceQueries';
@@ -223,6 +233,11 @@ const DETACHED: TxCallbacks = {
   onError: () => undefined
 };
 
+const NO_CARDS: PendingBridge[] = [];
+
+/** The latest Confirm's card, and how its run ends when the card reads the action landed first. */
+type ChainWatch = { scope: string; bridgeId: string; check: (card: PendingBridge) => void };
+
 /** `action` can be sent now by `account`: the next action, a keepalive of the ticket it redeems, or the recipient's convert. */
 const launchable = (bridge: PendingBridge, action: PendingBridgeNextAction, account: string | undefined) =>
   action === 'keepalive'
@@ -255,7 +270,14 @@ const convertible = (bridge: PendingBridge, amount: bigint | undefined): amount 
  * to this wallet) and records the action there.
  */
 export function useDestinationActionLaunch() {
-  const { launch: launchModal, updateModalContent, txCallbacks, isModalOpen, txStatus } = useTransaction();
+  const {
+    launch: launchModal,
+    updateModalContent,
+    txCallbacks,
+    isModalOpen,
+    txStatus,
+    activeSessionId
+  } = useTransaction();
   const sessionId = useId();
   const queryClient = useQueryClient();
   const chains = useChains();
@@ -263,7 +285,7 @@ export function useDestinationActionLaunch() {
   const isSafeApp = useIsSafeApp();
   const { batch, batchPending } = useBridgeBatch();
   const { scope, familyChainId } = usePendingScope();
-  const { locked } = useMinimizedSessionLock(sessionId);
+  const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { chainId: walletChainId, address } = useConnection();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
@@ -286,6 +308,9 @@ export function useDestinationActionLaunch() {
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
   const launchedToastRef = useRef<{ loading: string; success: string; error: string }>(undefined);
   const claimRunRef = useRef<ClaimRun | undefined>(undefined);
+  // The card and action the latest Confirm sends.
+  const [run, setRun] = useState<{ scope: string; bridgeId: string; action: PendingBridgeNextAction }>();
+  const chainWatchRef = useRef<ChainWatch | undefined>(undefined);
   const claimLegRunsRef = useRef(new Map<string, ClaimRun>());
   const replay = recovery?.kind === 'replay' ? recovery : undefined;
   const redeem = recovery?.kind === 'redeem' ? recovery : undefined;
@@ -332,7 +357,7 @@ export function useDestinationActionLaunch() {
     // A convert of the card sells the same USDC: it refuses while this sale may still be signed.
     onLegPrompt: (variables, context) =>
       variables.functionName === CCTP_CONVERT_FUNCTION && isClaimRun(context)
-        ? openCctpSpend(context.scope, context.bridgeId)
+        ? openClaimedSale(context.scope, context.bridgeId)
         : undefined,
     onCallsSent: recordBundleSent('claim'),
     getCallbacks: () => legCallbacksRef.current
@@ -380,6 +405,17 @@ export function useDestinationActionLaunch() {
   const resetRedeem = redeemLegs.reset;
   const resetClaim = claimLegs.reset;
   const resetConvert = convertLegs.reset;
+  // The engine of each recovery kind, to drop a run the card's chain read ended.
+  const releaseLegsRef = useRef<Record<Recovery['kind'], () => void>>(undefined);
+  useLayoutEffect(() => {
+    releaseLegsRef.current = {
+      replay: replayLegs.release,
+      redeem: redeemLegs.release,
+      'cctp-claim': claimLegs.release,
+      'cctp-convert': convertLegs.release,
+      withdrawal: withdrawalLegs.release
+    };
+  });
   const { dropCheck: dropClaimCheck } = claimLegs;
   const { dropCheck: dropConvertCheck } = convertLegs;
   // A close while the claim or convert still checks the chain must not open the wallet behind the modal.
@@ -573,6 +609,8 @@ export function useDestinationActionLaunch() {
           ? Number(formatUnits(convertAmount!, 6))
           : usdsToNumber(bridgedAmount(bridge.amount, bridge.routeKind))
       });
+      // A new modal isn't the last Confirm's run until its own Confirm.
+      setRun(undefined);
       launchModal({
         ...(nextRecovery?.kind === 'cctp-convert'
           ? cctpConvertModal({
@@ -661,7 +699,7 @@ export function useDestinationActionLaunch() {
               onSent: record((current, txHash) =>
                 recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
               ),
-              onConfirmed: (txHash, bundleTxHashes) => {
+              onConfirmed: (txHash, bundleTxHashes, bundle) => {
                 const others = bundleTxHashes?.filter(hash => hash !== txHash);
                 pendingBridgeStore.update(scope, bridge.id, current =>
                   recordAction(current, {
@@ -671,6 +709,9 @@ export function useDestinationActionLaunch() {
                     ...(others?.length && { bundleTxHashes: others })
                   })
                 );
+                if (bundle) tracker.recordBundleMined(txHash);
+                // Read the card now: a prove's new ETA would otherwise wait for the next poll.
+                void queryClient.invalidateQueries({ queryKey: ['bridge-progress', scope, bridge.id] });
                 // A settled bridge leaves the tracker once this confirms, so nothing else refreshes these.
                 void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
               },
@@ -689,13 +730,32 @@ export function useDestinationActionLaunch() {
           // A CCTP card leaves once its USDS is delivered (Figma 78, 97): a claim only after its sale or a bundle, else it stays to offer the convert.
           let soldUsdc = nextRecovery?.kind === 'cctp-convert';
           const deliversUsds = nextRecovery?.kind === 'cctp-claim' || nextRecovery?.kind === 'cctp-convert';
-          const callbacks: TxCallbacks = tracker.wrap(
+          let claimedToast = false;
+          const tracked: TxCallbacks = tracker.wrap(
             deliversUsds
               ? {
                   ...recorded,
                   onMutate: variables => {
-                    if (nextRecovery.kind === 'cctp-claim')
-                      soldUsdc = variables?.functionName !== CCTP_CLAIM_FUNCTION;
+                    if (nextRecovery.kind === 'cctp-claim') {
+                      const functionName = variables?.functionName;
+                      soldUsdc = functionName !== CCTP_CLAIM_FUNCTION;
+                      // A leg after the claim goes out once the claim mined (not a Safe's): a failure from here leaves the USDC claimed.
+                      if (
+                        !isSafe &&
+                        !claimedToast &&
+                        functionName !== undefined &&
+                        functionName !== CCTP_CLAIM_FUNCTION &&
+                        modalOwnerRef.current === callbacks
+                      ) {
+                        claimedToast = true;
+                        updateModalContent(sessionId, {
+                          toast: {
+                            ...launchedToastRef.current!,
+                            error: t`USDC claimed, not converted to USDS`
+                          }
+                        });
+                      }
+                    }
                     recorded.onMutate(variables);
                   },
                   onSuccess: (...settled) => {
@@ -705,6 +765,51 @@ export function useDestinationActionLaunch() {
                 }
               : recorded
           );
+          // A wallet can hand back a hash that never mines while the action still lands (MetaMask Mobile): the card's chain read ends the run then.
+          let awaitingReceipt = false;
+          let ended = false;
+          const callbacks: TxCallbacks = {
+            ...tracked,
+            onMutate: variables => {
+              awaitingReceipt = false;
+              tracked.onMutate(variables);
+            },
+            onStart: hash => {
+              awaitingReceipt = !!hash;
+              tracked.onStart(hash);
+            },
+            onSuccess: (...settled) => {
+              ended = true;
+              tracked.onSuccess(...settled);
+            },
+            onError: (...failed) => {
+              ended = true;
+              tracked.onError(...failed);
+            }
+          };
+          const claimOnly = action === 'claim' && isCctpClaimOnly(bridge.routeData);
+          chainWatchRef.current = {
+            scope,
+            bridgeId: bridge.id,
+            check: card => {
+              if (ended || !awaitingReceipt || modalOwnerRef.current !== callbacks) return;
+              if (!actionLandedOnChain(card, action, claimOnly)) return;
+              if (action === 'finalize' && card.nextAction === 'replay')
+                updateModalContent(sessionId, {
+                  toast: {
+                    ...launchedToastRef.current!,
+                    success: t`Withdrawal finalized. Replay it to receive your USDS.`
+                  }
+                });
+              // Its engine still waits on the hash: kept, it would send this run's call under the next Confirm.
+              if (nextRecovery) releaseLegsRef.current?.[nextRecovery.kind]();
+              tracker.recordSettledOnChain();
+              // No receipt reaches onConfirmed, which refreshes these on a normal success.
+              void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
+              callbacks.onSuccess();
+            }
+          };
+          setRun({ scope, bridgeId: bridge.id, action });
           if (!nextRecovery) {
             void runMockLegs([action], () => callbacks);
             return;
@@ -727,6 +832,7 @@ export function useDestinationActionLaunch() {
     },
     [
       launchModal,
+      updateModalContent,
       sessionId,
       queryClient,
       pinChainId,
@@ -777,5 +883,27 @@ export function useDestinationActionLaunch() {
     launchIn(awaitingSwitch.scope, awaitingSwitch.card, awaitingSwitch.action, awaitingSwitch.amount);
   }, [awaitingSwitch, walletChainId, launchIn]);
 
-  return { launch, launchIn, canLaunch, actionHint, locked };
+  // The card's chain read can end a run whose wallet never confirmed its hash.
+  const watchScope = run?.scope;
+  const getRunCards = useCallback(
+    () => (watchScope ? pendingBridgeStore.getSnapshot(watchScope) : NO_CARDS),
+    [watchScope]
+  );
+  const runCards = useSyncExternalStore(pendingBridgeStore.subscribe, getRunCards);
+  useEffect(() => {
+    const watch = chainWatchRef.current;
+    if (!watch || watch.scope !== watchScope) return;
+    const card = runCards.find(entry => entry.id === watch.bridgeId);
+    if (card) watch.check(card);
+  }, [runCards, watchScope]);
+
+  // A claim is in flight from Confirm until its run ends, its sale included: the card isn't claimed before.
+  const claiming =
+    run?.action === 'claim' &&
+    activeSessionId === sessionId &&
+    (txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING)
+      ? { scope: run.scope, bridgeId: run.bridgeId }
+      : undefined;
+
+  return { launch, launchIn, canLaunch, actionHint, locked, restore, claiming };
 }

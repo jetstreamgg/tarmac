@@ -78,7 +78,8 @@ const props = {
   onConvert: vi.fn(),
   canAction: () => true,
   actionHint: () => undefined,
-  actionLocked: false
+  actionLocked: false,
+  onOpenTransaction: vi.fn()
 };
 
 let scopes = 0;

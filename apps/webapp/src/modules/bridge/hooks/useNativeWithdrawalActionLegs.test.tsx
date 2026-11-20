@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { encodeEventTopics, encodeFunctionData, keccak256, type Hex, type TransactionReceipt } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { OP_STACK_DEPOSIT, l2CrossDomainMessengerAbi } from '../adapters/nativeDeposit/contracts';
 import { ARBITRUM_WITHDRAWAL, OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
@@ -26,7 +27,9 @@ const mocks = vi.hoisted(() => ({
   buildError: null as Error | null,
   estimateParams: undefined as undefined | Record<string, unknown>,
   estimate: 1_024_585n as bigint | undefined,
-  estimateError: null as Error | null
+  estimateError: null as Error | null,
+  detached: false,
+  execute: vi.fn()
 }));
 
 vi.mock('wagmi', () => ({
@@ -67,7 +70,14 @@ vi.mock('../adapters/nativeWithdrawal/opStackActions', () => ({
 vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (params: Record<string, unknown>) => {
     mocks.flow = params;
-    return { prepared: true, error: null, execute: vi.fn(), reset: vi.fn() };
+    return {
+      prepared: true,
+      error: null,
+      execute: mocks.execute,
+      reset: vi.fn(),
+      release: vi.fn(),
+      detached: mocks.detached
+    };
   }
 }));
 
@@ -115,7 +125,51 @@ describe('useNativeWithdrawalActionLegs', () => {
       buildError: null,
       estimateParams: undefined,
       estimate: 1_024_585n,
-      estimateError: null
+      estimateError: null,
+      detached: false,
+      execute: vi.fn()
+    });
+  });
+
+  describe('a Confirm while an earlier run is out', () => {
+    const makeCallbacks = () => ({
+      onMutate: vi.fn(),
+      onStart: vi.fn(),
+      onSuccess: vi.fn(),
+      onError: vi.fn()
+    });
+    type Engine = {
+      onMutate: (variables?: object) => void;
+      onStart: (hash: string, variables?: object) => void;
+      onSuccess: (hash: string, blockNumber?: bigint) => void;
+    };
+
+    it("refuses while the engine holds an earlier run's write, retryable and sending nothing", () => {
+      mocks.detached = true;
+      const callbacks = makeCallbacks();
+      const { result } = render({ getCallbacks: () => callbacks as unknown as TxCallbacks });
+      result.current.execute();
+      expect(mocks.execute).not.toHaveBeenCalled();
+      const [error, hash] = callbacks.onError.mock.calls[0];
+      expect(error).toBeInstanceOf(TransactionRefusedError);
+      expect((error as TransactionRefusedError).final).toBeFalsy();
+      expect((error as Error).message).toMatch(/still open in your wallet or pending/);
+      expect(hash).toBe('');
+    });
+
+    it("hands prompt A's success, mined after card B's Confirm, to card A", () => {
+      const A = makeCallbacks();
+      const B = makeCallbacks();
+      let current = A;
+      render({ getCallbacks: () => current as unknown as TxCallbacks });
+      const engine = mocks.flow as unknown as Engine;
+      const promptA = { functionName: 'finalizeWithdrawalTransaction' };
+      engine.onMutate(promptA);
+      engine.onStart('0xa', promptA);
+      current = B;
+      engine.onSuccess('0xa', 3n);
+      expect(A.onSuccess).toHaveBeenCalledWith('0xa', 3n);
+      expect(B.onSuccess).not.toHaveBeenCalled();
     });
   });
 

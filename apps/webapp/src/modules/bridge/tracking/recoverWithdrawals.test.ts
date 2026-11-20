@@ -125,6 +125,34 @@ describe('recoverWithdrawals', () => {
     expect(settled.has(HASH)).toBe(false);
   });
 
+  describe('a queued Safe withdrawal with no hash yet', () => {
+    const SAFE_TX = '0x00000000000000000000000000000000000000000000000000000000000000cc';
+    const queued = (amount = 5n * 10n ** 18n) =>
+      createPendingBridge({
+        account: ACCOUNT,
+        amount,
+        from: 'base',
+        to: 'ethereum',
+        route: nativeWithdrawalRoute('base'),
+        safeTxHash: SAFE_TX,
+        now: NOW - 5 * 60_000
+      });
+
+    it('leaves a withdrawal it may have sent to its card, without a second card', async () => {
+      const store = createPendingBridgeStore({ now: () => NOW });
+      store.upsert(SCOPE, queued());
+      const { added } = run({ store });
+      expect(await added).toBe(0);
+      expect(store.getSnapshot(SCOPE)).toHaveLength(1);
+    });
+
+    it('adds a withdrawal of another amount', async () => {
+      const store = createPendingBridgeStore({ now: () => NOW });
+      store.upsert(SCOPE, queued(2n * 10n ** 18n));
+      expect(await run({ store }).added).toBe(1);
+    });
+  });
+
   it('does not add one the launch stored while it was being read', async () => {
     const store = createPendingBridgeStore({ now: () => NOW });
     const { added } = run({
