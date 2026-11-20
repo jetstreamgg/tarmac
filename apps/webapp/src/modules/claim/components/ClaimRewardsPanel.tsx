@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
@@ -6,7 +6,6 @@ import { useAvailableTokenRewardContracts, useTransactionFlow } from '@/hooks';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { formatUsd } from '@/utils';
-import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -56,8 +55,6 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
  * that support it, sequential otherwise. All three engines are mainnet, so a
  * single bundle works. The redesign claims the full in-scope set — the QA-round
  * comps draw no per-token selection, so the previous checkbox list is gone.
- * Restake (SKY-only) is offered in the stake scope and passed to the stake
- * adapter, which folds the SKY reward back via `lock`.
  *
  * The `scope` narrows what each adapter reads and is the ONLY selection mechanism: a
  * table row's Claim passes a single-reward scope (`merkl-token` / `reward-contract`), a
@@ -80,19 +77,11 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     [merkl.rewards, sky.rewards, stake.rewards]
   );
 
-  // Restake is a stake-scoped, SKY-only affordance.
-  const [restake, setRestake] = useState(false);
-  const skyStakeReward =
-    scope.kind === 'stake'
-      ? stake.rewards.find(reward => reward.tokenSymbol.toUpperCase() === 'SKY')
-      : undefined;
-  const effectiveRestake = restake && !!skyStakeReward;
-
   // Each adapter's useClaimCalls filters the list to its own source, so the full
-  // list can be passed to all three; only stake reads the restake option.
+  // list can be passed to all three.
   const merklCalls = merklAdapter.useClaimCalls(allRewards);
   const skyCalls = skyRewardsAdapter.useClaimCalls(allRewards);
-  const stakeCalls = stakeAdapter.useClaimCalls(allRewards, { restake: effectiveRestake });
+  const stakeCalls = stakeAdapter.useClaimCalls(allRewards);
   const calls = useMemo(
     () => [...merklCalls.calls, ...skyCalls.calls, ...stakeCalls.calls],
     [merklCalls.calls, skyCalls.calls, stakeCalls.calls]
@@ -235,16 +224,14 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     return [
       ...rowsFor('merkl', merklCalls.calls.length, t`Claim`),
       ...rowsFor('sky-rewards', skyCalls.calls.length, t`Claim`),
-      ...rowsFor('stake', stakeCalls.calls.length, effectiveRestake ? t`Restake` : t`Claim`)
+      ...rowsFor('stake', stakeCalls.calls.length, t`Claim`)
     ];
-  }, [allRewards, merklCalls.calls.length, skyCalls.calls.length, stakeCalls.calls.length, effectiveRestake]);
+  }, [allRewards, merklCalls.calls.length, skyCalls.calls.length, stakeCalls.calls.length]);
 
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: flow.execute,
-    // Not call-checked: every claim pays out to the user or, on restake, into
-    // their own position, and the restake amount follows the live accrued
-    // rewards, so a refetch would refuse it for nothing.
+    // Not call-checked: every claim pays out to the user.
     nextCalls: null,
     confirmDisabled: disabled,
     transactionScreenContent,
@@ -287,15 +274,6 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
             <ClaimRewardRow key={reward.id} reward={reward} />
           ))}
         </div>
-      )}
-
-      {skyStakeReward && (
-        <label className="flex items-center justify-between" data-testid="claim-restake-toggle">
-          <Text className="text-fgPrimary font-circle text-sm font-medium">
-            <Trans>Restake SKY rewards</Trans>
-          </Text>
-          <Switch checked={effectiveRestake} onCheckedChange={setRestake} aria-label="Restake SKY rewards" />
-        </label>
       )}
 
       {allRewards.length > 0 && <ModalSummaryGrid rows={gridRows} dividerClassName="h-6" />}
