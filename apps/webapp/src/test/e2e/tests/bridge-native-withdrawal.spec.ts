@@ -274,38 +274,6 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
     });
 
     // MetaMask Mobile can hand back a hash that never mines while the finalize lands under another.
-    test('base: a finalize whose wallet hash never confirms ends once the card reads it finalized', async ({
-      isolatedPage,
-      testAccount
-    }) => {
-      test.setTimeout(600_000);
-      await keepPendingBridgesOnLoad(isolatedPage.context());
-      const account = getAddress(testAccount);
-      const bridge = new BridgePage(isolatedPage);
-      const txHash = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account);
-      await proveOpStackWithdrawalOnFork('base', txHash, account);
-      const { usds: before } = await l1AccountState(account);
-      await bridge.gotoConnected();
-
-      const card = bridge.card('Ethereum');
-      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
-        timeout: 90_000
-      });
-      await dropWalletSends(isolatedPage);
-      await card.getByTestId('pending-bridge-action').click();
-      const close = isolatedPage.getByTestId('transaction-modal-close');
-      await expect(close).toHaveAttribute('aria-label', 'Minimize', { timeout: 90_000 });
-      await close.click();
-      const toast = isolatedPage.getByTestId('minimized-transaction-toast');
-      await expect(toast).toContainText('Finalizing the withdrawal', { timeout: 30_000 });
-
-      await finalizeOpStackWithdrawalOnFork('base', txHash, account);
-      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 180_000 });
-      await expect(isolatedPage.getByText('Funds received!')).toBeVisible({ timeout: 10_000 });
-      await expect(toast).toHaveCount(0);
-      expect((await l1AccountState(account)).usds - before).toBe(AMOUNT);
-    });
-
     test('base: after a finalize ended by the chain read, the next finalize sends its own call', async ({
       isolatedPage,
       testAccount
@@ -335,11 +303,13 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
       const close = isolatedPage.getByTestId('transaction-modal-close');
       await expect(close).toHaveAttribute('aria-label', 'Minimize', { timeout: 90_000 });
       await close.click();
+      const toast = isolatedPage.getByTestId('minimized-transaction-toast');
+      await expect(toast).toContainText('Finalizing the withdrawal', { timeout: 30_000 });
       await finalizeOpStackWithdrawalOnFork('base', txA, account);
       await expect(cardA.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 180_000 });
-      await expect(isolatedPage.getByTestId('minimized-transaction-toast')).toHaveCount(0, {
-        timeout: 15_000
-      });
+      await expect(isolatedPage.getByText('Funds received!')).toBeVisible({ timeout: 10_000 });
+      await expect(toast).toHaveCount(0, { timeout: 15_000 });
+      expect((await l1AccountState(account)).usds - before).toBe(AMOUNT);
       await isolatedPage.unroute(TENDERLY_RPC);
 
       // B, on the same page and engine: its own finalize goes out and lands.
@@ -413,16 +383,25 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
 
       // A reload: the page loads again with the wallet connected and storage kept.
       await bridge.gotoConnected();
-      await expect(card).toBeVisible({ timeout: 60_000 });
-      // The sent finalize is kept: the card never offers it again while it is out.
+      let sendsAfterReload = 0;
+      isolatedPage.on('request', request => {
+        if (request.postData()?.includes('"eth_sendTransaction"')) sendsAfterReload += 1;
+      });
+      // The sent finalize is kept: the card says it waits for it and never offers it again while it is out.
+      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
+        timeout: 90_000
+      });
+      await expect(card.getByTestId('pending-bridge-action-hint')).toContainText(
+        'Waiting for the transaction to confirm',
+        { timeout: 30_000 }
+      );
       const action = card.getByTestId('pending-bridge-action');
-      await expect
-        .poll(async () => (await action.count()) === 0 || (await action.isDisabled()), { timeout: 30_000 })
-        .toBe(true);
+      if (await action.count()) await expect(action).toBeDisabled();
 
       await finalizeOpStackWithdrawalOnFork('base', txHash, account);
       await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 180_000 });
       expect((await l1AccountState(account)).usds - before).toBe(AMOUNT);
+      expect(sendsAfterReload).toBe(0);
     });
 
     test('base: while a finalize prompt is still open, another card refuses to send until that prompt ends', async ({

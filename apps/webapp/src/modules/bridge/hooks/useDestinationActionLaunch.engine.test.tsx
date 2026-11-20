@@ -14,7 +14,7 @@ import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
-// The launcher, the replay legs, their engine and its receipt wait all run for real; only the
+// The launcher, the replay and ticket legs, their engines and the receipt wait all run for real; only the
 // wallet (wagmi) and the node (viem's receipt wait) are faked.
 
 type Request = { functionName: string; args: readonly unknown[] };
@@ -26,28 +26,37 @@ const mocks = vi.hoisted(() => ({
   launched: [] as TransactionConfig[],
   isModalOpen: true,
   session: {} as TxCallbacks,
-  // the wallet: each prompt's request, in order, and the mutation options of the last engine rendered
+  // the wallet: each prompt's request, in order, and the engine that sent it
   prompts: [] as { functionName: string; args: readonly unknown[] }[],
-  mutation: undefined as
-    | undefined
-    | {
-        onSuccess?: (hash: string, request: object) => void;
-        onError?: (error: Error, request: object) => void;
-      },
-  setWrite: undefined as undefined | ((update: (state: object) => object) => void),
+  engines: new WeakMap<
+    object,
+    {
+      mutation: {
+        current: {
+          onSuccess?: (hash: string, request: object) => void;
+          onError?: (error: Error, request: object) => void;
+        };
+      };
+      setWrite: (update: (state: object) => object) => void;
+    }
+  >(),
   // the node: the receipt wait of each hash
   waits: new Map<string, Wait>()
 }));
 
 vi.mock('wagmi', async () => {
-  const { useState: useWriteState } = await import('react');
+  const { useRef, useState: useWriteState } = await import('react');
   return {
     useConnection: () => ({ address: mocks.address, chainId: mocks.walletChainId }),
     useChainId: () => mocks.walletChainId,
-    useChains: () => [1, 8453, 10].map(id => ({ id })),
+    useChains: () => [1, 8453, 10, 42161].map(id => ({ id })),
     useConfig: () => ({}),
     useReadContract: ({ functionName, query }: { functionName: string; query?: { enabled?: boolean } }) => ({
       data: functionName === 'baseGas' && query?.enabled !== false ? 100_000n : undefined,
+      error: null
+    }),
+    useEstimateGas: ({ query }: { query?: { enabled?: boolean } }) => ({
+      data: query?.enabled ? 100_000n : undefined,
       error: null
     }),
     useSimulateContract: (params: Request & { query?: { enabled?: boolean } }) => ({
@@ -59,17 +68,25 @@ vi.mock('wagmi', async () => {
       refetch: () => Promise.resolve({})
     }),
     useWriteContract: (options: {
-      mutation: NonNullable<typeof mocks.mutation> & { onMutate?: (r: object) => void };
+      mutation: {
+        onMutate?: (r: object) => void;
+        onSuccess?: (hash: string, request: object) => void;
+        onError?: (error: Error, request: object) => void;
+      };
     }) => {
       const [state, setState] = useWriteState<{ data?: string; variables?: object; isPending: boolean }>({
         isPending: false
       });
-      mocks.mutation = options.mutation;
-      mocks.setWrite = setState as unknown as typeof mocks.setWrite;
+      const mutation = useRef(options.mutation);
+      mutation.current = options.mutation;
       return {
         writeContract: (request: Request) => {
           options.mutation.onMutate?.(request);
           mocks.prompts.push(request);
+          mocks.engines.set(request, {
+            mutation,
+            setWrite: setState as unknown as (update: (state: object) => object) => void
+          });
           setState({ variables: request, isPending: true });
         },
         error: null,
@@ -120,7 +137,7 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
 vi.mock('@/modules/ui/hooks/useResetUnfinishedRunOnClose', () => ({
   useResetUnfinishedRunOnClose: () => undefined
 }));
-// The other actions' legs stay idle: only the replay engine is under test.
+// The other actions' legs stay idle: only the replay and Arbitrum ticket engines are under test.
 const { idleLegs } = vi.hoisted(() => ({
   idleLegs: () => ({
     calls: [],
@@ -135,7 +152,6 @@ const { idleLegs } = vi.hoisted(() => ({
 }));
 vi.mock('./useCctpClaimLegs', () => ({ CCTP_CLAIM_FUNCTION: 'receiveMessage', useCctpClaimLegs: idleLegs }));
 vi.mock('./useCctpConvertLegs', () => ({ useCctpConvertLegs: idleLegs }));
-vi.mock('./useArbitrumRedeemLegs', () => ({ useArbitrumRedeemLegs: idleLegs }));
 vi.mock('./useNativeWithdrawalActionLegs', () => ({ useNativeWithdrawalActionLegs: idleLegs }));
 
 const NOW = 1_800_000_000_000;
@@ -189,9 +205,10 @@ const flush = () => act(() => new Promise(resolve => setTimeout(resolve, 0)));
 
 /** The wallet answers the prompt for `request` with `hash`; the engine then waits on its receipt. */
 const sign = async (request: object, hash: string) => {
+  const engine = mocks.engines.get(request)!;
   act(() => {
-    mocks.mutation!.onSuccess?.(hash, request);
-    mocks.setWrite!(state =>
+    engine.mutation.current.onSuccess?.(hash, request);
+    engine.setWrite(state =>
       (state as { variables?: object }).variables === request
         ? { ...state, data: hash, isPending: false }
         : state
@@ -235,10 +252,9 @@ const launchAndConfirm = async (page: ReturnType<typeof mount>, network: Network
   mocks.session = session;
   page.rerenderPage();
   await flush();
-  act(() => page.result.current.launch(stored(DEPOSITS[network].txHash)));
-  await flush();
   const before = { prompts: mocks.prompts.length, launched: mocks.launched.length };
-  await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched - 1));
+  act(() => page.result.current.launch(stored(DEPOSITS[network].txHash)));
+  await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched));
   confirm(session);
   await waitFor(() => expect(mocks.prompts.length > before.prompts || answered.has(session)).toBe(true));
 };
@@ -342,9 +358,10 @@ describe('useDestinationActionLaunch with the real replay engine', () => {
     const rejection = Object.assign(new Error('User rejected the request.'), {
       name: 'UserRejectedRequestError'
     });
+    const engine = mocks.engines.get(mocks.prompts[0])!;
     act(() => {
-      mocks.mutation!.onError?.(rejection, mocks.prompts[0]);
-      mocks.setWrite!(() => ({ isPending: false }));
+      engine.mutation.current.onError?.(rejection, mocks.prompts[0]);
+      engine.setWrite(() => ({ isPending: false }));
     });
     await waitFor(() => expect(log).toEqual(['A.onMutate', 'A.onError(UserRejectedRequestError)']));
     expect(stored(DEPOSITS.base.txHash).actions).toEqual([]);
@@ -373,5 +390,78 @@ describe('useDestinationActionLaunch with the real replay engine', () => {
     expect(stored(DEPOSITS.base.txHash).actions.map(({ txHash, status }) => [txHash, status])).toEqual([
       ['0xfast', undefined]
     ]);
+  });
+
+  describe('an Arbitrum ticket, on its own engine', () => {
+    // canLaunchKeepalive reads the wall clock: an hour left is urgent.
+    const seedTicket = (txHash: string, ticket: string) => {
+      const resolved = resolveBridgeRoute({ from: 'ethereum', to: 'arbitrum', amount: 1n, facts: {} });
+      if (resolved.status !== 'ok') throw new Error(resolved.reason);
+      const bridge = createPendingBridge({
+        account: mocks.address,
+        amount: 10n ** 18n,
+        from: 'ethereum',
+        to: 'arbitrum',
+        route: resolved.route,
+        txHash,
+        now: NOW
+      });
+      const routeData = {
+        ticketId: `0x${ticket.repeat(64)}`,
+        timeout: String(Math.floor(Date.now() / 1000) + 3600)
+      };
+      pendingBridgeStore.upsert(
+        scope(),
+        applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData }, NOW)
+      );
+    };
+    const launchTicket = async (
+      page: ReturnType<typeof mount>,
+      txHash: string,
+      action: 'redeem' | 'keepalive',
+      session: TxCallbacks
+    ) => {
+      mocks.walletChainId = 42161;
+      mocks.session = session;
+      page.rerenderPage();
+      await flush();
+      const before = { prompts: mocks.prompts.length, launched: mocks.launched.length };
+      act(() => page.result.current.launch(stored(txHash), action === 'keepalive' ? 'keepalive' : undefined));
+      await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched));
+      confirm(session);
+      await waitFor(() => expect(mocks.prompts.length > before.prompts || answered.has(session)).toBe(true));
+    };
+
+    it("after a redeem's hash that never mines is ended by the chain read, the next card sends its own redeem", async () => {
+      const log: string[] = [];
+      seedTicket('0xarbA', 'a');
+      seedTicket('0xarbB', 'b');
+      const page = mount();
+      await launchTicket(page, '0xarbA', 'redeem', sessionFor('A', log));
+      expect(mocks.prompts.map(({ functionName, args }) => [functionName, args[0]])).toEqual([
+        ['redeem', `0x${'a'.repeat(64)}`]
+      ]);
+      // A's wallet hash never mines while the ticket is redeemed under another.
+      await sign(mocks.prompts[0], '0xredeemA');
+      act(() =>
+        pendingBridgeStore.update(scope(), '0xarbA', bridge =>
+          applyProgress(bridge, { kind: 'arrived' }, Date.now())
+        )
+      );
+      await waitFor(() =>
+        expect(log).toEqual(['A.onMutate', 'A.onStart(0xredeemA)', 'A.onSuccess(chain read)'])
+      );
+
+      await launchTicket(page, '0xarbB', 'redeem', sessionFor('B', log));
+      expect(mocks.prompts.map(({ functionName, args }) => [functionName, args[0]])).toEqual([
+        ['redeem', `0x${'a'.repeat(64)}`],
+        ['redeem', `0x${'b'.repeat(64)}`]
+      ]);
+      await sign(mocks.prompts[1], '0xredeemB');
+      await mine('0xredeemB');
+      await waitFor(() =>
+        expect(log.slice(3)).toEqual(['B.onMutate', 'B.onStart(0xredeemB)', 'B.onSuccess(0xredeemB)'])
+      );
+    });
   });
 });
