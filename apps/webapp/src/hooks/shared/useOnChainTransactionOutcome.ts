@@ -50,6 +50,10 @@ export type TransactionOutcomeState = {
 /**
  * Watches a broadcast transaction until the chain gives a verdict.
  *
+ * Takes an on-chain transaction hash. For the hash a wallet returned from a
+ * write, use `useSentTransactionOutcome`: a Safe returns a safeTxHash, which
+ * never appears on-chain.
+ *
  * Unlike wagmi's `useWaitForTransactionReceipt`, an error while watching never
  * becomes the outcome. The transaction is out there whatever the RPC says, so
  * a failed poll means "not known yet": reporting it as a failure put Retry on
@@ -71,23 +75,23 @@ export type TransactionOutcomeState = {
  * while the transaction is pending, and the hash only exists on the chain it
  * was sent to.
  */
-export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?: number }) {
+export function useOnChainTransactionOutcome({ txHash, chainId }: { txHash?: Hash; chainId?: number }) {
   const config = useConfig();
   const currentChainId = useChainId();
   const sendChainId = chainId ?? currentChainId;
   const [watched, setWatched] = useState<{ hash?: Hash; chainId: number }>({ chainId: sendChainId });
-  if (hash !== watched.hash) setWatched({ hash, chainId: sendChainId });
-  const watchChainId = hash === watched.hash ? watched.chainId : sendChainId;
+  if (txHash !== watched.hash) setWatched({ hash: txHash, chainId: sendChainId });
+  const watchChainId = txHash === watched.hash ? watched.chainId : sendChainId;
 
   const { data, isSuccess: settled } = useQuery<ReceiptResult>({
-    queryKey: ['transactionOutcome', watchChainId, hash],
-    enabled: !!hash,
+    queryKey: ['transactionOutcome', watchChainId, txHash],
+    enabled: !!txHash,
     queryFn: async () => {
       const client = getPublicClient(config, { chainId: watchChainId });
       if (!client) throw new Error(`No client for chain ${watchChainId}`);
       let replacement: ReplacementReturnType | undefined;
       const receipt = await waitForTransactionReceipt(client, {
-        hash: hash!,
+        hash: txHash!,
         timeout: 0,
         onReplaced: r => (replacement = r)
       });
@@ -111,7 +115,7 @@ export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?
   }, [data]);
 
   return {
-    isPending: !!hash && !settled,
+    isPending: !!txHash && !settled,
     isSuccess: settled && !failure,
     failure,
     receipt: data?.receipt

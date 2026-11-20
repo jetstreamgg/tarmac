@@ -18,20 +18,20 @@ vi.mock('wagmi/actions', () => ({
   }
 }));
 
-import { useTransactionOutcome } from '@/hooks/shared/useTransactionOutcome';
+import { useOnChainTransactionOutcome } from '@/hooks/shared/useOnChainTransactionOutcome';
 
 const HASH = '0xabc' as const;
 const receipt = (status: 'success' | 'reverted') => ({ status, transactionHash: HASH });
 
-function render(props: { hash?: `0x${string}`; chainId?: number } = { hash: HASH, chainId: 1 }) {
+function render(props: { txHash?: `0x${string}`; chainId?: number } = { txHash: HASH, chainId: 1 }) {
   const client = new QueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return renderHook(p => useTransactionOutcome(p), { wrapper, initialProps: props });
+  return renderHook(p => useOnChainTransactionOutcome(p), { wrapper, initialProps: props });
 }
 
-describe('useTransactionOutcome', () => {
+describe('useOnChainTransactionOutcome', () => {
   afterEach(() => {
     vi.clearAllMocks();
     chain.current = 1;
@@ -103,12 +103,12 @@ describe('useTransactionOutcome', () => {
     viem.waitForTransactionReceipt
       .mockRejectedValueOnce(new Error('HTTP request failed. Status: 503'))
       .mockResolvedValueOnce(receipt('success'));
-    const { result, rerender } = render({ hash: HASH });
+    const { result, rerender } = render({ txHash: HASH });
     await waitFor(() => expect(viem.waitForTransactionReceipt).toHaveBeenCalledTimes(1));
 
     // The wallet moves to Base while the mainnet tx is pending.
     chain.current = 8453;
-    rerender({ hash: HASH });
+    rerender({ txHash: HASH });
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 3_000 });
     expect(chain.clientsFor).toEqual([1, 1]);
   });
