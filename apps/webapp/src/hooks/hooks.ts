@@ -198,6 +198,12 @@ export type SequentialTransactionHook = {
    * once the run is clear, immediately when nothing was out.
    */
   reset: (onCleared?: () => void) => void;
+  /**
+   * Drops the run once the caller read its outcome on chain, its receipt wait
+   * included, and runs a pending reset's `onCleared`. A prompt still in the
+   * wallet is detached as by `reset`.
+   */
+  release: () => void;
   /** A reset left a write out: its run's frozen calls are held until it settles. */
   detached: boolean;
   /** See `BatchWriteHook.nextCalls`. */

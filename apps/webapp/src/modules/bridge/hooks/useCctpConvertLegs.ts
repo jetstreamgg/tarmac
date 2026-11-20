@@ -213,6 +213,7 @@ export function useCctpConvertLegs({
     error: (active && allowance.error) || legs.error || null,
     execute,
     reset: legs.reset,
+    release: legs.release,
     dropCheck: legs.dropCheck
   };
 }

@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   isModalOpen: true,
   session: {} as TxCallbacks,
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[],
+  claimRelease: (() => undefined) as () => void,
   replay: {
     params: undefined as
       | undefined
@@ -48,7 +49,8 @@ const mocks = vi.hoisted(() => ({
     ready: false,
     error: null as Error | null,
     execute: (() => undefined) as () => void,
-    reset: (() => undefined) as () => void
+    reset: (() => undefined) as () => void,
+    release: (() => undefined) as () => void
   },
   redeem: {
     params: undefined as
@@ -63,7 +65,8 @@ const mocks = vi.hoisted(() => ({
     ready: false,
     error: null as Error | null,
     execute: (() => undefined) as () => void,
-    reset: (() => undefined) as () => void
+    reset: (() => undefined) as () => void,
+    release: (() => undefined) as () => void
   },
   withdrawal: {
     params: undefined as
@@ -80,7 +83,8 @@ const mocks = vi.hoisted(() => ({
     ready: false,
     error: null as Error | null,
     execute: (() => undefined) as () => void,
-    reset: (() => undefined) as () => void
+    reset: (() => undefined) as () => void,
+    release: (() => undefined) as () => void
   }
 }));
 
@@ -109,6 +113,7 @@ vi.mock('./useCctpClaimLegs', () => {
     error: null,
     execute: () => mocks.legs.push({ names: ['receiveMessage'], getCallbacks }),
     reset: () => undefined,
+    release: () => mocks.claimRelease(),
     dropCheck: () => undefined
   };
   return {
@@ -153,22 +158,22 @@ vi.mock('@/modules/ui/hooks/useResetUnfinishedRunOnClose', () => ({
 vi.mock('./useOpStackReplayLegs', () => ({
   useOpStackReplayLegs: (params: NonNullable<typeof mocks.replay.params>) => {
     mocks.replay.params = params;
-    const { ready, error, execute, reset } = mocks.replay;
-    return { ready, error, execute, reset };
+    const { ready, error, execute, reset, release } = mocks.replay;
+    return { ready, error, execute, reset, release };
   }
 }));
 vi.mock('./useArbitrumRedeemLegs', () => ({
   useArbitrumRedeemLegs: (params: NonNullable<typeof mocks.redeem.params>) => {
     mocks.redeem.params = params;
-    const { ready, error, execute, reset } = mocks.redeem;
-    return { ready, error, execute, reset };
+    const { ready, error, execute, reset, release } = mocks.redeem;
+    return { ready, error, execute, reset, release };
   }
 }));
 vi.mock('./useNativeWithdrawalActionLegs', () => ({
   useNativeWithdrawalActionLegs: (params: NonNullable<typeof mocks.withdrawal.params>) => {
     mocks.withdrawal.params = params;
-    const { ready, error, execute, reset } = mocks.withdrawal;
-    return { ready, error, execute, reset };
+    const { ready, error, execute, reset, release } = mocks.withdrawal;
+    return { ready, error, execute, reset, release };
   }
 }));
 vi.mock('../adapters/mockAdapter', () => ({
@@ -288,9 +293,31 @@ describe('useDestinationActionLaunch', () => {
     mocks.isModalOpen = true;
     mocks.session = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
     mocks.legs = [];
-    mocks.replay = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
-    mocks.redeem = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
-    mocks.withdrawal = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
+    mocks.claimRelease = vi.fn();
+    mocks.replay = {
+      params: undefined,
+      ready: false,
+      error: null,
+      execute: vi.fn(),
+      reset: vi.fn(),
+      release: vi.fn()
+    };
+    mocks.redeem = {
+      params: undefined,
+      ready: false,
+      error: null,
+      execute: vi.fn(),
+      reset: vi.fn(),
+      release: vi.fn()
+    };
+    mocks.withdrawal = {
+      params: undefined,
+      ready: false,
+      error: null,
+      execute: vi.fn(),
+      reset: vi.fn(),
+      release: vi.fn()
+    };
   });
 
   it("can't launch, and the card disables its button, when the destination network can't be pinned", () => {
@@ -1053,6 +1080,85 @@ describe('useDestinationActionLaunch', () => {
       callbacks.onStart('0xclaim');
       chainRead('0xsource', { kind: 'arrived' });
       expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    describe("drops the engine's run before ending, so the next action never sends this one's call", () => {
+      it('a finalize', () => {
+        sendWithdrawal('base', 'finalize');
+        chainRead('0xwithdrawal', { kind: 'arrived' });
+        expect(mocks.withdrawal.release).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(mocks.withdrawal.release).mock.invocationCallOrder[0]).toBeLessThan(
+          vi.mocked(mocks.session.onSuccess).mock.invocationCallOrder[0]
+        );
+      });
+
+      it('a redeem', () => {
+        mocks.redeem.ready = true;
+        mocks.chainIds = [1, 42161];
+        mocks.walletChainId = 42161;
+        const card = seedReadyRedeem();
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card));
+        act(() => mocks.launched[0].onConfirm!());
+        const callbacks = mocks.redeem.params!.getCallbacks();
+        callbacks.onMutate({ functionName: 'redeem' });
+        callbacks.onStart('0xredeem');
+        chainRead('0xarbdeposit', { kind: 'arrived' });
+        expect(mocks.redeem.release).toHaveBeenCalledTimes(1);
+        expect(mocks.withdrawal.release).not.toHaveBeenCalled();
+      });
+
+      it('a claim-only CCTP claim', () => {
+        seedReadyClaim();
+        act(() =>
+          pendingBridgeStore.update(scope(), '0xsource', bridge => ({
+            ...bridge,
+            routeData: { ...CCTP_CLAIM_ONLY }
+          }))
+        );
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        const callbacks = launchAndConfirm(result.current.launch);
+        callbacks.onMutate({ functionName: 'receiveMessage' });
+        callbacks.onStart('0xclaim');
+        chainRead('0xsource', { kind: 'arrived' });
+        expect(mocks.claimRelease).toHaveBeenCalledTimes(1);
+      });
+
+      it('a prove, on the withdrawal engine', () => {
+        sendWithdrawal('base', 'prove');
+        chainRead('0xwithdrawal', { kind: 'waiting', nextAction: 'finalize' });
+        expect(mocks.withdrawal.release).toHaveBeenCalledTimes(1);
+        expect(mocks.replay.release).not.toHaveBeenCalled();
+      });
+
+      it("a deposit's replay, on the replay engine", () => {
+        mocks.replay.ready = true;
+        mocks.walletChainId = 8453;
+        const card = seedReadyReplay();
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card));
+        act(() => mocks.launched[0].onConfirm!());
+        const callbacks = mocks.replay.params!.getCallbacks();
+        callbacks.onMutate({ functionName: 'relayMessage' });
+        callbacks.onStart('0xreplay');
+        chainRead('0xdeposit', { kind: 'arrived' });
+        expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+        expect(mocks.replay.release).toHaveBeenCalledTimes(1);
+        expect(mocks.withdrawal.release).not.toHaveBeenCalled();
+      });
+
+      it('control: a run ended by its receipt is left to the engine', () => {
+        const { callbacks } = sendWithdrawal('base', 'finalize');
+        callbacks.onSuccess('0xwallet');
+        chainRead('0xwithdrawal', { kind: 'arrived' });
+        expect(mocks.withdrawal.release).not.toHaveBeenCalled();
+      });
+
+      it('control: a run the chain read does not end keeps its engine run', () => {
+        sendWithdrawal('base', 'prove');
+        chainRead('0xwithdrawal', { kind: 'waiting' });
+        expect(mocks.withdrawal.release).not.toHaveBeenCalled();
+      });
     });
   });
 });

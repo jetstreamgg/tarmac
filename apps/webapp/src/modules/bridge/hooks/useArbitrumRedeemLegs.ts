@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { encodeFunctionData, type Address } from 'viem';
 import { useEstimateGas } from 'wagmi';
-import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { ARB_RETRYABLE_TX, arbRetryableTxAbi } from '../adapters/nativeDeposit/contracts';
 import {
@@ -10,7 +9,7 @@ import {
   arbitrumTicketCall,
   type ArbitrumTicketAction
 } from '../adapters/nativeDeposit/arbitrum';
-import { usePromptIssuers } from './usePromptIssuers';
+import { useActionLegFlow } from './useActionLegFlow';
 
 /**
  * The redeem or keepalive leg of a deposit whose Arbitrum ticket wasn't
@@ -64,17 +63,7 @@ export function useArbitrumRedeemLegs({
     [action, ticketId, estimate.data]
   );
 
-  const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
-  const flow = useSequentialTransactionFlow({
-    calls,
-    enabled: calls.length > 0,
-    chainId,
-    failOnReplaced: true,
-    onMutate,
-    onStart: (hash, variables) => issuerOf(variables).onStart(hash),
-    onSuccess: (hash, blockNumber) => getCallbacks().onSuccess(hash, blockNumber),
-    onError: (error, hash, variables) => issuerOf(variables).onError(error, hash)
-  });
+  const flow = useActionLegFlow({ calls, chainId, getCallbacks });
 
   return {
     /** Confirm can send the call. */
@@ -82,6 +71,7 @@ export function useArbitrumRedeemLegs({
     /** The ticket, the estimate or the simulation failed. */
     error: ticket?.error ?? (ticketId ? estimate.error : null) ?? (calls.length > 0 ? flow.error : null),
     execute: flow.execute,
-    reset: flow.reset
+    reset: flow.reset,
+    release: flow.release
   };
 }

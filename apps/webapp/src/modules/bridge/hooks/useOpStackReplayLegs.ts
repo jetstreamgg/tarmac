@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useReadContract } from 'wagmi';
-import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import {
   L2_CROSS_DOMAIN_MESSENGER,
@@ -8,7 +7,7 @@ import {
   type OpStackNetworkId
 } from '../adapters/nativeDeposit/contracts';
 import { opStackReplay, opStackReplayCall, opStackReplayGas } from '../adapters/nativeDeposit/opStack';
-import { usePromptIssuers } from './usePromptIssuers';
+import { useActionLegFlow } from './useActionLegFlow';
 
 /**
  * The replay leg of a deposit whose OP Stack relay failed: relayMessage on the
@@ -59,17 +58,7 @@ export function useOpStackReplayLegs({
     [value, baseGas.data]
   );
 
-  const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
-  const flow = useSequentialTransactionFlow({
-    calls,
-    enabled: calls.length > 0,
-    chainId,
-    failOnReplaced: true,
-    onMutate,
-    onStart: (hash, variables) => issuerOf(variables).onStart(hash),
-    onSuccess: (hash, blockNumber) => getCallbacks().onSuccess(hash, blockNumber),
-    onError: (error, hash, variables) => issuerOf(variables).onError(error, hash)
-  });
+  const flow = useActionLegFlow({ calls, chainId, getCallbacks });
 
   return {
     /** Confirm can send the replay. */
@@ -77,6 +66,7 @@ export function useOpStackReplayLegs({
     /** The message, the baseGas read or the simulation failed. */
     error: replay?.error ?? (value ? baseGas.error : null) ?? (calls.length > 0 ? flow.error : null),
     execute: flow.execute,
-    reset: flow.reset
+    reset: flow.reset,
+    release: flow.release
   };
 }

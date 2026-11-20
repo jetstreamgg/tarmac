@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { encodeFunctionData, type Address, type Call, type Client } from 'viem';
 import { useConfig, useEstimateGas, useReadContract } from 'wagmi';
-import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import {
   isOpStackNetwork,
@@ -23,7 +22,7 @@ import type { ChainReader } from '../adapters/types';
 import type { PendingBridge } from '../model/types';
 import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
-import { usePromptIssuers } from './usePromptIssuers';
+import { useActionLegFlow } from './useActionLegFlow';
 
 export type NativeWithdrawalLegAction = 'prove' | 'finalize' | 'replay';
 
@@ -163,19 +162,13 @@ export function useNativeWithdrawalActionLegs({
     return [];
   }, [replayValue, opStack, baseGas.data, finalize, finalizeEstimate.data, portalAction, built.data]);
 
-  const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
-  const flow = useSequentialTransactionFlow({
+  const flow = useActionLegFlow({
     calls,
-    enabled: calls.length > 0,
     chainId,
-    failOnReplaced: true,
-    onMutate,
-    onStart: (hash, variables) => issuerOf(variables).onStart(hash),
+    getCallbacks,
     onReceipt: ({ logs }) => {
       if (portalAction === 'finalize' && opStack && opStackRelayFailed(opStack, logs)) onRelayFailed?.();
-    },
-    onSuccess: (hash, blockNumber) => getCallbacks().onSuccess(hash, blockNumber),
-    onError: (error, hash, variables) => issuerOf(variables).onError(error, hash)
+    }
   });
 
   return {
@@ -189,6 +182,7 @@ export function useNativeWithdrawalActionLegs({
       (replayValue ? baseGas.error : null) ??
       (calls.length > 0 ? flow.error : null),
     execute: flow.execute,
-    reset: flow.reset
+    reset: flow.reset,
+    release: flow.release
   };
 }

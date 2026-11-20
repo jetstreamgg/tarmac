@@ -2,6 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { renderHook } from '@testing-library/react';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { TxMutateVariables, UseSequentialTransactionFlowParameters } from '@/hooks/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -11,7 +12,10 @@ import { useArbitrumRedeemLegs } from './useArbitrumRedeemLegs';
 // A prompt opened by an earlier card's Confirm is never reported to the card whose Confirm is current.
 
 const mocks = vi.hoisted(() => ({
-  flow: undefined as undefined | Record<string, unknown>
+  flow: undefined as undefined | Record<string, unknown>,
+  detached: false,
+  execute: vi.fn(),
+  release: vi.fn()
 }));
 
 vi.mock('wagmi', () => ({
@@ -20,7 +24,14 @@ vi.mock('wagmi', () => ({
 vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (params: Record<string, unknown>) => {
     mocks.flow = params;
-    return { prepared: true, error: null, execute: vi.fn(), reset: vi.fn() };
+    return {
+      prepared: true,
+      error: null,
+      execute: mocks.execute,
+      reset: vi.fn(),
+      release: mocks.release,
+      detached: mocks.detached
+    };
   }
 }));
 
@@ -89,5 +100,64 @@ describe('useArbitrumRedeemLegs: a prompt signed or rejected late', () => {
   it("control: prompt B's hash reaches card B", () => {
     engine.onStart(HASH_B, variablesB);
     expect(B.onStart).toHaveBeenCalledWith(HASH_B);
+  });
+});
+
+describe('useArbitrumRedeemLegs: a Confirm while an earlier run is out', () => {
+  let current: { value: MockCallbacks };
+  let A: MockCallbacks;
+  let B: MockCallbacks;
+  let rerender: () => void;
+  let legs: { current: ReturnType<typeof useArbitrumRedeemLegs> };
+  let engine: Required<
+    Pick<UseSequentialTransactionFlowParameters, 'onMutate' | 'onStart' | 'onSuccess' | 'onError'>
+  >;
+
+  beforeEach(() => {
+    Object.assign(mocks, { flow: undefined, detached: false, execute: vi.fn(), release: vi.fn() });
+    A = makeCallbacks();
+    B = makeCallbacks();
+    current = { value: A };
+    ({ result: legs, rerender } = renderHook(() =>
+      useArbitrumRedeemLegs({
+        enabled: true,
+        routeData: { ticketId: ARBITRUM_TICKET.ticketId, timeout: '1' },
+        chainId: 42161,
+        account: ACCOUNT,
+        getCallbacks: () => current.value as unknown as TxCallbacks
+      })
+    ));
+    engine = mocks.flow as unknown as typeof engine;
+  });
+
+  it("hands prompt A's success, mined after card B's Confirm, to card A", () => {
+    const variablesA = { functionName: 'a', args: [] } as unknown as TxMutateVariables;
+    engine.onMutate(variablesA);
+    engine.onStart(HASH_A, variablesA);
+    // Card B's Confirm re-points the callbacks; the engine still holds A's run, so B prompts nothing.
+    current.value = B;
+    engine.onSuccess(HASH_A, 7n);
+    expect(B.onSuccess).not.toHaveBeenCalled();
+    expect(A.onSuccess).toHaveBeenCalledWith(HASH_A, 7n);
+  });
+
+  it("refuses a Confirm while the engine holds an earlier run's write, sending nothing", () => {
+    mocks.detached = true;
+    rerender();
+    current.value = B;
+    legs.current.execute();
+    expect(mocks.execute).not.toHaveBeenCalled();
+    expect(B.onError).toHaveBeenCalledWith(expect.any(TransactionRefusedError), '');
+  });
+
+  it('control: a Confirm with nothing out sends', () => {
+    legs.current.execute();
+    expect(mocks.execute).toHaveBeenCalledTimes(1);
+    expect(A.onError).not.toHaveBeenCalled();
+  });
+
+  it("releases the engine's run", () => {
+    legs.current.release();
+    expect(mocks.release).toHaveBeenCalledTimes(1);
   });
 });

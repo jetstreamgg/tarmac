@@ -9,12 +9,19 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  */
 export function usePromptIssuers(getCallbacks: () => TxCallbacks) {
   const issuersRef = useRef(new WeakMap<object, TxCallbacks>());
+  const lastPromptRef = useRef<object | undefined>(undefined);
+  const issuerOf = (variables?: TxMutateVariables) =>
+    (variables && issuersRef.current.get(variables)) ?? getCallbacks();
   return {
     onMutate: (variables?: TxMutateVariables) => {
-      if (variables) issuersRef.current.set(variables, getCallbacks());
+      if (variables) {
+        issuersRef.current.set(variables, getCallbacks());
+        lastPromptRef.current = variables;
+      }
       getCallbacks().onMutate(variables);
     },
-    issuerOf: (variables?: TxMutateVariables) =>
-      (variables && issuersRef.current.get(variables)) ?? getCallbacks()
+    issuerOf,
+    /** The Confirm of the latest prompt, which a run's success answers. */
+    lastIssuer: () => issuerOf(lastPromptRef.current as TxMutateVariables | undefined)
   };
 }

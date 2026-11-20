@@ -405,6 +405,17 @@ export function useDestinationActionLaunch() {
   const resetRedeem = redeemLegs.reset;
   const resetClaim = claimLegs.reset;
   const resetConvert = convertLegs.reset;
+  // The engine of each recovery kind, to drop a run the card's chain read ended.
+  const releaseLegsRef = useRef<Record<Recovery['kind'], () => void>>(undefined);
+  useLayoutEffect(() => {
+    releaseLegsRef.current = {
+      replay: replayLegs.release,
+      redeem: redeemLegs.release,
+      'cctp-claim': claimLegs.release,
+      'cctp-convert': convertLegs.release,
+      withdrawal: withdrawalLegs.release
+    };
+  });
   const { dropCheck: dropClaimCheck } = claimLegs;
   const { dropCheck: dropConvertCheck } = convertLegs;
   // A close while the claim or convert still checks the chain must not open the wallet behind the modal.
@@ -790,6 +801,8 @@ export function useDestinationActionLaunch() {
                     success: t`Withdrawal finalized. Replay it to receive your USDS.`
                   }
                 });
+              // Its engine still waits on the hash: kept, it would send this run's call under the next Confirm.
+              if (nextRecovery) releaseLegsRef.current?.[nextRecovery.kind]();
               tracker.recordSettledOnChain();
               // No receipt reaches onConfirmed, which refreshes these on a normal success.
               void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
