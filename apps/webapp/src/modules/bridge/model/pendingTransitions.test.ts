@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
 import {
+  actionLandedOnChain,
   applyProgress,
   createPendingBridge,
   isPendingBridgeVisible,
@@ -908,5 +909,39 @@ describe('a destination action sent as a wallet bundle', () => {
     const dropped = applyProgress(bundled, { kind: 'action-dropped', txHash: '0xcalls' }, NOW + MINUTE);
     expect(dropped.actions).toEqual([]);
     expect(canLaunchAction(dropped)).toBe(true);
+  });
+});
+
+describe('actionLandedOnChain', () => {
+  const withdrawal = () => create(routeFor('base', 'ethereum', false));
+  const ready = (action: Parameters<typeof actionLandedOnChain>[1]) =>
+    applyProgress(withdrawal(), { kind: 'ready', nextAction: action }, NOW);
+
+  it('never counts the card still offering the action it sent', () => {
+    for (const action of ['prove', 'finalize', 'redeem', 'replay', 'claim'] as const)
+      expect(actionLandedOnChain(ready(action), action, true)).toBe(false);
+  });
+
+  it('counts a prove once the finalize is next, not while the read leaves it pending', () => {
+    const proven = applyProgress(ready('prove'), { kind: 'waiting', nextAction: 'finalize' }, NOW);
+    expect(actionLandedOnChain(proven, 'prove', false)).toBe(true);
+    const unread = applyProgress(ready('prove'), { kind: 'waiting' }, NOW);
+    expect(actionLandedOnChain(unread, 'prove', false)).toBe(false);
+  });
+
+  it('counts a settled card, except for a claim with its sale to follow, a keepalive or a convert', () => {
+    const settled = applyProgress(ready('finalize'), { kind: 'arrived' }, NOW);
+    expect(actionLandedOnChain(settled, 'finalize', false)).toBe(true);
+    expect(actionLandedOnChain(settled, 'claim', true)).toBe(true);
+    expect(actionLandedOnChain(settled, 'claim', false)).toBe(false);
+    expect(actionLandedOnChain(settled, 'keepalive', false)).toBe(false);
+    expect(actionLandedOnChain(settled, 'convert', false)).toBe(false);
+  });
+
+  it('never counts a failed or expired card', () => {
+    const failed = applyProgress(ready('finalize'), { kind: 'failed', reason: 'x' }, NOW);
+    const expired = applyProgress(ready('redeem'), { kind: 'expired' }, NOW);
+    expect(actionLandedOnChain(failed, 'finalize', false)).toBe(false);
+    expect(actionLandedOnChain(expired, 'redeem', false)).toBe(false);
   });
 });

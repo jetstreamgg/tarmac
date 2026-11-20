@@ -12,6 +12,7 @@ import { applyProgress, createPendingBridge, dropSentAction } from '../model/pen
 import { nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
 import type { PendingBridgeNextAction } from '../model/types';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
+import { CCTP_CLAIM_ONLY } from '../adapters/cctp/calls';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
 // The hook invalidates balance reads once an action confirms.
@@ -923,6 +924,135 @@ describe('useDestinationActionLaunch', () => {
       confirmAThenB();
       mocks.redeem.params!.getCallbacks().onStart('0xB');
       expect(mocks.session.onStart).toHaveBeenCalledWith('0xB');
+    });
+  });
+
+  describe('a run whose wallet hash never confirms while the chain shows the action done', () => {
+    const chainRead = (id: string, progress: Parameters<typeof applyProgress>[1]) =>
+      act(() =>
+        pendingBridgeStore.update(scope(), id, bridge => applyProgress(bridge, progress, Date.now()))
+      );
+    const sendWithdrawal = (
+      from: 'base' | 'arbitrum',
+      action: PendingBridgeNextAction,
+      hash = '0xwallet'
+    ) => {
+      mocks.withdrawal.ready = true;
+      const card = seedReadyWithdrawal(from, action, action === 'prove' ? PROVE_DATA : undefined);
+      const hook = renderHook(() => useDestinationActionLaunch());
+      act(() => hook.result.current.launch(card));
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.withdrawal.params!.getCallbacks();
+      callbacks.onMutate({ functionName: action });
+      if (hash) callbacks.onStart(hash);
+      return { ...hook, callbacks };
+    };
+
+    it('ends an OP Stack finalize as a success once the card reads it arrived', () => {
+      sendWithdrawal('base', 'finalize');
+      expect(mocks.session.onSuccess).not.toHaveBeenCalled();
+      chainRead('0xwithdrawal', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+      expect(mocks.session.onSuccess).toHaveBeenCalledWith();
+      expect(mocks.launched[0].analytics?.completedData?.()).toMatchObject({ confirmed_by: 'chain' });
+    });
+
+    it('ends an Arbitrum finalize the same way', () => {
+      sendWithdrawal('arbitrum', 'finalize');
+      chainRead('0xwithdrawal', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('ends a prove once the card moves on to the finalize', () => {
+      sendWithdrawal('base', 'prove');
+      chainRead('0xwithdrawal', { kind: 'waiting', nextAction: 'finalize' });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('says the funds wait for a Replay when the chain shows the finalize with its relay failed', () => {
+      sendWithdrawal('base', 'finalize');
+      chainRead('0xwithdrawal', { kind: 'ready', nextAction: 'replay', routeData: ROUTE_DATA });
+      expect(mocks.modalUpdates.at(-1)?.toast).toMatchObject({
+        success: 'Withdrawal finalized. Replay it to receive your USDS.'
+      });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('ends a redeem once its deposit arrives', () => {
+      mocks.redeem.ready = true;
+      mocks.chainIds = [1, 42161];
+      mocks.walletChainId = 42161;
+      const card = seedReadyRedeem();
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card));
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.redeem.params!.getCallbacks();
+      callbacks.onMutate({ functionName: 'redeem' });
+      callbacks.onStart('0xredeem');
+      chainRead('0xarbdeposit', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('waits for the wallet while it is still signing', () => {
+      sendWithdrawal('base', 'finalize', '');
+      chainRead('0xwithdrawal', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('ends only once when the receipt came first', () => {
+      const { callbacks } = sendWithdrawal('base', 'finalize');
+      callbacks.onSuccess('0xwallet');
+      chainRead('0xwithdrawal', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
+      expect(mocks.session.onSuccess).toHaveBeenCalledWith('0xwallet');
+      expect(mocks.launched[0].analytics?.completedData?.()).not.toHaveProperty('confirmed_by');
+    });
+
+    it('leaves a failed run alone', () => {
+      const { callbacks } = sendWithdrawal('base', 'finalize');
+      callbacks.onError(new Error('boom'), '0xwallet');
+      chainRead('0xwithdrawal', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('leaves the modal alone once it closed', () => {
+      const { rerender } = sendWithdrawal('base', 'finalize');
+      mocks.isModalOpen = false;
+      rerender();
+      chainRead('0xwithdrawal', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("doesn't end on a read that leaves the action pending", () => {
+      sendWithdrawal('base', 'prove');
+      chainRead('0xwithdrawal', { kind: 'waiting' });
+      expect(mocks.session.onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("doesn't end a CCTP claim that still has its sale to send", () => {
+      seedReadyClaim();
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      const callbacks = launchAndConfirm(result.current.launch);
+      callbacks.onMutate({ functionName: 'receiveMessage' });
+      callbacks.onStart('0xclaim');
+      chainRead('0xsource', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('ends the claim of a claim-only CCTP transfer once its USDC arrived', () => {
+      seedReadyClaim();
+      act(() =>
+        pendingBridgeStore.update(scope(), '0xsource', bridge => ({
+          ...bridge,
+          routeData: { ...CCTP_CLAIM_ONLY }
+        }))
+      );
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      const callbacks = launchAndConfirm(result.current.launch);
+      callbacks.onMutate({ functionName: 'receiveMessage' });
+      callbacks.onStart('0xclaim');
+      chainRead('0xsource', { kind: 'arrived' });
+      expect(mocks.session.onSuccess).toHaveBeenCalledTimes(1);
     });
   });
 });
