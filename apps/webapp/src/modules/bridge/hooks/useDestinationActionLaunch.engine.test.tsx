@@ -7,10 +7,11 @@ import { i18n } from '@lingui/core';
 import { createElement, useState, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { BASE_BURN_ATTESTED, BASE_BURN_MINT_RECIPIENT } from '../adapters/cctp/cctp.fixtures';
 import { opStackDepositMessage, opStackReplay } from '../adapters/nativeDeposit/opStack';
 import { BASE_DEPOSIT_LOGS, OPTIMISM_DEPOSIT_LOGS } from '../adapters/nativeDeposit/depositFixtures';
 import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
@@ -41,7 +42,9 @@ const mocks = vi.hoisted(() => ({
     }
   >(),
   // the node: the receipt wait of each hash
-  waits: new Map<string, Wait>()
+  waits: new Map<string, Wait>(),
+  // a claim's pre-send read of its message: nothing to refuse unless a test holds it
+  claimRefusal: () => Promise.resolve(undefined) as Promise<Error | undefined>
 }));
 
 vi.mock('wagmi', async () => {
@@ -51,6 +54,7 @@ vi.mock('wagmi', async () => {
     useChainId: () => mocks.walletChainId,
     useChains: () => [1, 8453, 10, 42161].map(id => ({ id })),
     useConfig: () => ({}),
+    usePublicClient: () => ({}),
     useReadContract: ({ functionName, query }: { functionName: string; query?: { enabled?: boolean } }) => ({
       data: functionName === 'baseGas' && query?.enabled !== false ? 100_000n : undefined,
       error: null
@@ -113,6 +117,12 @@ vi.mock('@/hooks/shared/prepareRevertReporter', () => ({ reportPrepareRevert: ()
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useIsSafeWallet: () => false,
+  // a claim sells its USDC after an approve
+  useTokenAllowance: ({ contractAddress }: { contractAddress?: string }) => ({
+    data: contractAddress ? 0n : undefined,
+    error: null,
+    mutate: () => undefined
+  }),
   useSafeWalletStatus: () => 'not-safe'
 }));
 vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
@@ -137,7 +147,18 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
 vi.mock('@/modules/ui/hooks/useResetUnfinishedRunOnClose', () => ({
   useResetUnfinishedRunOnClose: () => undefined
 }));
-// The other actions' legs stay idle: only the replay and Arbitrum ticket engines are under test.
+vi.mock('../adapters/cctp/gate', () => ({ cctpClaimRefusal: () => mocks.claimRefusal() }));
+// No wallet bundles: a claim's legs go out one at a time.
+vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
+  useSendBatchTransactionFlow: () => ({
+    execute: () => undefined,
+    reset: () => undefined,
+    prepared: false,
+    batchUnavailable: true,
+    error: null
+  })
+}));
+// The convert's legs stay idle: the replay, Arbitrum ticket, CCTP claim and withdrawal engines run for real.
 const { idleLegs } = vi.hoisted(() => ({
   idleLegs: () => ({
     calls: [],
@@ -147,12 +168,28 @@ const { idleLegs } = vi.hoisted(() => ({
     execute: () => undefined,
     reset: () => undefined,
     release: () => undefined,
+    detached: false,
     dropCheck: () => undefined
   })
 }));
-vi.mock('./useCctpClaimLegs', () => ({ CCTP_CLAIM_FUNCTION: 'receiveMessage', useCctpClaimLegs: idleLegs }));
 vi.mock('./useCctpConvertLegs', () => ({ useCctpConvertLegs: idleLegs }));
-vi.mock('./useNativeWithdrawalActionLegs', () => ({ useNativeWithdrawalActionLegs: idleLegs }));
+// A finalize's call is built from the chain: the fixture withdrawal's, as proven by PROVER.
+vi.mock('./adapterContext', () => ({
+  wagmiAdapterContext: () => ({ getClient: (network: string) => ({ network }) })
+}));
+vi.mock('../adapters/nativeWithdrawal/opStackActions', async () => {
+  const { opStackFinalizeCall, opStackWithdrawalMessage } =
+    await import('../adapters/nativeWithdrawal/opStack');
+  const { BASE_WITHDRAWAL_LOGS } = await import('../adapters/nativeWithdrawal/withdrawalFixtures');
+  return {
+    opStackWithdrawalActionCall: async () =>
+      opStackFinalizeCall({
+        network: 'base',
+        withdrawal: opStackWithdrawalMessage(BASE_WITHDRAWAL_LOGS, 'base')!.withdrawal,
+        proofSubmitter: '0x2222222222222222222222222222222222222222'
+      })
+  };
+});
 
 const NOW = 1_800_000_000_000;
 let accountSeq = 0;
@@ -264,6 +301,117 @@ const answered = new WeakSet<TxCallbacks>();
 const confirm = (session?: TxCallbacks) => {
   if (session) answered.delete(session);
   act(() => mocks.launched.at(-1)!.onConfirm!());
+};
+
+// canLaunchKeepalive reads the wall clock: an hour left is urgent.
+const seedTicket = (txHash: string, ticket: string) => {
+  const resolved = resolveBridgeRoute({ from: 'ethereum', to: 'arbitrum', amount: 1n, facts: {} });
+  if (resolved.status !== 'ok') throw new Error(resolved.reason);
+  const bridge = createPendingBridge({
+    account: mocks.address,
+    amount: 10n ** 18n,
+    from: 'ethereum',
+    to: 'arbitrum',
+    route: resolved.route,
+    txHash,
+    now: NOW
+  });
+  const routeData = {
+    ticketId: `0x${ticket.repeat(64)}`,
+    timeout: String(Math.floor(Date.now() / 1000) + 3600)
+  };
+  pendingBridgeStore.upsert(
+    scope(),
+    applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData }, NOW)
+  );
+};
+const launchTicket = async (
+  page: ReturnType<typeof mount>,
+  txHash: string,
+  action: 'redeem' | 'keepalive',
+  session: TxCallbacks
+) => {
+  mocks.walletChainId = 42161;
+  mocks.session = session;
+  page.rerenderPage();
+  await flush();
+  const before = { prompts: mocks.prompts.length, launched: mocks.launched.length };
+  act(() => page.result.current.launch(stored(txHash), action === 'keepalive' ? 'keepalive' : undefined));
+  await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched));
+  confirm(session);
+  await waitFor(() => expect(mocks.prompts.length > before.prompts || answered.has(session)).toBe(true));
+};
+
+/** A Base to Ethereum CCTP card of the fixture burn, ready to claim; claim-only leaves out the sale. */
+const seedClaim = (txHash: string, { claimOnly = false } = {}) => {
+  const resolved = resolveBridgeRoute({
+    from: 'base',
+    to: 'ethereum',
+    amount: 1n,
+    facts: { cctp: { isOpen: true } }
+  });
+  if (resolved.status !== 'ok') throw new Error(resolved.reason);
+  const bridge = createPendingBridge({
+    account: mocks.address,
+    amount: 100n * 10n ** 18n,
+    from: 'base',
+    to: 'ethereum',
+    route: resolved.route,
+    txHash,
+    now: NOW
+  });
+  const routeData = {
+    cctpMessage: BASE_BURN_ATTESTED.message,
+    cctpAttestation: BASE_BURN_ATTESTED.attestation,
+    ...(claimOnly && { cctpClaimOnly: 'true' })
+  };
+  pendingBridgeStore.upsert(
+    scope(),
+    applyProgress(bridge, { kind: 'ready', nextAction: 'claim', routeData }, NOW)
+  );
+};
+/** The card's tracker finds `hash` reverted, or unknown to its chain long after it was sent. */
+const dropRead = (bridgeId: string, hash: string) =>
+  act(() =>
+    pendingBridgeStore.update(scope(), bridgeId, bridge =>
+      applyProgress(bridge, { kind: 'action-dropped', txHash: hash }, Date.now())
+    )
+  );
+const launchClaim = async (page: ReturnType<typeof mount>, txHash: string, session: TxCallbacks) => {
+  mocks.walletChainId = 1;
+  mocks.session = session;
+  page.rerenderPage();
+  await flush();
+  const before = { prompts: mocks.prompts.length, launched: mocks.launched.length };
+  act(() => page.result.current.launch(stored(txHash)));
+  await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched));
+  confirm(session);
+  await waitFor(() => expect(mocks.prompts.length > before.prompts || answered.has(session)).toBe(true));
+};
+
+/** A Base to Ethereum native withdrawal, proven and ready to finalize. */
+const seedFinalize = (txHash: string) => {
+  const bridge = createPendingBridge({
+    account: mocks.address,
+    amount: 10n ** 18n,
+    from: 'base',
+    to: 'ethereum',
+    route: nativeWithdrawalRoute('base'),
+    txHash,
+    now: NOW
+  });
+  pendingBridgeStore.upsert(scope(), applyProgress(bridge, { kind: 'ready', nextAction: 'finalize' }, NOW));
+};
+const launchFinalize = async (page: ReturnType<typeof mount>, txHash: string, session: TxCallbacks) => {
+  mocks.walletChainId = 1;
+  mocks.session = session;
+  page.rerenderPage();
+  await flush();
+  const before = { prompts: mocks.prompts.length, launched: mocks.launched.length };
+  act(() => page.result.current.launch(stored(txHash)));
+  await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched));
+  confirm(session);
+  await waitFor(() => expect(mocks.prompts.length > before.prompts || answered.has(session)).toBe(true));
 };
 
 describe('useDestinationActionLaunch with the real replay engine', () => {
@@ -392,46 +540,278 @@ describe('useDestinationActionLaunch with the real replay engine', () => {
     ]);
   });
 
-  describe('an Arbitrum ticket, on its own engine', () => {
-    // canLaunchKeepalive reads the wall clock: an hour left is urgent.
-    const seedTicket = (txHash: string, ticket: string) => {
-      const resolved = resolveBridgeRoute({ from: 'ethereum', to: 'arbitrum', amount: 1n, facts: {} });
-      if (resolved.status !== 'ok') throw new Error(resolved.reason);
-      const bridge = createPendingBridge({
-        account: mocks.address,
-        amount: 10n ** 18n,
-        from: 'ethereum',
-        to: 'arbitrum',
-        route: resolved.route,
-        txHash,
-        now: NOW
-      });
-      const routeData = {
-        ticketId: `0x${ticket.repeat(64)}`,
-        timeout: String(Math.floor(Date.now() / 1000) + 3600)
-      };
-      pendingBridgeStore.upsert(
-        scope(),
-        applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData }, NOW)
+  describe("a wallet hash the card's chain read finds dropped", () => {
+    /** The tracker finds `hash` unknown to its chain long after it was sent. */
+    const readDropped = (bridgeId: string, hash: string) =>
+      act(() =>
+        pendingBridgeStore.update(scope(), bridgeId, bridge =>
+          applyProgress(bridge, { kind: 'action-dropped', txHash: hash }, Date.now())
+        )
       );
-    };
-    const launchTicket = async (
-      page: ReturnType<typeof mount>,
-      txHash: string,
-      action: 'redeem' | 'keepalive',
-      session: TxCallbacks
-    ) => {
-      mocks.walletChainId = 42161;
-      mocks.session = session;
+
+    it('ends its run, and the Retry sends the replay again', async () => {
+      const log: string[] = [];
+      seedReadyReplay('base');
+      const page = mount();
+      const session = sessionFor('A', log);
+      await launchAndConfirm(page, 'base', session);
+      await sign(mocks.prompts[0], '0xlost');
+      expect(stored(DEPOSITS.base.txHash).actions.map(({ txHash }) => txHash)).toEqual(['0xlost']);
+
+      readDropped(DEPOSITS.base.txHash, '0xlost');
+      await waitFor(() =>
+        expect(log).toEqual(['A.onMutate', 'A.onStart(0xlost)', 'A.onError(TransactionRefusedError)'])
+      );
+      expect(page.result.current.canLaunch(stored(DEPOSITS.base.txHash))).toBe(true);
+
+      confirm(session);
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      expect(mocks.prompts[1].args).toEqual(replayArgs('base'));
+      await sign(mocks.prompts[1], '0xfound');
+      await mine('0xfound');
+      await waitFor(() =>
+        expect(log.slice(3)).toEqual(['A.onMutate', 'A.onStart(0xfound)', 'A.onSuccess(0xfound)'])
+      );
+    });
+
+    it("ends its run while another card's modal is open, so that card's Retry sends", async () => {
+      const log: string[] = [];
+      seedReadyReplay('base');
+      seedReadyReplay('optimism');
+      const page = mount();
+      await launchAndConfirm(page, 'base', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xlost');
+
+      // B's Confirm while A's hash may still mine: refused.
+      const sessionB = sessionFor('B', log);
+      await launchAndConfirm(page, 'optimism', sessionB);
+      await waitFor(() => expect(log).toContain('B.onError(TransactionRefusedError)'));
+      expect(mocks.prompts).toHaveLength(1);
+
+      readDropped(DEPOSITS.base.txHash, '0xlost');
+      await waitFor(() => expect(page.result.current.canLaunch(stored(DEPOSITS.base.txHash))).toBe(true));
+      confirm(sessionB);
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      expect(mocks.prompts[1].args).toEqual(replayArgs('optimism'));
+      await sign(mocks.prompts[1], '0xb');
+      await mine('0xb');
+      await waitFor(() => expect(log).toContain('B.onSuccess(0xb)'));
+      // A's modal is gone: its late end reaches no session.
+      expect(log.filter(entry => entry.startsWith('A.'))).toEqual(['A.onMutate', 'A.onStart(0xlost)']);
+    });
+
+    it('a keepalive ends its run too, and the redeem goes out after it', async () => {
+      const log: string[] = [];
+      seedTicket('0xarbA', 'a');
+      const page = mount();
+      await launchTicket(page, '0xarbA', 'keepalive', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xkeep');
+      readDropped('0xarbA', '0xkeep');
+      await waitFor(() => expect(log).toContain('A.onError(TransactionRefusedError)'));
+      expect(page.result.current.canLaunch(stored('0xarbA'), 'keepalive')).toBe(true);
+
+      await launchTicket(page, '0xarbA', 'redeem', sessionFor('B', log));
+      expect(mocks.prompts.map(({ functionName }) => functionName)).toEqual(['keepalive', 'redeem']);
+    });
+
+    it("tells the user to check the wallet, as the chain's silence doesn't prove nothing was sent", async () => {
+      const log: string[] = [];
+      const messages: string[] = [];
+      seedReadyReplay('base');
+      const page = mount();
+      const session = sessionFor('A', log);
+      const onError = session.onError;
+      session.onError = function (error, hash) {
+        messages.push(error.message);
+        onError.call(this, error, hash);
+      };
+      await launchAndConfirm(page, 'base', session);
+      await sign(mocks.prompts[0], '0xlost');
+      readDropped(DEPOSITS.base.txHash, '0xlost');
+      await waitFor(() => expect(messages).toHaveLength(1));
+      expect(messages[0]).toBe(
+        "We couldn't find this transaction on the network. Check your wallet before trying again."
+      );
+    });
+
+    it("lands under another hash while another card's modal is open: that card's Retry sends", async () => {
+      const log: string[] = [];
+      seedReadyReplay('base');
+      seedReadyReplay('optimism');
+      const page = mount();
+      await launchAndConfirm(page, 'base', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xlost');
+      const sessionB = sessionFor('B', log);
+      await launchAndConfirm(page, 'optimism', sessionB);
+      await waitFor(() => expect(log).toContain('B.onError(TransactionRefusedError)'));
+
+      readArrived('base');
+      readDropped(DEPOSITS.base.txHash, '0xlost');
+      confirm(sessionB);
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      expect(mocks.prompts[1].args).toEqual(replayArgs('optimism'));
+      await sign(mocks.prompts[1], '0xb');
+      await mine('0xb');
+      await waitFor(() => expect(log).toContain('B.onSuccess(0xb)'));
+      expect(log.filter(entry => entry.startsWith('A.'))).toEqual(['A.onMutate', 'A.onStart(0xlost)']);
+    });
+
+    it('lands under another hash after its modal closed: the next card sends', async () => {
+      const log: string[] = [];
+      seedReadyReplay('base');
+      seedReadyReplay('optimism');
+      const page = mount();
+      await launchAndConfirm(page, 'base', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xlost');
+      mocks.isModalOpen = false;
       page.rerenderPage();
       await flush();
-      const before = { prompts: mocks.prompts.length, launched: mocks.launched.length };
-      act(() => page.result.current.launch(stored(txHash), action === 'keepalive' ? 'keepalive' : undefined));
-      await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(before.launched));
-      confirm(session);
-      await waitFor(() => expect(mocks.prompts.length > before.prompts || answered.has(session)).toBe(true));
-    };
 
+      readArrived('base');
+      readDropped(DEPOSITS.base.txHash, '0xlost');
+      mocks.isModalOpen = true;
+      await launchAndConfirm(page, 'optimism', sessionFor('B', log));
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      expect(mocks.prompts[1].args).toEqual(replayArgs('optimism'));
+      expect(log.filter(entry => entry.startsWith('A.'))).toEqual(['A.onMutate', 'A.onStart(0xlost)']);
+    });
+
+    it('is not mistaken for a drop when the hash confirms', async () => {
+      const log: string[] = [];
+      seedReadyReplay('base');
+      const page = mount();
+      await launchAndConfirm(page, 'base', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xa');
+      await mine('0xa');
+      await waitFor(() => expect(log).toEqual(['A.onMutate', 'A.onStart(0xa)', 'A.onSuccess(0xa)']));
+      readDropped(DEPOSITS.base.txHash, '0xa');
+      await flush();
+      expect(log).toEqual(['A.onMutate', 'A.onStart(0xa)', 'A.onSuccess(0xa)']);
+    });
+  });
+
+  describe('a CCTP claim, on its own engine', () => {
+    beforeEach(() => {
+      // The fixture message mints to this account only.
+      mocks.address = BASE_BURN_MINT_RECIPIENT;
+      mocks.claimRefusal = () => Promise.resolve(undefined);
+    });
+
+    it('receives the message, then approves and sells the USDC, and ends on the sale', async () => {
+      const log: string[] = [];
+      seedClaim('0xburnhappy');
+      const page = mount();
+      await launchClaim(page, '0xburnhappy', sessionFor('A', log));
+      expect(mocks.prompts.map(({ functionName }) => functionName)).toEqual(['receiveMessage']);
+      await sign(mocks.prompts[0], '0xreceive');
+      await mine('0xreceive');
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      await sign(mocks.prompts[1], '0xapprove');
+      await mine('0xapprove');
+      await waitFor(() => expect(mocks.prompts).toHaveLength(3));
+      expect(mocks.prompts.map(({ functionName }) => functionName)).toEqual([
+        'receiveMessage',
+        'approve',
+        'sellGem'
+      ]);
+      await sign(mocks.prompts[2], '0xsell');
+      await mine('0xsell');
+      await waitFor(() => expect(log).toContain('A.onSuccess(0xsell)'));
+    });
+
+    it('ends a claim whose receive the chain dropped, and the Retry receives again', async () => {
+      const log: string[] = [];
+      seedClaim('0xburnlost', { claimOnly: true });
+      const page = mount();
+      const session = sessionFor('A', log);
+      await launchClaim(page, '0xburnlost', session);
+      await sign(mocks.prompts[0], '0xlost');
+      dropRead('0xburnlost', '0xlost');
+      await waitFor(() =>
+        expect(log).toEqual(['A.onMutate', 'A.onStart(0xlost)', 'A.onError(TransactionRefusedError)'])
+      );
+
+      confirm(session);
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      expect(mocks.prompts[1].functionName).toBe('receiveMessage');
+      await sign(mocks.prompts[1], '0xfound');
+      await mine('0xfound');
+      await waitFor(() =>
+        expect(log.slice(3)).toEqual(['A.onMutate', 'A.onStart(0xfound)', 'A.onSuccess(0xfound)'])
+      );
+    });
+
+    it("an older claim's drop read while the next claim checks its message leaves that claim to send", async () => {
+      const log: string[] = [];
+      seedClaim('0xburnA', { claimOnly: true });
+      seedClaim('0xburnB', { claimOnly: true });
+      const page = mount();
+      await launchClaim(page, '0xburnA', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xa');
+      const sessionB = sessionFor('B', log);
+      await launchClaim(page, '0xburnB', sessionB);
+      await waitFor(() => expect(log).toContain('B.onError(TransactionRefusedError)'));
+      // A reverts: the claim engine reports it to neither modal, so A's run never ends.
+      act(() => mocks.waits.get('0xa')!.resolve({ status: 'reverted', blockNumber: 5n, logs: [] }));
+      await flush();
+      expect(log).toEqual(['A.onMutate', 'A.onStart(0xa)', 'B.onError(TransactionRefusedError)']);
+
+      let checked: ((refusal: undefined) => void) | undefined;
+      mocks.claimRefusal = () => new Promise(resolve => (checked = resolve));
+      // B retries until its engine has read A's receipt and checks B's message.
+      await waitFor(() => {
+        if (!checked) confirm(sessionB);
+        expect(checked).toBeDefined();
+      });
+      // A's card reads the revert too, while B's message check is out.
+      dropRead('0xburnA', '0xa');
+      await flush();
+      act(() => checked!(undefined));
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      await sign(mocks.prompts[1], '0xb');
+      await mine('0xb');
+      await waitFor(() => expect(log).toContain('B.onSuccess(0xb)'));
+    });
+  });
+
+  describe('a native withdrawal finalize, on its own engine', () => {
+    it('finalizes, and reports its receipt to its session', async () => {
+      const log: string[] = [];
+      seedFinalize('0xwithdrawalok');
+      const page = mount();
+      await launchFinalize(page, '0xwithdrawalok', sessionFor('A', log));
+      expect(mocks.prompts.map(({ functionName }) => functionName)).toEqual([
+        'finalizeWithdrawalTransactionExternalProof'
+      ]);
+      await sign(mocks.prompts[0], '0xfinal');
+      await mine('0xfinal');
+      await waitFor(() => expect(log).toEqual(['A.onMutate', 'A.onStart(0xfinal)', 'A.onSuccess(0xfinal)']));
+    });
+
+    it('ends a finalize whose hash the chain dropped, and the Retry finalizes again', async () => {
+      const log: string[] = [];
+      seedFinalize('0xwithdrawallost');
+      const page = mount();
+      const session = sessionFor('A', log);
+      await launchFinalize(page, '0xwithdrawallost', session);
+      await sign(mocks.prompts[0], '0xlost');
+      dropRead('0xwithdrawallost', '0xlost');
+      await waitFor(() =>
+        expect(log).toEqual(['A.onMutate', 'A.onStart(0xlost)', 'A.onError(TransactionRefusedError)'])
+      );
+
+      confirm(session);
+      await waitFor(() => expect(mocks.prompts).toHaveLength(2));
+      expect(mocks.prompts[1]).toEqual(mocks.prompts[0]);
+      await sign(mocks.prompts[1], '0xfound');
+      await mine('0xfound');
+      await waitFor(() =>
+        expect(log.slice(3)).toEqual(['A.onMutate', 'A.onStart(0xfound)', 'A.onSuccess(0xfound)'])
+      );
+    });
+  });
+
+  describe('an Arbitrum ticket, on its own engine', () => {
     it("after a redeem's hash that never mines is ended by the chain read, the next card sends its own redeem", async () => {
       const log: string[] = [];
       seedTicket('0xarbA', 'a');

@@ -214,6 +214,8 @@ export function useCctpConvertLegs({
     execute,
     reset: legs.reset,
     release: legs.release,
+    /** An earlier run's send is still out: the engine waits on it. */
+    detached: legs.busy,
     dropCheck: legs.dropCheck
   };
 }

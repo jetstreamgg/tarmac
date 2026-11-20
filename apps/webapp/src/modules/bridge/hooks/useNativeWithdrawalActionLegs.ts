@@ -183,6 +183,8 @@ export function useNativeWithdrawalActionLegs({
       (calls.length > 0 ? flow.error : null),
     execute: flow.execute,
     reset: flow.reset,
-    release: flow.release
+    release: flow.release,
+    /** An earlier run's send is still out: the engine waits on it. */
+    detached: flow.detached
   };
 }
