@@ -1,9 +1,25 @@
 import { mainnet } from 'viem/chains';
 import { isTestnetId } from '@/utils';
+import type { PendleMarketConfig } from './pendle';
 
 /** Whether a market has matured (expiry timestamp <= now). */
 export function isMarketMatured(expiry: number): boolean {
   return Math.floor(Date.now() / 1000) >= expiry;
+}
+
+const maturityMonthFormatter = new Intl.DateTimeFormat('en-GB', {
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC'
+});
+
+/**
+ * Display name for a matured market ("Fixed Yield · Nov 2026"). Markets share
+ * one product name, so the maturity tells a matured position apart from the
+ * live market that succeeded it.
+ */
+export function maturedPendleMarketName(market: Pick<PendleMarketConfig, 'name' | 'expiry'>): string {
+  return `${market.name} · ${maturityMonthFormatter.format(new Date(market.expiry * 1000))}`;
 }
 
 /**

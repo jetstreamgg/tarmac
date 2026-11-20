@@ -27,6 +27,11 @@ export type PendleMarketConfig = {
   marketAddress: `0x${string}`;
   /** The PT token contract address */
   ptToken: `0x${string}`;
+  /**
+   * The PT token's on-chain symbol, maturity included (e.g. "PT-sUSDS-26NOV2026").
+   * Immutable like the addresses; copy it from the PT contract's `symbol()`.
+   */
+  ptSymbol: string;
   /** The YT token contract address (paired with PT, used for redeemPyToToken post-maturity) */
   ytToken: `0x${string}`;
   /** The SY (ERC-5115) token contract address */

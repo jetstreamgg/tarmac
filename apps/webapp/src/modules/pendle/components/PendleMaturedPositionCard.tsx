@@ -4,7 +4,7 @@ import { Clock } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { cn } from '@/lib/cn';
 import { familyMainnetId, formatNumber, getChainIcon, getChainName } from '@/utils';
-import type { PendleMarketConfig } from '@/hooks';
+import { maturedPendleMarketName, type PendleMarketConfig } from '@/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconboxStatus } from '@/components/ui/iconbox';
@@ -95,7 +95,7 @@ export const PendleMaturedPositionCard = ({
 
       <div className="flex flex-col gap-3">
         <span className="text-fgPrimary font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
-          {market.name}
+          {maturedPendleMarketName(market)}
         </span>
         <Text variant="small" className="text-fgSecondary">
           <Trans>Your position matured on {maturityLabel} and is ready to claim.</Trans>

@@ -76,7 +76,12 @@ export {
   PendleConvertSide,
   PendleHistoryAction
 } from './pendle/constants';
-export { isMarketMatured, isPendleChain, formatPendleAggregatorName } from './pendle/helpers';
+export {
+  isMarketMatured,
+  maturedPendleMarketName,
+  isPendleChain,
+  formatPendleAggregatorName
+} from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';

@@ -6,6 +6,7 @@ import { pendleAnalyticsData } from './pendleAnalyticsData';
 const MARKET: PendleMarketConfig = {
   name: 'PT-USDG',
   slug: 'pt-usdg',
+  ptSymbol: 'PT-USDG-28MAY2026',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38d74a0d29380899ad354121dfb521adb0548',
   ytToken: '0x4a1294749a70bc32a998b49dd11bf26e9379e3c1',
@@ -106,6 +107,7 @@ describe('pendleAnalyticsData', () => {
       expect(data.assetAddress).toBe(MATURED_MARKET.underlyingToken);
       expect(data.assetSymbol).toBe('USDG');
       expect(data.ptAddress).toBe(MATURED_MARKET.ptToken);
+      expect(data.ptSymbol).toBe(MATURED_MARKET.ptSymbol);
       expect(data.expiry).toBe(MATURED_MARKET.expiry);
       expect(data.slippage).toBe(0.01);
     });

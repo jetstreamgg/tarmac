@@ -397,6 +397,7 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     slug: 'pt-susds',
     marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
     ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
+    ptSymbol: 'PT-sUSDS-26NOV2026',
     ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
     syToken: '0xbe3d4ec488a0a042bb86f9176c24f8cd54018ba7',
     underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',

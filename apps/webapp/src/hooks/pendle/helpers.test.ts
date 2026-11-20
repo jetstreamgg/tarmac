@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMarketMatured } from './helpers';
+import { isMarketMatured, maturedPendleMarketName } from './helpers';
 
 describe('pendle helpers', () => {
   describe('isMarketMatured', () => {
@@ -11,6 +11,14 @@ describe('pendle helpers', () => {
     it('returns true when expiry is in the past', () => {
       const now = Math.floor(Date.now() / 1000);
       expect(isMarketMatured(now - 60_000)).toBe(true);
+    });
+  });
+
+  describe('maturedPendleMarketName', () => {
+    it('appends the UTC maturity month to the product name', () => {
+      expect(maturedPendleMarketName({ name: 'Fixed Yield', expiry: 1795651200 })).toBe(
+        'Fixed Yield · Nov 2026'
+      );
     });
   });
 });
