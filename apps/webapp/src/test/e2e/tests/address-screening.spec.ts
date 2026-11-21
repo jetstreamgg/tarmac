@@ -69,8 +69,9 @@ test('a screened-out new wallet gets the blocked screen, never the terms', async
 
   await isolatedPage.getByRole('button', { name: 'Connect Batch Mock Wallet' }).first().click();
 
-  // The blocked state renders in both AuthWrapper and the wallet chip.
-  await expect(isolatedPage.getByText('Wallet blocked').first()).toBeVisible({ timeout: 15_000 });
+  // Reached by role: the gate must stay in the accessibility tree.
+  await expect(isolatedPage.getByRole('dialog', { name: 'Wallet blocked' })).toBeVisible({ timeout: 15_000 });
+  await expect(isolatedPage.getByRole('button', { name: 'Disconnect wallet' })).toBeVisible();
   await expect(isolatedPage.getByTestId('terms-modal')).toHaveCount(0);
 });
 

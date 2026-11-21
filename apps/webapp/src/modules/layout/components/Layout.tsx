@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import { ConfigContext } from '../../config/context/ConfigContext';
 import { ErrorBoundary } from './ErrorBoundary';
 import { InsideLayoutContext } from './InsideLayoutContext';
-import { AuthWrapper } from './AuthWrapper';
 import { VStack } from './VStack';
 import { Text } from '@/modules/layout/components/Typography';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
@@ -112,7 +111,7 @@ export function Layout({
                 (getRouteChainAction rule b) switches the wallet back on the
                 user's behalf. If they decline, the transaction modal's chain
                 guard is what stops a transaction, where it actually matters. */}
-              <AuthWrapper>{children}</AuthWrapper>
+              {children}
             </ErrorBoundary>
 
             <ErrorBoundary variant="small">

@@ -24,7 +24,7 @@ let recentlyVisibleTimer: ReturnType<typeof setTimeout> | undefined;
  * width and height: the modal read as opening outward from its centre instead
  * of sliding up.
  *
- * This is one cover for both phases, mounted once by WalletChip — the spinner
+ * This is one cover for both phases, mounted once by AccessGate — the spinner
  * never restarts across the handoff. It wears the DialogOverlay's scrim recipe
  * and the App Loader's logomark, so the terms modal's own overlay takes over
  * from an identical layer and the card is the only thing that arrives, rising

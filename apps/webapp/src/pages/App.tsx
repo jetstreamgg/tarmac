@@ -30,6 +30,7 @@ import { useNavigationAnalytics } from '@/modules/analytics/hooks/useNavigationA
 import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
 import { setPrepareRevertListener } from '@/hooks/shared/prepareRevertReporter';
 import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
+import { AccessGate } from '@/modules/auth/components/AccessGate';
 
 // The engines report prepare-time simulation failures here (see prepareRevertReporter).
 setPrepareRevertListener(trackPrepareReverted);
@@ -71,42 +72,44 @@ const AppContent = () => {
   useNavigationAnalytics();
   return (
     <ConnectedProvider>
-      <TermsModalProvider>
-        <ConnectThenActProvider>
-          <TooltipProvider delayDuration={300}>
-            <NetworkSwitchProvider>
-              <GatedTransactionProvider>
-                {/* Toast tier above the dialog tier (z-50): network/tx
-                        toasts must stay readable over a modal's blurred
-                        overlay (e.g. the auto-switch toast fires as a supply
-                        modal opens). Below the popover (z-100) and tooltip
-                        (z-101) tiers. ToastCloseAll rides one step above the
-                        stack it controls.
+      <AccessGate>
+        <TermsModalProvider>
+          <ConnectThenActProvider>
+            <TooltipProvider delayDuration={300}>
+              <NetworkSwitchProvider>
+                <GatedTransactionProvider>
+                  {/* Toast tier above the dialog tier (z-50): network/tx
+                          toasts must stay readable over a modal's blurred
+                          overlay (e.g. the auto-switch toast fires as a supply
+                          modal opens). Below the popover (z-100) and tooltip
+                          (z-101) tiers. ToastCloseAll rides one step above the
+                          stack it controls.
 
-                        The DismissableLayerBranch keeps toasts *clickable*
-                        while a modal Radix surface (wallet drawer, any
-                        dialog) is open.
+                          The DismissableLayerBranch keeps toasts *clickable*
+                          while a modal Radix surface (wallet drawer, any
+                          dialog) is open.
 
-                        app-loader-cover-hidden: this tree mounts outside
-                        Layout, so it hides via the loader's document flag
-                        while the cover plays (globals.css).
+                          app-loader-cover-hidden: this tree mounts outside
+                          Layout, so it hides via the loader's document flag
+                          while the cover plays (globals.css).
 
-                        Portalled to the body: a stake takeover marks #root
-                        inert, which would take the toasts' buttons and
-                        sonner's live region down with the page. */}
-                {createPortal(
-                  <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
-                    <Toaster className="!z-[60]" />
-                    <ToastCloseAll />
-                  </DismissableLayerBranch>,
-                  document.body
-                )}
-                <RouterProvider router={router} />
-              </GatedTransactionProvider>
-            </NetworkSwitchProvider>
-          </TooltipProvider>
-        </ConnectThenActProvider>
-      </TermsModalProvider>
+                          Portalled to the body: a stake takeover marks #root
+                          inert, which would take the toasts' buttons and
+                          sonner's live region down with the page. */}
+                  {createPortal(
+                    <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
+                      <Toaster className="!z-[60]" />
+                      <ToastCloseAll />
+                    </DismissableLayerBranch>,
+                    document.body
+                  )}
+                  <RouterProvider router={router} />
+                </GatedTransactionProvider>
+              </NetworkSwitchProvider>
+            </TooltipProvider>
+          </ConnectThenActProvider>
+        </TermsModalProvider>
+      </AccessGate>
     </ConnectedProvider>
   );
 };

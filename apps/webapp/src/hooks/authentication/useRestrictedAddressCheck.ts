@@ -73,9 +73,10 @@ export const useRestrictedAddressCheck = ({
   data: AddressScreeningResult | undefined;
   error: Error | undefined;
   isLoading: boolean;
+  isFetching: boolean;
   refetch: () => void;
 } => {
-  const { data, error, isLoading, refetch } = useQuery({
+  const { data, error, isLoading, isFetching, refetch } = useQuery({
     queryKey: addressScreeningQueryKey(address),
     // A cached risky verdict keeps the query live even when the caller didn't
     // ask for a fetch, so the re-poll below runs wherever the block came from
@@ -88,5 +89,5 @@ export const useRestrictedAddressCheck = ({
     ...options
   });
 
-  return { data, error: error ?? undefined, isLoading: !data && isLoading, refetch };
+  return { data, error: error ?? undefined, isLoading: !data && isLoading, isFetching, refetch };
 };

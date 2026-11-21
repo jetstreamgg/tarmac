@@ -38,9 +38,10 @@ export const useVpnCheck = ({
   data: VpnResponse | undefined;
   error: any | undefined;
   isLoading: boolean;
+  isFetching: boolean;
   refetch: () => void;
 } => {
-  const { data, error, isLoading, refetch } = useQuery({
+  const { data, error, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['vpn'],
     queryFn: () => checkVpn(authUrl),
     refetchInterval,
@@ -48,5 +49,5 @@ export const useVpnCheck = ({
     enabled: !skip && enabled
   });
 
-  return { data, error, isLoading: !data && isLoading, refetch };
+  return { data, error, isLoading: !data && isLoading, isFetching, refetch };
 };

@@ -80,7 +80,7 @@ describe('TermsModal', () => {
   // while the check was still running — as the narrow waiting card — and then
   // swap to the wide terms card; DialogContent transitions `all`, so that swap
   // animated width and height and the modal read as expanding outward from its
-  // centre rather than sliding up. WalletChip's ConnectChecksCover holds the
+  // centre rather than sliding up. AccessGate's ConnectChecksCover holds the
   // screen for the check instead (covered in WalletChip.test).
   it('stays shut while the terms check runs, then opens straight at its full width', () => {
     mocks.connected.isCheckingTerms = true;

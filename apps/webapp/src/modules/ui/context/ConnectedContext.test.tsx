@@ -67,9 +67,9 @@ vi.mock('@/hooks', () => ({
   // way a disabled useQuery still observes its cache entry.
   useRestrictedAddressCheck: ({ enabled }: { enabled: boolean }) => {
     mocks.screeningEnabled(enabled);
-    return { ...mocks.authCheck, refetch: mocks.refetchAddressCheck };
+    return { isFetching: false, ...mocks.authCheck, refetch: mocks.refetchAddressCheck };
   },
-  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
+  useVpnCheck: () => ({ isFetching: false, ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
 
@@ -113,7 +113,8 @@ function Consumer() {
     isCheckingTerms,
     acceptTerms,
     signTerms,
-    retryAccessChecks
+    retryAccessChecks,
+    isRetryingAccessChecks
   } = useConnectedContext();
   return (
     <div>
@@ -127,6 +128,7 @@ function Consumer() {
       <span data-testid="message">{termsMessageToSign ?? 'none'}</span>
       <span data-testid="denied">{String(termsCheckDenied)}</span>
       <span data-testid="checking">{String(isCheckingTerms)}</span>
+      <span data-testid="retrying">{String(isRetryingAccessChecks)}</span>
       <button data-testid="accept" onClick={() => void acceptTerms()}>
         accept
       </button>
@@ -151,12 +153,12 @@ const checkResult = (overrides: Record<string, unknown> = {}) => ({
   ...overrides
 });
 
-const renderProvider = () =>
-  render(
-    <ConnectedProvider>
-      <Consumer />
-    </ConnectedProvider>
-  );
+const providerTree = () => (
+  <ConnectedProvider>
+    <Consumer />
+  </ConnectedProvider>
+);
+const renderProvider = () => render(providerTree());
 
 const accepted = () => screen.getByTestId('accepted').textContent;
 
@@ -598,6 +600,75 @@ describe('ConnectedContext — the terms AND gate', () => {
 
       expect(authorized()).toBe('false');
       expect(blockReason()).toBe('ip-check-unavailable');
+    });
+
+    // A refetch with no data resets the query to pending and clears `error`,
+    // so without the provider remembering the gate it would drop for every
+    // retry (the IP check re-polls every 60s).
+    it('keeps the IP block up while a failed check retries, and flags the retry', () => {
+      mocks.vpnCheck = { data: undefined, isLoading: false, error: new Error('ip status down') };
+      const { rerender } = renderProvider();
+      expect(blockReason()).toBe('ip-check-unavailable');
+
+      mocks.vpnCheck = {
+        data: undefined,
+        isLoading: true,
+        error: undefined,
+        isFetching: true
+      } as typeof mocks.vpnCheck;
+      rerender(providerTree());
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('ip-check-unavailable');
+      expect(screen.getByTestId('retrying').textContent).toBe('true');
+
+      mocks.vpnCheck = {
+        data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'DE' },
+        isLoading: false,
+        error: undefined
+      };
+      rerender(providerTree());
+      expect(blockReason()).toBe('none');
+    });
+
+    // Same for the screening query.
+    it('keeps the screening block up while it retries, and flags the retry', async () => {
+      mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(blockReason()).toBe('screening-unavailable'));
+
+      mocks.authCheck = {
+        data: undefined,
+        isLoading: true,
+        error: undefined,
+        isFetching: true
+      } as typeof mocks.authCheck;
+      rerender(providerTree());
+
+      expect(blockReason()).toBe('screening-unavailable');
+      expect(screen.getByTestId('retrying').textContent).toBe('true');
+
+      mocks.authCheck = { data: { addressAllowed: true }, isLoading: false, error: undefined };
+      rerender(providerTree());
+      expect(blockReason()).toBe('none');
+    });
+
+    // A failure left in the shared cache by the pre-transaction check has
+    // cleared its error by the time a required screening refetches.
+    it('reads a first required screening as loading, not as unavailable', async () => {
+      mocks.authCheck = {
+        data: undefined,
+        isLoading: true,
+        error: undefined,
+        isFetching: true
+      } as typeof mocks.authCheck;
+
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('none');
+      expect(screen.getByTestId('retrying').textContent).toBe('false');
     });
 
     it('keeps a cached /ip/status verdict through a failed refetch', () => {
