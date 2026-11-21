@@ -260,12 +260,12 @@ describe('useCurveStUsdsProvider', () => {
       expect(result.current.data?.quote?.invalidReason).toBe('Curve pool deposits unavailable');
     });
 
-    it('should mark quote invalid when price impact too high', () => {
+    it('should keep the quote valid at high price impact', () => {
       (useCurveQuote as ReturnType<typeof vi.fn>).mockReturnValue({
         data: {
           stUsdsAmount: 900n * WAD,
           usdsAmount: 1000n * WAD,
-          priceImpactBps: STUSDS_PROVIDER_CONFIG.maxPriceImpactBps + 100, // Exceeds threshold
+          priceImpactBps: 1500,
           effectiveRate: (900n * WAD * WAD) / (1000n * WAD)
         },
         isLoading: false,
@@ -280,8 +280,8 @@ describe('useCurveStUsdsProvider', () => {
         })
       );
 
-      expect(result.current.data?.quote?.isValid).toBe(false);
-      expect(result.current.data?.quote?.invalidReason).toBe('Price impact too high');
+      expect(result.current.data?.quote?.isValid).toBe(true);
+      expect(result.current.data?.quote?.rateInfo.priceImpactBps).toBe(1500);
     });
   });
 

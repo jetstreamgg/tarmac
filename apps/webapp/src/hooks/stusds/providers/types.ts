@@ -206,10 +206,4 @@ export type StUsdsRateComparisonConfig = {
    * Slippage = deviation from quoted price during execution due to price movement.
    */
   maxSlippageBps: number;
-  /**
-   * Maximum acceptable price impact for swaps (basis points).
-   * Price impact = how much the trade size affects the pool price.
-   * Typically higher than slippage as larger trades naturally have more impact.
-   */
-  maxPriceImpactBps: number;
 };
