@@ -289,9 +289,11 @@ describe('useNativeStUsdsProvider', () => {
       expect(result.current.data?.quote?.invalidReason).toBe('Amount exceeds remaining capacity');
     });
 
-    it('should mark quote invalid when amount exceeds withdrawable', () => {
-      const maxWithdraw = 500n * WAD;
-      const requestedAmount = 1000n * WAD;
+    it("keeps the quote valid when the amount exceeds the user's own withdrawable balance (APP-509)", () => {
+      // A sub-1-USDS position quoted at the selection's 1-USDS reference
+      // amount: the balance is the form's error, not the route's.
+      const maxWithdraw = WAD / 10n;
+      const requestedAmount = WAD;
 
       (useStUsdsData as ReturnType<typeof vi.fn>).mockReturnValue({
         data: {
@@ -310,8 +312,8 @@ describe('useNativeStUsdsProvider', () => {
         })
       );
 
-      expect(result.current.data?.quote?.isValid).toBe(false);
-      expect(result.current.data?.quote?.invalidReason).toBe('Amount exceeds available liquidity');
+      expect(result.current.data?.quote?.isValid).toBe(true);
+      expect(result.current.data?.quote?.invalidReason).toBeUndefined();
     });
   });
 

@@ -109,6 +109,15 @@ const setupMocks = (
   });
 };
 
+// What the native provider returns when it can't quote: rate 0, not a real rate.
+const failedQuote = (data: StUsdsProviderData) => ({
+  ...data.quote!,
+  outputAmount: 0n,
+  rateInfo: { ...data.quote!.rateInfo, outputAmount: 0n, effectiveRate: 0n },
+  isValid: false,
+  invalidReason: 'Unable to get quote'
+});
+
 const defaultParams: StUsdsQuoteParams = {
   amount: 1000n * WAD,
   direction: StUsdsDirection.SUPPLY
@@ -262,6 +271,47 @@ describe('useStUsdsProviderSelection', () => {
       expect(result.current.selectedProvider).toBe(StUsdsProviderType.CURVE);
       expect(result.current.selectionReason).toBe(StUsdsSelectionReason.CURVE_ONLY_AVAILABLE);
     });
+
+    it('reports no rate difference when the blocked native route failed to quote (APP-509)', () => {
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+        status: StUsdsProviderStatus.BLOCKED,
+        canWithdraw: false,
+        blockedReason: StUsdsBlockedReason.AMOUNT_EXCEEDS_LIQUIDITY
+      });
+      nativeData.quote = failedQuote(nativeData);
+      setupMocks(nativeData, createMockProviderData(StUsdsProviderType.CURVE));
+
+      const { result } = renderHook(() =>
+        useStUsdsProviderSelection({ amount: 1000n * WAD, direction: StUsdsDirection.WITHDRAW })
+      );
+
+      expect(result.current.selectedProvider).toBe(StUsdsProviderType.CURVE);
+      expect(result.current.rateDifferencePercent).toBe(0);
+    });
+
+    it('keeps the rate difference when the blocked native route has a rate', () => {
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+        status: StUsdsProviderStatus.BLOCKED,
+        canWithdraw: false,
+        blockedReason: StUsdsBlockedReason.AMOUNT_EXCEEDS_LIQUIDITY,
+        inputAmount: 1000n * WAD,
+        outputAmount: 1000n * WAD
+      });
+      nativeData.quote!.isValid = false;
+      setupMocks(
+        nativeData,
+        createMockProviderData(StUsdsProviderType.CURVE, {
+          inputAmount: 1000n * WAD,
+          outputAmount: 990n * WAD
+        })
+      );
+
+      const { result } = renderHook(() =>
+        useStUsdsProviderSelection({ amount: 1000n * WAD, direction: StUsdsDirection.WITHDRAW })
+      );
+
+      expect(result.current.rateDifferencePercent).toBe(-1);
+    });
   });
 
   describe('Selection Logic - Both Blocked', () => {
@@ -397,6 +447,87 @@ describe('useStUsdsProviderSelection', () => {
 
       expect(result.current.selectedProvider).toBe(StUsdsProviderType.NATIVE);
       expect(result.current.selectionReason).toBe(StUsdsSelectionReason.NATIVE_BETTER_RATE);
+    });
+
+    it('does not report a better rate when Curve wins only on quote validity (APP-509)', () => {
+      // Native couldn't quote: rate 0, which compares as Curve being +100% better.
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE);
+      nativeData.quote = failedQuote(nativeData);
+      const curveData = createMockProviderData(StUsdsProviderType.CURVE, {
+        inputAmount: 10015n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      setupMocks(nativeData, curveData);
+
+      const { result } = renderHook(() =>
+        useStUsdsProviderSelection({ amount: 0n, direction: StUsdsDirection.WITHDRAW })
+      );
+
+      expect(result.current.selectedProvider).toBe(StUsdsProviderType.CURVE);
+      expect(result.current.selectionReason).toBe(StUsdsSelectionReason.CURVE_ONLY_AVAILABLE);
+      expect(result.current.rateDifferencePercent).toBe(0);
+    });
+
+    it('keeps native for a small wallet at the reference amount when Curve is worse (APP-509)', () => {
+      // Both quote validly now that the native quote ignores the user's own
+      // balance; Curve's ~0.15% premium leaves native as the honest pick.
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+        inputAmount: 10000n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      const curveData = createMockProviderData(StUsdsProviderType.CURVE, {
+        inputAmount: 10015n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      setupMocks(nativeData, curveData);
+
+      const { result } = renderHook(() =>
+        useStUsdsProviderSelection({ amount: 0n, direction: StUsdsDirection.WITHDRAW })
+      );
+
+      expect(result.current.selectedProvider).toBe(StUsdsProviderType.NATIVE);
+      expect(result.current.selectionReason).not.toBe(StUsdsSelectionReason.CURVE_BETTER_RATE);
+    });
+
+    describe('a typed withdrawal above the native max', () => {
+      const AMOUNT = 1000n * WAD;
+      const setup = (curveInput: bigint, { nativeQuoteFailed = false } = {}) => {
+        const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+          inputAmount: AMOUNT,
+          outputAmount: AMOUNT
+        });
+        nativeData.state.maxWithdraw = AMOUNT - WAD;
+        if (nativeQuoteFailed) nativeData.quote = failedQuote(nativeData);
+        setupMocks(
+          nativeData,
+          createMockProviderData(StUsdsProviderType.CURVE, { inputAmount: curveInput, outputAmount: AMOUNT })
+        );
+      };
+      const select = () =>
+        renderHook(() =>
+          useStUsdsProviderSelection({
+            amount: AMOUNT,
+            direction: StUsdsDirection.WITHDRAW,
+            userStUsdsBalance: AMOUNT
+          })
+        ).result.current;
+
+      it('goes through Curve when the shares cover it, as native would refuse it', () => {
+        setup(AMOUNT);
+        expect(select().selectedProvider).toBe(StUsdsProviderType.CURVE);
+        expect(select().selectionReason).toBe(StUsdsSelectionReason.CURVE_ONLY_AVAILABLE);
+      });
+
+      it('reports no rate difference when the native preview failed (APP-509)', () => {
+        setup(AMOUNT, { nativeQuoteFailed: true });
+        expect(select().selectedProvider).toBe(StUsdsProviderType.CURVE);
+        expect(select().rateDifferencePercent).toBe(0);
+      });
+
+      it('stays native when it exceeds the shares too: that is the form error, not a route', () => {
+        setup(AMOUNT + WAD);
+        expect(select().selectedProvider).toBe(StUsdsProviderType.NATIVE);
+      });
     });
 
     it('should calculate correct rate difference percent', () => {

@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 // (e.g. "Cannot access 'siteConfig' before initialization"). The router
 // instance is injected by main.tsx instead.
 import type { AnyRouter } from '@tanstack/react-router';
+import { filterWalletRejection } from './walletRejection';
 
 // Fall back to the app-wide env name so Sentry still gets a meaningful environment
 // even before dedicated VITE_SENTRY_* values are populated everywhere.
@@ -142,28 +143,9 @@ export function initSentry(router: AnyRouter): void {
         return null;
       }
 
-      // Drop unhandled wallet provider rejections from EIP-1193 providers.
-      // These are plain-object rejections we can't prevent from our side:
-      //   - 4001: user rejected request during Wagmi auto-reconnect (WEBAPP-B).
-      //   - -32601: JSON-RPC "Method not found" — wagmi/viem/RainbowKit
-      //     speculatively probe optional methods (EIP-5792 capabilities,
-      //     wallet_watchAsset, etc.) and wallets that don't implement them
-      //     reject with this code.
-      //   - 4900: "provider is disconnected from all chains" — a locked or
-      //     chain-less extension (seen from Rabby) rejecting wagmi's
-      //     auto-reconnect probes on page load (WEBAPP-V, WEBAPP-B).
-      const extraData = (event.extra as Record<string, unknown> | undefined)?.__serialized__ as
-        Record<string, unknown> | undefined;
-      if (
-        event.exception?.values?.some(v =>
-          v.value?.includes('Object captured as promise rejection with keys')
-        ) &&
-        (extraData?.code === 4001 || extraData?.code === 4900 || extraData?.code === -32601)
-      ) {
-        return null;
-      }
-
-      return event;
+      // Unhandled plain-object rejections from EIP-1193 providers: drop the
+      // known wallet noise, title the rest.
+      return filterWalletRejection(event);
     }
   });
   hasInitializedSentry = true;

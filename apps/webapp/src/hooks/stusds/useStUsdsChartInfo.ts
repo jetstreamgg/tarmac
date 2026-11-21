@@ -1,6 +1,5 @@
 import { parseEther } from 'viem';
-import { ReadHook } from '../hooks';
-import { useBaLabsHistoric } from '../shared/useBaLabsHistoric';
+import { useBaLabsHistoric, type BaLabsHistoricHook } from '../shared/useBaLabsHistoric';
 
 type StUsdsChartInfo = {
   date: string;
@@ -38,7 +37,7 @@ function transformBaLabsChartData(results: StUsdsChartInfo[]): StUsdsChartInfoPa
 
 export function useStUsdsChartInfo(
   options: { limit?: number } = { limit: 100 }
-): ReadHook & { data?: StUsdsChartInfoParsed[] } {
+): BaLabsHistoricHook<StUsdsChartInfoParsed> {
   const { limit } = options;
 
   // `p_size` is required: without it the endpoint serves its 100-row default,

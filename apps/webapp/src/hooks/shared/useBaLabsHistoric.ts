@@ -5,6 +5,12 @@ import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
 import { toReadHook } from './toReadHook';
 
+export type BaLabsHistoricHook<T> = ReadHook & {
+  data?: T[];
+  /** `data` is still the previous range's: parse it with that range (useSettledTimeFrame). */
+  isPlaceholderData: boolean;
+};
+
 /**
  * A paged BA Labs `historic` series, parsed into chart points. The endpoint
  * caps a response at 1000 rows whatever `p_size` asks for, so every page is
@@ -21,12 +27,12 @@ export function useBaLabsHistoric<TRaw, TParsed>({
   path: string;
   /** Row budget (`p_size`), passed through verbatim. */
   limit?: number;
-  /** Query-key prefix; the URL is the second key part. */
+  /** Query-key prefix; the path, row budget and enabled state are the other key parts. */
   queryKey: string;
   transform: (rows: TRaw[]) => TParsed[];
   /** Extra precondition on top of the API root being configured. */
   enabled?: boolean;
-}): ReadHook & { data?: TParsed[] } {
+}): BaLabsHistoricHook<TParsed> {
   const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl && enabled) {
@@ -45,9 +51,17 @@ export function useBaLabsHistoric<TRaw, TParsed>({
 
   const query = useQuery({
     enabled: Boolean(url),
-    queryKey: [queryKey, url],
-    queryFn: () => (url ? fetchHistoric(url) : Promise.resolve([]))
+    // The enabled state keeps a disabled caller on its own empty entry instead
+    // of reading the series an enabled one cached under the same path.
+    queryKey: [queryKey, path, limit, Boolean(url)],
+    queryFn: () => (url ? fetchHistoric(url) : Promise.resolve([])),
+    // A timeframe switch only changes `limit`: keep the series on screen while
+    // the new range loads, instead of flashing the skeleton (APP-407). Only for
+    // the same series — another farm or vault starts from the skeleton rather
+    // than briefly showing the previous one's data.
+    placeholderData: (previousData, previousQuery) =>
+      url && previousQuery?.queryKey[1] === path ? previousData : undefined
   });
 
-  return toReadHook(query, [baLabsDataSource(url)]);
+  return { ...toReadHook(query, [baLabsDataSource(url)]), isPlaceholderData: query.isPlaceholderData };
 }

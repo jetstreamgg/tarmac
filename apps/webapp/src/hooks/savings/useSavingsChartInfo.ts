@@ -1,8 +1,7 @@
 import { parseEther } from 'viem';
 import { useChainId } from 'wagmi';
 import { sUsdsAddress } from './useReadSavingsUsds';
-import { ReadHook } from '../hooks';
-import { useBaLabsHistoric } from '../shared/useBaLabsHistoric';
+import { useBaLabsHistoric, type BaLabsHistoricHook } from '../shared/useBaLabsHistoric';
 
 type SavingsChartInfo = {
   date: string;
@@ -28,7 +27,7 @@ function transformBaLabsChartData(results: SavingsChartInfo[]): SavingsChartInfo
 export function useSavingsChartInfo(
   paramChainId?: number,
   options: { limit?: number } = { limit: 100 }
-): ReadHook & { data?: SavingsChartInfoParsed[] } {
+): BaLabsHistoricHook<SavingsChartInfoParsed> {
   const { limit } = options;
   const wagmiChainId = useChainId();
   const chainId = paramChainId || wagmiChainId;

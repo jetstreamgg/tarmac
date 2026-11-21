@@ -17,7 +17,9 @@ const readStoredSlippage = (key: string, fallback: number): number => {
   const stored = window.localStorage.getItem(key);
   if (!stored) return fallback;
   const parsed = Number(stored);
-  if (Number.isNaN(parsed) || parsed < 0) return fallback;
+  // 0 included: the slippage menu used to store it when its field was cleared,
+  // and a 0% tolerance reverts on any price move (APP-533).
+  if (Number.isNaN(parsed) || parsed <= 0) return fallback;
   return parsed;
 };
 

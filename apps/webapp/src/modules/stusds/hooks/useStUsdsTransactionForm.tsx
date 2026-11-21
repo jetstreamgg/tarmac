@@ -151,11 +151,18 @@ export function useStUsdsTransactionForm({
     : stUsdsData !== undefined && !withdrawBalancesLoading;
   // A max withdraw bypasses the amount checks: the derived display can drift or
   // lag the debounce, but the flag — not the number — drives the redemption.
+  // Once the typed amount routes through Curve, Curve's max is what limits it:
+  // `available` can still be the native max the balances pick from a different
+  // amount, which would refuse a route the notice has just announced.
   const insufficient =
     !max &&
     availableKnown &&
     amount > 0n &&
-    (isSupply ? amount > available : amount > available || amount > (withdrawBalanceLimit ?? available));
+    (isSupply
+      ? amount > available
+      : isCurveSelected && curveMaxWithdraw !== undefined
+        ? amount > curveMaxWithdraw
+        : amount > available || amount > (withdrawBalanceLimit ?? available));
 
   // Route-level blocks the balance check can't see: both providers blocked, or
   // a supply above the module cap while Curve can't take it either.
