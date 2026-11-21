@@ -19,12 +19,14 @@ import {
   stUsdsAddress
 } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { withForkAliases } from '@/utils/chainId';
 
 const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKENS;
 
-// It stores all the RPCs the application will use, and also the user configured-ones
+// It stores all the RPCs the application will use, and also the user configured-ones.
+// The Tenderly fork L2s list their real L2's tokens.
 export const defaultConfig: WidgetsConfig = {
-  balancesTokenList: {
+  balancesTokenList: withForkAliases({
     [mainnet.id]: [
       { ...eth, address: eth.address[mainnet.id] },
       { ...weth, address: wethAddress[mainnet.id] },
@@ -81,8 +83,8 @@ export const defaultConfig: WidgetsConfig = {
       { ...usds, address: usdsL2Address[optimism.id] },
       { ...susds, address: sUsdsL2Address[optimism.id] }
     ]
-  },
-  tradeTokenList: {
+  }),
+  tradeTokenList: withForkAliases({
     [mainnet.id]: [
       { ...usdc, address: usdcAddress[mainnet.id] },
       { ...usdt, address: usdtAddress[mainnet.id] },
@@ -133,5 +135,5 @@ export const defaultConfig: WidgetsConfig = {
       { ...usds, address: usdsL2Address[optimism.id] },
       { ...susds, address: sUsdsL2Address[optimism.id] }
     ]
-  }
+  })
 };

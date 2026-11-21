@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useConnection, useChainId, useChains } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import {
   mcdPotAddress,
@@ -12,7 +12,7 @@ import {
 import { useReadMcdPot } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink, isL2ChainId } from '@/utils';
+import { familyMainnetId, getEtherscanLink, isL2ChainId } from '@/utils';
 import { calculateDsrInfo } from './calculateDsrInfo';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
@@ -31,15 +31,9 @@ export type DsrHook = ReadHook & {
 
 export function useSavingsData(address?: `0x${string}`): DsrHook {
   const connectedChainId = useChainId();
-  const chains = useChains();
-  // If the connected chain is an L2, read the pot data from the mainnet-family
-  // chain of the ACTIVE wagmi config: chain 1 in production, the Tenderly
-  // mainnet fork in mock/e2e mode (chain 1 is not configured there, so a
-  // hardcoded 1 fails every pot read while connected to an L2 and the hook
-  // never returns data).
-  const ethereumChainId = !isL2ChainId(connectedChainId)
-    ? connectedChainId
-    : (chains.find(chain => !isL2ChainId(chain.id))?.id ?? 1);
+  // Pot data lives on the family's Ethereum chain: chain 1 in production, the
+  // Tenderly mainnet fork in mock/e2e mode and on the dev fork L2s.
+  const ethereumChainId = familyMainnetId(connectedChainId);
 
   const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress;

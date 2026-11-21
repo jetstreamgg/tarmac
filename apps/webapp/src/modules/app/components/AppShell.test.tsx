@@ -37,6 +37,7 @@ vi.mock('../hooks/useWidgetItems', () => ({
 
 vi.mock('../hooks/useDeeplinkAnalytics', () => ({ useDeeplinkAnalytics: () => {} }));
 vi.mock('../hooks/useNetworkChangeToast', () => ({ useNetworkChangeToast: () => {} }));
+vi.mock('@/modules/bridge/components/BridgeTracker', () => ({ BridgeTracker: () => null }));
 
 beforeEach(() => {
   mocks.intent = Intent.SAVINGS_INTENT;

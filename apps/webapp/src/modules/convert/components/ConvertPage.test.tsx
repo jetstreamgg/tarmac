@@ -91,6 +91,14 @@ vi.mock('./ConvertCard', () => ({
   ConvertCard: () => <div data-testid="convert-card" />
 }));
 
+// The Swap | Bridge tabs read `?tab=` from the router; the page test renders without one.
+vi.mock('@/lib/navigation', () => ({
+  useAppSearchParams: () => [new URLSearchParams(), vi.fn()]
+}));
+vi.mock('@/modules/bridge/components/BridgePanel', () => ({
+  BridgePanel: () => <div data-testid="bridge-panel" />
+}));
+
 import { ConvertPage } from './ConvertPage';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 

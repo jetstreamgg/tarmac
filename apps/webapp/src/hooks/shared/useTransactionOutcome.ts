@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useChainId, useConfig } from 'wagmi';
 import { getPublicClient } from 'wagmi/actions';
@@ -32,6 +32,37 @@ export class TransactionRevertedError extends Error {
     super('Transaction reverted on-chain.');
   }
 }
+
+/**
+ * A send refused before the wallet saw it, with a message written for the
+ * user. `final` when sending again can't succeed, so the modal offers no retry.
+ */
+export class TransactionRefusedError extends Error {
+  override name = 'TransactionRefusedError' as const;
+  readonly final: boolean;
+  constructor(message: string, { final = false }: { final?: boolean } = {}) {
+    super(message);
+    this.final = final;
+  }
+}
+
+// Per error, the user copy of a send that went out with an outcome the app can't read.
+const unconfirmedReasons = new WeakMap<object, string>();
+
+/**
+ * Marks `error` as ending a send that went out but whose outcome can't be read:
+ * it may still mine, so the modal says it isn't confirmed yet and offers no
+ * retry. `reason` is user copy. The error itself is kept, for its analytics
+ * and Sentry grouping.
+ */
+export function markUnconfirmed<E extends Error>(error: E, reason: string): E {
+  unconfirmedReasons.set(error, reason);
+  return error;
+}
+
+/** The copy `markUnconfirmed` gave `error`, if any. */
+export const unconfirmedReason = (error: unknown): string | undefined =>
+  typeof error === 'object' && error !== null ? unconfirmedReasons.get(error) : undefined;
 
 export type TransactionOutcomeState = {
   /** A hash is being watched and has no outcome yet, including while the RPC is failing. */
@@ -70,8 +101,22 @@ export type TransactionOutcomeState = {
  * The chain is fixed when a hash first appears: the wallet can switch chains
  * while the transaction is pending, and the hash only exists on the chain it
  * was sent to.
+ *
+ * `onRepriced` hears a speed-up as viem spots it, before the new hash mines.
  */
-export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?: number }) {
+export function useTransactionOutcome({
+  hash,
+  chainId,
+  onRepriced
+}: {
+  hash?: Hash;
+  chainId?: number;
+  onRepriced?: (from: Hash, to: Hash) => void;
+}) {
+  const onRepricedRef = useRef(onRepriced);
+  useEffect(() => {
+    onRepricedRef.current = onRepriced;
+  }, [onRepriced]);
   const config = useConfig();
   const currentChainId = useChainId();
   const sendChainId = chainId ?? currentChainId;
@@ -89,7 +134,10 @@ export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?
       const receipt = await waitForTransactionReceipt(client, {
         hash: hash!,
         timeout: 0,
-        onReplaced: r => (replacement = r)
+        onReplaced: r => {
+          replacement = r;
+          if (r.reason === 'repriced') onRepricedRef.current?.(hash!, r.transaction.hash);
+        }
       });
       return { receipt, replacement };
     },

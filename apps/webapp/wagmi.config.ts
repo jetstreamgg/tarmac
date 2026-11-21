@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from '@wagmi/cli';
+import type { Plugin } from '@wagmi/cli';
 import { etherscan, /*fetch as fetchPlugin,*/ react } from '@wagmi/cli/plugins';
 import { mainnet, base } from 'wagmi/chains';
 
@@ -9,6 +10,21 @@ import { mainnet, base } from 'wagmi/chains';
 // --- End ABI imports ---
 
 import { contracts, l2Contracts } from './src/hooks';
+import { withForkAliases } from './src/utils/chainId';
+
+// Adds the Tenderly fork L2 ids to the generated address maps. Done on the
+// plugin's output so the ABI cache, keyed by the source address map, still hits.
+const withForkAddresses = (plugin: Plugin): Plugin => ({
+  ...plugin,
+  async contracts() {
+    const resolved = (await plugin.contracts?.()) ?? [];
+    return resolved.map(contract =>
+      contract.address && typeof contract.address === 'object'
+        ? { ...contract, address: withForkAliases(contract.address) }
+        : contract
+    );
+  }
+});
 
 export default defineConfig(() => {
   const hookNames: string[] = [];
@@ -52,19 +68,23 @@ export default defineConfig(() => {
       }),
       // The etherscan plugin fetches ABIs for contracts which have a mainnet deployment
       // cacheDuration set to 30 days since ABIs are immutable once deployed
-      etherscan({
-        apiKey: env.ETHERSCAN_V2_API_KEY,
-        chainId: mainnet.id,
-        contracts,
-        cacheDuration: 2_592_000_000
-      }),
+      withForkAddresses(
+        etherscan({
+          apiKey: env.ETHERSCAN_V2_API_KEY,
+          chainId: mainnet.id,
+          contracts,
+          cacheDuration: 2_592_000_000
+        })
+      ),
       // This etherscan plugin fetches ABIs for L2 contracts which have a base deployment
-      etherscan({
-        apiKey: env.ETHERSCAN_V2_API_KEY,
-        chainId: base.id,
-        contracts: l2Contracts,
-        cacheDuration: 2_592_000_000
-      })
+      withForkAddresses(
+        etherscan({
+          apiKey: env.ETHERSCAN_V2_API_KEY,
+          chainId: base.id,
+          contracts: l2Contracts,
+          cacheDuration: 2_592_000_000
+        })
+      )
       // // This fetch plugin fetches ABIs for contracts deployed on the tenderly testnet
       // fetchPlugin({
       //   contracts: tenderlyContracts,

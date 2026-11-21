@@ -1,4 +1,4 @@
-import { getEtherscanLink } from './getEtherscanLink';
+import { getExplorerLink } from './getEtherscanLink';
 import { getSafeTransactionLink } from './getSafeTransactionLink';
 
 export function getTransactionLink(
@@ -9,5 +9,5 @@ export function getTransactionLink(
 ) {
   return isSafeWallet && connectedAddress
     ? getSafeTransactionLink(chainId, connectedAddress, txHash)
-    : getEtherscanLink(chainId, txHash, 'tx');
+    : getExplorerLink(chainId, txHash, 'tx');
 }

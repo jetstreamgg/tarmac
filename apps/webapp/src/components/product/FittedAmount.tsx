@@ -40,12 +40,15 @@ export function FittedAmount({
   amount,
   className,
   maxPx = MAX_PX,
+  minPx = MIN_PX,
   testId
 }: {
   amount: string;
   className?: string;
   /** For callers whose comps draw below Heading-2. Pass the matching `text-*` class too. */
   maxPx?: number;
+  /** For a slot too narrow for a long amount at the default floor. */
+  minPx?: number;
   testId?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -56,7 +59,7 @@ export function FittedAmount({
 
     const fit = () => {
       el.style.fontSize = `${maxPx}px`;
-      el.style.fontSize = `${fitFontSize({ neededPx: el.scrollWidth, availablePx: el.clientWidth, maxPx })}px`;
+      el.style.fontSize = `${fitFontSize({ neededPx: el.scrollWidth, availablePx: el.clientWidth, maxPx, minPx })}px`;
     };
     fit();
 
@@ -73,7 +76,7 @@ export function FittedAmount({
       window.removeEventListener('resize', fit);
       observer?.disconnect();
     };
-  }, [amount, maxPx]);
+  }, [amount, maxPx, minPx]);
 
   return (
     <span

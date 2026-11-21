@@ -27,13 +27,16 @@ export const AppEvents = {
   CONVERT_BLOCKED: 'app_convert_blocked',
   PROMO_IMPRESSION: 'app_promo_impression',
   PROMO_CLICKED: 'app_promo_clicked',
+  BRIDGE_TX_SENT: 'app_bridge_tx_sent',
+  BRIDGE_CLAIM_LINK_COPIED: 'app_bridge_claim_link_copied',
+  BRIDGE_LOOKUP_COMPLETED: 'app_bridge_lookup_completed',
   TRANSACTION_PREPARE_REVERTED: 'app_transaction_prepare_reverted'
 } as const;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 // 'link' = fallback for pathname-changing pushes no click handler claimed (in-page links, buttons).
-export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card' | 'link';
+export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card' | 'link' | 'tab';
 export type RedirectReason =
   | 'module_unavailable'
   | 'unknown_reward'

@@ -88,6 +88,13 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
   usdsFlagshipVault: morphoVaultRevertMessages,
   usdtRiskCapitalVault: morphoVaultRevertMessages,
   usdtSavingsVault: morphoVaultRevertMessages,
+  // USDS Bridge: ABI sources, its refusals carry their own copy
+  skyL1TokenBridgeImplementation: null,
+  skyL1TokenGatewayImplementation: null,
+  arbitrumInboxImplementation: null,
+  cctpTokenMessengerV2Implementation: null,
+  cctpMessageTransmitterV2Implementation: null,
+  cctpTokenMinterV2: null,
   // L2
   usdcL2: null,
   usdsL2: null,

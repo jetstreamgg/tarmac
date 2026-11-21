@@ -4,11 +4,57 @@ import { mockRpcCalls } from './mock-rpc-call';
 import { unmockedIpStatusHandler } from './mock-vpn-check';
 import { mockGeoConfig } from './mock-geo-config';
 import { unmockedAddressScreeningHandler } from './mock-terms-gate';
+import { isSafeServiceUrl, noSafeServiceHandler } from './mock-safe-service';
 
 type TestFixtures = {
   testAccount: `0x${string}`;
   isolatedPage: Page;
 };
+
+type FixtureLeaks = { unmockedScreenings: string[]; unmockedSafeService: string[] };
+
+/** The routes every test page gets. Any extra page (a second tab) must install them too. */
+export async function installFixtureRoutes(page: Page): Promise<FixtureLeaks> {
+  // Set up RPC call mocking (from base fixtures)
+  await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
+
+  // /ip/status never fires in the default skip-auth build; a spec that
+  // forces the checks on must register its own mock (which takes precedence
+  // over this one) — the default 500s so a forgotten mock fails closed and
+  // loudly instead of silently disarming the US signature gate.
+  await page.route('**/ip/status', unmockedIpStatusHandler);
+
+  // Serve an unrestricted geo config; the staging endpoint is unreachable
+  // from the test browser and the fetch fallback disables several modules.
+  await page.route('**/geo-config', mockGeoConfig);
+
+  // Address screening never fires in the default skip-auth build either, and
+  // a spec that forces the checks on mocks it (mockAddressScreening takes
+  // precedence). Anything reaching this handler is recorded and fails the
+  // test below: a screening leak costs a billed provider call per run.
+  const unmockedScreenings: string[] = [];
+  await page.route(/\/address\/status/, route => {
+    unmockedScreenings.push(new URL(route.request().url()).pathname);
+    return unmockedAddressScreeningHandler(route);
+  });
+
+  // No address is a Safe unless the spec calls enableSafeMode (see mock-safe-service).
+  const unmockedSafeService: string[] = [];
+  await page.route(isSafeServiceUrl, noSafeServiceHandler(unmockedSafeService));
+
+  return { unmockedScreenings, unmockedSafeService };
+}
+
+export function expectNoFixtureLeaks({ unmockedScreenings, unmockedSafeService }: FixtureLeaks) {
+  expect(
+    unmockedScreenings,
+    'address screening was requested without a mock — the skip-auth build screened, or a spec forced the checks on without mockAddressScreening'
+  ).toEqual([]);
+  expect(
+    unmockedSafeService,
+    'the Safe Transaction Service was asked for more than a Safe lookup without enableSafeMode'
+  ).toEqual([]);
+}
 
 /**
  * Parallel test fixtures with account pool management.
@@ -74,28 +120,7 @@ export const test = playwrightTest.extend<TestFixtures>({
     // Create page from context
     const page = await context.newPage();
 
-    // Set up RPC call mocking (from base fixtures)
-    await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
-
-    // /ip/status never fires in the default skip-auth build; a spec that
-    // forces the checks on must register its own mock (which takes precedence
-    // over this one) — the default 500s so a forgotten mock fails closed and
-    // loudly instead of silently disarming the US signature gate.
-    await page.route('**/ip/status', unmockedIpStatusHandler);
-
-    // Serve an unrestricted geo config; the staging endpoint is unreachable
-    // from the test browser and the fetch fallback disables several modules.
-    await page.route('**/geo-config', mockGeoConfig);
-
-    // Address screening never fires in the default skip-auth build either, and
-    // a spec that forces the checks on mocks it (mockAddressScreening takes
-    // precedence). Anything reaching this handler is recorded and fails the
-    // test below: a screening leak costs a billed provider call per run.
-    const unmockedScreenings: string[] = [];
-    await page.route(/\/address\/status/, route => {
-      unmockedScreenings.push(new URL(route.request().url()).pathname);
-      return unmockedAddressScreeningHandler(route);
-    });
+    const leaks = await installFixtureRoutes(page);
 
     // Set environment variable for server-side access (if needed)
     process.env.VITE_TEST_ACCOUNT = testAccount;
@@ -110,10 +135,7 @@ export const test = playwrightTest.extend<TestFixtures>({
     // Close context
     await context.close();
 
-    expect(
-      unmockedScreenings,
-      'address screening was requested without a mock — the skip-auth build screened, or a spec forced the checks on without mockAddressScreening'
-    ).toEqual([]);
+    expectNoFixtureLeaks(leaks);
   }
 });
 

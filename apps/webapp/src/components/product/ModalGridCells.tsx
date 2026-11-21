@@ -11,6 +11,7 @@ import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/modules/ui/hooks/useChainImage';
 import { CellFigure } from '@/components/product/CellFigure';
+import { BridgeTypeLogo, type BridgeTypeLogoKind } from './BridgeTypeLogo';
 import { RateInfo, type RateInfoType } from './RateInfo';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
 
@@ -56,6 +57,8 @@ export type ModalGridCellHints = {
   afterTone?: CellTone;
   /** Draw the 12px network (chain) icon before the value. */
   network?: boolean;
+  /** Protocol logo drawn 12px before the value, Circle's or SkyLink's (the bridge review's Bridge type). */
+  logo?: BridgeTypeLogoKind;
   /**
    * Chain for the network icon when the transaction runs on a different chain
    * than the connected one (the Pendle engine pins mainnet). Defaults to the
@@ -341,6 +344,7 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
   // deltas every other module emits.
   const iconFor = (side: 'before' | 'after') => {
     if (cell.network) return <NetworkIcon chainId={cell.networkChainId} />;
+    if (cell.logo) return <BridgeTypeLogo logo={cell.logo} />;
     if (cell.trend === 'down') {
       return <TrendingDown boxSize={12} className="text-statusError size-3 shrink-0" aria-hidden />;
     }
