@@ -3,6 +3,7 @@ import { useCurvePoolData } from './useCurvePoolData';
 import { useCurveQuote } from './useCurveQuote';
 import { useCurveRate } from './useCurveRate';
 import { STUSDS_PROVIDER_CONFIG } from './constants';
+import { STUSDS_CURVE_SUPPLY_ENABLED } from '@/lib/constants';
 import {
   StUsdsProviderType,
   StUsdsProviderStatus,
@@ -73,7 +74,8 @@ export function useCurveStUsdsProvider(
 
     // Check if there's sufficient liquidity for deposits (need stUSDS in pool)
     // When depositing USDS, we get stUSDS out, so we need stUSDS liquidity
-    const canDeposit = poolData.stUsdsReserve > MIN_LIQUIDITY_THRESHOLD;
+    // The supply route can also be switched off via VITE_STUSDS_CURVE_SUPPLY_ENABLED
+    const canDeposit = STUSDS_CURVE_SUPPLY_ENABLED && poolData.stUsdsReserve > MIN_LIQUIDITY_THRESHOLD;
 
     // Check if there's sufficient liquidity for withdrawals (need USDS in pool)
     // When withdrawing, we swap stUSDS for USDS, so we need USDS liquidity

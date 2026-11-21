@@ -20,6 +20,14 @@ vi.mock('./useCurveRate', () => ({
   useCurveRate: vi.fn()
 }));
 
+const flags = vi.hoisted(() => ({ curveSupplyEnabled: true }));
+vi.mock('@/lib/constants', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/lib/constants')>()),
+  get STUSDS_CURVE_SUPPLY_ENABLED() {
+    return flags.curveSupplyEnabled;
+  }
+}));
+
 import { useCurvePoolData } from './useCurvePoolData';
 import { useCurveQuote } from './useCurveQuote';
 import { useCurveRate } from './useCurveRate';
@@ -30,6 +38,7 @@ describe('useCurveStUsdsProvider', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    flags.curveSupplyEnabled = true;
 
     (useCurvePoolData as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
@@ -120,6 +129,35 @@ describe('useCurveStUsdsProvider', () => {
       expect(result.current.data?.state.blockedReason).toBe(
         StUsdsBlockedReason.CURVE_INSUFFICIENT_STUSDS_LIQUIDITY
       );
+    });
+
+    it('should be blocked when the Curve supply route is disabled', () => {
+      flags.curveSupplyEnabled = false;
+
+      const { result } = renderHook(() =>
+        useCurveStUsdsProvider({
+          amount: 1000n * WAD,
+          direction: StUsdsDirection.SUPPLY
+        })
+      );
+
+      expect(result.current.data?.state.status).toBe(StUsdsProviderStatus.BLOCKED);
+      expect(result.current.data?.state.canDeposit).toBe(false);
+      expect(result.current.data?.quote?.isValid).toBe(false);
+    });
+
+    it('should keep withdrawals available when the Curve supply route is disabled', () => {
+      flags.curveSupplyEnabled = false;
+
+      const { result } = renderHook(() =>
+        useCurveStUsdsProvider({
+          amount: 1000n * WAD,
+          direction: StUsdsDirection.WITHDRAW
+        })
+      );
+
+      expect(result.current.data?.state.status).toBe(StUsdsProviderStatus.AVAILABLE);
+      expect(result.current.data?.state.canWithdraw).toBe(true);
     });
   });
 
