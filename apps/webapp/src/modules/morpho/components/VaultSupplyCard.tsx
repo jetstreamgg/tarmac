@@ -15,7 +15,7 @@ import { HighRateInfo, WithdrawalsUnavailableNotice } from '@/components/product
 import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/modules/icons';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_VAULTS_URL } from '@/lib/constants';
 
 /**
  * Per-vault blurb (APP-526 item 7): the same one-liner the risk card shows,
@@ -103,7 +103,9 @@ export function VaultSupplyCard({
       }
       description={<VaultDescription vaultName={vaultName} />}
       notice={
-        withdrawalsUnavailable ? <WithdrawalsUnavailableNotice assetSymbol={assetToken.symbol} /> : undefined
+        withdrawalsUnavailable ? (
+          <WithdrawalsUnavailableNotice assetSymbol={assetToken.symbol} risksHref={USER_RISKS_VAULTS_URL} />
+        ) : undefined
       }
       stats={
         <SupplyCardStats

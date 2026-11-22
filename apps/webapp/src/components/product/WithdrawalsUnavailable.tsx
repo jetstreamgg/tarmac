@@ -3,7 +3,6 @@ import { msg } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { Info, MoveUpRight, TriangleAlert } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { USER_RISKS_URL } from '@/lib/constants';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
 /**
@@ -19,10 +18,10 @@ export const WITHDRAWALS_UNAVAILABLE_WORDING = msg`Currently unavailable (100% u
 
 const stopClick = (event: MouseEvent) => event.stopPropagation();
 
-function UnderstandTheRisksLink({ className }: { className?: string }) {
+function UnderstandTheRisksLink({ href, className }: { href: string; className?: string }) {
   return (
     <a
-      href={USER_RISKS_URL}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       onClick={stopClick}
@@ -70,7 +69,14 @@ export function WithdrawalsUnavailableBadge({ assetSymbol }: { assetSymbol: stri
  * The supply card's callout, between the blurb and the rate: the product is
  * fully lent out, with a link to the user-risks page.
  */
-export function WithdrawalsUnavailableNotice({ assetSymbol }: { assetSymbol: string }) {
+export function WithdrawalsUnavailableNotice({
+  assetSymbol,
+  risksHref
+}: {
+  assetSymbol: string;
+  /** The product's section of the user risks doc. */
+  risksHref: string;
+}) {
   return (
     <div
       className="bg-statusWarningBg border-statusWarningBorder flex items-start gap-2 rounded-lg border px-3 py-2"
@@ -82,7 +88,7 @@ export function WithdrawalsUnavailableNotice({ assetSymbol }: { assetSymbol: str
           Withdrawals are currently unavailable: all the {assetSymbol} supplied is lent out without a due date
           (100% utilization).
         </Trans>{' '}
-        <UnderstandTheRisksLink />
+        <UnderstandTheRisksLink href={risksHref} />
       </p>
     </div>
   );
@@ -124,7 +130,14 @@ export function HighRateInfo({ assetSymbol }: { assetSymbol: string }) {
 }
 
 /** Beside the Liquidity figure while utilization is at 100%. */
-export function NoLiquidityInfo({ assetSymbol }: { assetSymbol: string }) {
+export function NoLiquidityInfo({
+  assetSymbol,
+  risksHref
+}: {
+  assetSymbol: string;
+  /** The product's section of the user risks doc. */
+  risksHref: string;
+}) {
   return (
     <AlertInfoTooltip
       testId="withdrawals-unavailable-liquidity-info"
@@ -134,7 +147,7 @@ export function NoLiquidityInfo({ assetSymbol }: { assetSymbol: string }) {
             Withdrawals are currently unavailable: all the {assetSymbol} supplied is lent out (100%
             utilization).
           </Trans>{' '}
-          <UnderstandTheRisksLink />
+          <UnderstandTheRisksLink href={risksHref} />
         </>
       }
     />

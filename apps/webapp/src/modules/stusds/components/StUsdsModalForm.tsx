@@ -28,7 +28,7 @@ import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
 import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } from '../lib/providerNotice';
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
@@ -370,11 +370,7 @@ export function StUsdsModalForm({
                 <Trans>
                   I understand stUSDS is an expert module that may function differently than other modules,
                   and I have reviewed the associated{' '}
-                  <ExternalLink
-                    href="https://docs.sky.money/user-risks"
-                    showIcon={false}
-                    className="text-fgBrand"
-                  >
+                  <ExternalLink href={USER_RISKS_STUSDS_URL} showIcon={false} className="text-fgBrand">
                     User Risks
                   </ExternalLink>
                   .

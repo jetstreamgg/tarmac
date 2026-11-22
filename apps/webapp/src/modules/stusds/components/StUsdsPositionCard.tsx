@@ -27,7 +27,7 @@ import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPos
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 
 /**
  * No-position stUSDS entry card: "Supply USDS and earn X%" headline, the
@@ -90,7 +90,11 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
           Withdrawals may be delayed during periods of high utilization.
         </Trans>
       }
-      notice={withdrawalsUnavailable ? <WithdrawalsUnavailableNotice assetSymbol="USDS" /> : undefined}
+      notice={
+        withdrawalsUnavailable ? (
+          <WithdrawalsUnavailableNotice assetSymbol="USDS" risksHref={USER_RISKS_STUSDS_URL} />
+        ) : undefined
+      }
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
@@ -191,7 +195,9 @@ export function StUsdsPositionCard() {
       // No comp of its own (APP-432 item 16) — the grid follows the savings card.
       stats={
         <>
-          {withdrawalsUnavailable && <WithdrawalsUnavailableNotice assetSymbol="USDS" />}
+          {withdrawalsUnavailable && (
+            <WithdrawalsUnavailableNotice assetSymbol="USDS" risksHref={USER_RISKS_STUSDS_URL} />
+          )}
           <ProductStatPair grow>
             <ProductStat label={<Trans>Supply</Trans>}>
               {usdsIcon}
