@@ -91,7 +91,6 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
     id: row.id,
     name: row.name,
     riskProfile: row.riskProfile,
-    withdrawalsUnavailable: row.withdrawalsUnavailable,
     isNew: !unavailable && NEW_PRODUCT_IDS.includes(row.id),
     // Bare logo — the comp's iconbox holds no chain chip (1036:201236);
     // networks live in their own column.
