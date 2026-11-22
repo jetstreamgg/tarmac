@@ -28,7 +28,6 @@ import {
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { RiskTierMeter } from './RiskMeter';
 import { withdrawalWording } from './withdrawalAvailability';
-import { WITHDRAWALS_UNAVAILABLE_WORDING } from './WithdrawalsUnavailable';
 
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
@@ -267,9 +266,21 @@ function RiskTierDetailsBody({
         <FactRow label={<Trans>Liquidation risk</Trans>} value={details.liquidationRisk} />
         <FactRow
           label={<Trans>Withdrawals</Trans>}
-          value={i18n._(
-            withdrawalsUnavailable ? WITHDRAWALS_UNAVAILABLE_WORDING : withdrawalWording(profile)
-          )}
+          value={
+            withdrawalsUnavailable ? (
+              // The parenthetical drops to its own line rather than wrapping mid-phrase.
+              <>
+                <span className="block">
+                  <Trans>Currently unavailable</Trans>
+                </span>
+                <span className="block">
+                  <Trans>(100% utilization)</Trans>
+                </span>
+              </>
+            ) : (
+              i18n._(withdrawalWording(profile))
+            )
+          }
         />
       </div>
     </>
