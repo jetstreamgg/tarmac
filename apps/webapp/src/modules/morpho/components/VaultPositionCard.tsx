@@ -3,7 +3,15 @@ import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { useVaultMarketData, useErc4626VaultData, getTokenDecimals, type Token } from '@/hooks';
+import {
+  useVaultMarketData,
+  useErc4626VaultData,
+  withdrawalsUnavailableFor,
+  getTokenDecimals,
+  getVaultByAddress,
+  type Token
+} from '@/hooks';
+import { WithdrawalsUnavailableNotice } from '@/components/product/WithdrawalsUnavailable';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,6 +56,11 @@ export function VaultPositionCard({
 
   const { data: marketData, isLoading: rateLoading } = useVaultMarketData({ vaultAddress });
   const netRate = marketData?.rate?.netRate;
+  // The registry lookup only misses on an unsupported chain - no warning there.
+  const riskProfile = getVaultByAddress(vaultAddress, chainId)?.riskProfile;
+  const withdrawalsUnavailable =
+    riskProfile !== undefined &&
+    withdrawalsUnavailableFor(riskProfile, marketData?.liquidity, marketData?.totalAssets);
 
   const { data: vaultData, error: vaultError, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
 
@@ -99,6 +112,7 @@ export function VaultPositionCard({
         vaultName={vaultName}
         netRate={netRate}
         rateData={marketData?.rate}
+        withdrawalsUnavailable={withdrawalsUnavailable}
         onSupply={() => openSupply(modalArgs)}
       />
     );
@@ -133,6 +147,7 @@ export function VaultPositionCard({
       }
       stats={
         <>
+          {withdrawalsUnavailable && <WithdrawalsUnavailableNotice assetSymbol={assetToken.symbol} />}
           <ProductStatPair grow>
             {/* The comp's "Supply" is the deposited principal; with no
                 cost-basis source it restates the position balance the hero

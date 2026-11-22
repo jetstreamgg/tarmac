@@ -99,6 +99,11 @@ export type EarnProductRow = EarnProductDescriptor & {
   rate30d: EarnRate;
   tvl?: EarnUsdAmount;
   position?: EarnUsdAmount;
+  /**
+   * stUSDS / Risk Capital only: the supplied liquidity is fully lent out
+   * (100% utilization), so withdrawals are currently unavailable.
+   */
+  withdrawalsUnavailable?: boolean;
   isLoading: boolean;
   error: Error | null;
 };

@@ -161,6 +161,7 @@ export function ProductSupplyCard({
   badges,
   title,
   description,
+  notice,
   stats,
   cta,
   className,
@@ -171,6 +172,8 @@ export function ProductSupplyCard({
   title: ReactNode;
   /** Omitted by /stake, whose comp (1036:208779) carries no blurb. */
   description?: ReactNode;
+  /** A callout under the blurb (e.g. the 100%-utilization withdrawal warning). */
+  notice?: ReactNode;
   stats: ReactNode;
   /** Omitted by cards with nothing to offer — a matured market's closed state. */
   cta?: ReactNode;
@@ -203,6 +206,7 @@ export function ProductSupplyCard({
           {title}
         </h3>
         {description && <p className="text-fgSecondary text-xs leading-[18px]">{description}</p>}
+        {notice}
       </div>
       {/* Anchored to the card's bottom edge via the parent's `justify-between`:
           at natural height this is a no-op (no free space to distribute), so

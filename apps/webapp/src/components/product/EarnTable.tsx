@@ -61,6 +61,8 @@ export type EarnTableRowItem = {
    * deposits, so its risk tier is moot.
    */
   riskProfile?: EarnRiskProfileId;
+  /** Liquidity fully lent out: the risk details' Withdrawals fact reads "Currently unavailable". */
+  withdrawalsUnavailable?: boolean;
   /** Mobile expanded-card primary CTA label; defaults to "Supply". */
   ctaLabel?: ReactNode;
   rate: string;
@@ -328,7 +330,10 @@ function EarnCardList({
                               label: <Trans>Risk</Trans>,
                               value: row.riskProfile ? (
                                 <Dim dimmed={dimmed}>
-                                  <RiskTierDetailsTrigger profile={row.riskProfile} />
+                                  <RiskTierDetailsTrigger
+                                    profile={row.riskProfile}
+                                    withdrawalsUnavailable={row.withdrawalsUnavailable}
+                                  />
                                 </Dim>
                               ) : (
                                 <CellEmpty />
@@ -543,7 +548,10 @@ export function EarnTable({
               <TableCell>
                 {row.riskProfile ? (
                   <Dim dimmed={dimmed}>
-                    <RiskTierDetailsTrigger profile={row.riskProfile} />
+                    <RiskTierDetailsTrigger
+                      profile={row.riskProfile}
+                      withdrawalsUnavailable={row.withdrawalsUnavailable}
+                    />
                   </Dim>
                 ) : (
                   <CellEmpty />
