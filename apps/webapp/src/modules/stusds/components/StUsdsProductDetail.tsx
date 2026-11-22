@@ -29,7 +29,7 @@ import {
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
-import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 
 /**
  * stUSDS product detail page (D7) — composes the reusable ProductDetailTemplate,
@@ -136,7 +136,9 @@ export function StUsdsProductDetail() {
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
-      info: withdrawalsUnavailable ? <NoLiquidityInfo assetSymbol="USDS" /> : undefined,
+      info: withdrawalsUnavailable ? (
+        <NoLiquidityInfo assetSymbol="USDS" risksHref={USER_RISKS_STUSDS_URL} />
+      ) : undefined,
       // Real value (unlike Savings' "Unlimited") — module TVL minus what the
       // staking engine has borrowed; withdrawals above it route through Curve.
       value:
@@ -173,7 +175,7 @@ export function StUsdsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: USER_RISKS_URL
+        learnMoreHref: USER_RISKS_STUSDS_URL
       }}
       transactions={<StUsdsTransactionsTable />}
       transactionsTitle={<Trans>All transactions</Trans>}

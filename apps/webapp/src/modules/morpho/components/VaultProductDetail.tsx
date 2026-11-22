@@ -25,7 +25,7 @@ import { VaultPositionCard } from './VaultPositionCard';
 import { VaultTransactionsTable } from './VaultTransactionsTable';
 import { VaultRateBreakdown } from './VaultRateBreakdown';
 import { trailing30DayRate } from '../helpers/vaultRates';
-import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_VAULTS_URL } from '@/lib/constants';
 
 /**
  * About copy per vault (APP-526), keyed by the config name - the one stable,
@@ -134,7 +134,9 @@ export function VaultProductDetail({
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
-      info: withdrawalsUnavailable ? <NoLiquidityInfo assetSymbol={assetSymbol} /> : undefined,
+      info: withdrawalsUnavailable ? (
+        <NoLiquidityInfo assetSymbol={assetSymbol} risksHref={USER_RISKS_VAULTS_URL} />
+      ) : undefined,
       value: marketData?.liquidity !== undefined ? formatWholeUsd(marketData.liquidity, decimals) : NO_VALUE
     },
     {
@@ -179,7 +181,7 @@ export function VaultProductDetail({
       }
       details={details}
       afterDetails={{ title: <Trans>Strategy</Trans>, body: <VaultStrategy vaultAddress={vaultAddress} /> }}
-      about={{ body: VAULT_ABOUT[vault.name] ?? NO_VALUE, learnMoreHref: USER_RISKS_URL }}
+      about={{ body: VAULT_ABOUT[vault.name] ?? NO_VALUE, learnMoreHref: USER_RISKS_VAULTS_URL }}
       transactions={<VaultTransactionsTable vaultAddress={vaultAddress} />}
     />
   );

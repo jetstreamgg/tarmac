@@ -30,7 +30,7 @@ import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_VAULTS_URL } from '@/lib/constants';
 
 /**
  * Position-aware action card for the vault product page (ProductDetailTemplate
@@ -147,7 +147,9 @@ export function VaultPositionCard({
       }
       stats={
         <>
-          {withdrawalsUnavailable && <WithdrawalsUnavailableNotice assetSymbol={assetToken.symbol} />}
+          {withdrawalsUnavailable && (
+            <WithdrawalsUnavailableNotice assetSymbol={assetToken.symbol} risksHref={USER_RISKS_VAULTS_URL} />
+          )}
           <ProductStatPair grow>
             {/* The comp's "Supply" is the deposited principal; with no
                 cost-basis source it restates the position balance the hero
