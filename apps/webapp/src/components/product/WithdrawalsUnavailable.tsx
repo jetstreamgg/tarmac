@@ -14,7 +14,7 @@ import { InfoTooltip } from '@/components/InfoTooltip';
  * so everything clears on its own once liquidity returns.
  */
 
-/** The risk-details / review-grid Withdrawals fact while liquidity is exhausted. */
+/** The review-grid Withdrawals cell while liquidity is exhausted (risk details split it over two lines). */
 export const WITHDRAWALS_UNAVAILABLE_WORDING = msg`Currently unavailable (100% utilization)`;
 
 const stopClick = (event: MouseEvent) => event.stopPropagation();
