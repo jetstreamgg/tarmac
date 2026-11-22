@@ -12,13 +12,15 @@ import {
   useProductNetworks,
   useStUsdsCapacityData,
   useStUsdsChartInfo,
-  useStUsdsData
+  useStUsdsData,
+  withdrawalsUnavailableFor
 } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
+import { HighRateInfo, NoLiquidityInfo } from '@/components/product/WithdrawalsUnavailable';
 import {
   ProductDetailTemplate,
   ProductDetailRow,
@@ -43,6 +45,11 @@ export function StUsdsProductDetail() {
   const { data: capacityData, isLoading: capacityLoading } = useStUsdsCapacityData();
   const { data: overall, isLoading: overallLoading } = useOverallSkyData();
   const { data: chartInfo, isLoading: chartLoading } = useStUsdsChartInfo();
+  const withdrawalsUnavailable = withdrawalsUnavailableFor(
+    'stusds',
+    stUsdsData?.availableLiquidity,
+    stUsdsData?.totalAssets
+  );
 
   const currentRate = (
     <DetailValue
@@ -98,7 +105,7 @@ export function StUsdsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="stusds" />,
+      info: withdrawalsUnavailable ? <HighRateInfo assetSymbol="USDS" /> : <RateInfo type="stusds" />,
       value: currentRate
     },
     {
@@ -113,7 +120,7 @@ export function StUsdsProductDetail() {
       label: <Trans>Risk profile</Trans>,
       // Tier + copy resolve through the profile registry (RISK_TIER_BY_PROFILE,
       // BL-07), so the marketplace and this page can't diverge.
-      value: <RiskTierDetailsTrigger profile="stusds" />
+      value: <RiskTierDetailsTrigger profile="stusds" withdrawalsUnavailable={withdrawalsUnavailable} />
     },
     {
       id: 'tvl',
@@ -125,6 +132,7 @@ export function StUsdsProductDetail() {
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
+      info: withdrawalsUnavailable ? <NoLiquidityInfo assetSymbol="USDS" /> : undefined,
       // Real value (unlike Savings' "Unlimited") — module TVL minus what the
       // staking engine has borrowed; withdrawals above it route through Curve.
       value:

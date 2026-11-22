@@ -29,6 +29,7 @@ import {
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { RiskTierMeter } from './RiskMeter';
 import { withdrawalWording } from './withdrawalAvailability';
+import { WITHDRAWALS_UNAVAILABLE_WORDING } from './WithdrawalsUnavailable';
 
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
@@ -231,7 +232,15 @@ function FactRow({ label, value }: { label: ReactNode; value: ReactNode }) {
 }
 
 /** Scale + description + divider + fact rows — shared by the tooltip card and the bottom sheet. */
-function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: EarnRiskProfileId }) {
+function RiskTierDetailsBody({
+  tier,
+  profile,
+  withdrawalsUnavailable
+}: {
+  tier: EarnRiskTier;
+  profile: EarnRiskProfileId;
+  withdrawalsUnavailable?: boolean;
+}) {
   const { i18n } = useLingui();
   const severity = RISK_TIER_DETAILS[tier];
   const details = RISK_PROFILE_DETAILS[profile];
@@ -258,7 +267,12 @@ function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: E
           value={<ExposureFactValue symbols={details.exposureTokens} />}
         />
         <FactRow label={<Trans>Liquidation risk</Trans>} value={details.liquidationRisk} />
-        <FactRow label={<Trans>Withdrawals</Trans>} value={i18n._(withdrawalWording(profile))} />
+        <FactRow
+          label={<Trans>Withdrawals</Trans>}
+          value={i18n._(
+            withdrawalsUnavailable ? WITHDRAWALS_UNAVAILABLE_WORDING : withdrawalWording(profile)
+          )}
+        />
       </div>
     </>
   );
@@ -274,10 +288,13 @@ function RiskTierDetailsBody({ tier, profile }: { tier: EarnRiskTier; profile: E
 export function RiskTierDetailsCard({
   tier,
   profile,
+  withdrawalsUnavailable,
   className
 }: {
   tier: EarnRiskTier;
   profile: EarnRiskProfileId;
+  /** Liquidity is fully lent out: the Withdrawals fact reads "Currently unavailable". */
+  withdrawalsUnavailable?: boolean;
   className?: string;
 }) {
   return (
@@ -290,7 +307,7 @@ export function RiskTierDetailsCard({
           {RISK_TIER_DETAILS[tier].title}
         </span>
       </div>
-      <RiskTierDetailsBody tier={tier} profile={profile} />
+      <RiskTierDetailsBody tier={tier} profile={profile} withdrawalsUnavailable={withdrawalsUnavailable} />
       <div className="border-borderPrimary w-full border-b" />
       <a
         href={USER_RISKS_URL}
@@ -314,9 +331,12 @@ export function RiskTierDetailsCard({
  */
 export function RiskTierDetailsTrigger({
   profile,
+  withdrawalsUnavailable,
   className
 }: {
   profile: EarnRiskProfileId;
+  /** Liquidity is fully lent out: the Withdrawals fact reads "Currently unavailable". */
+  withdrawalsUnavailable?: boolean;
   className?: string;
 }) {
   // The tier always resolves through the registry map so no surface (row,
@@ -379,7 +399,11 @@ export function RiskTierDetailsTrigger({
                 </Button>
               </ResponsiveModalClose>
             </div>
-            <RiskTierDetailsBody tier={tier} profile={profile} />
+            <RiskTierDetailsBody
+              tier={tier}
+              profile={profile}
+              withdrawalsUnavailable={withdrawalsUnavailable}
+            />
             <Button variant="secondary" size="m" className="mt-1 w-full" asChild>
               <a href={USER_RISKS_URL} target="_blank" rel="noopener noreferrer">
                 <Trans>Learn more about risk</Trans>
@@ -409,7 +433,12 @@ export function RiskTierDetailsTrigger({
         </TooltipTrigger>
         <TooltipPortal>
           <TooltipContent onClick={stopRowClick}>
-            <RiskTierDetailsCard tier={tier} profile={profile} className="w-[228px]" />
+            <RiskTierDetailsCard
+              tier={tier}
+              profile={profile}
+              withdrawalsUnavailable={withdrawalsUnavailable}
+              className="w-[228px]"
+            />
           </TooltipContent>
         </TooltipPortal>
       </Tooltip>
