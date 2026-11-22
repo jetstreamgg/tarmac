@@ -120,7 +120,7 @@ export function StUsdsProductDetail() {
       label: <Trans>Risk profile</Trans>,
       // Tier + copy resolve through the profile registry (RISK_TIER_BY_PROFILE,
       // BL-07), so the marketplace and this page can't diverge.
-      value: <RiskTierDetailsTrigger profile="stusds" withdrawalsUnavailable={withdrawalsUnavailable} />
+      value: <RiskTierDetailsTrigger profile="stusds" />
     },
     {
       id: 'tvl',
