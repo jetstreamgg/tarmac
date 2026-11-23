@@ -8,6 +8,7 @@ import {
   useStUsdsData,
   useStUsdsProviderSelection,
   useStUsdsWithdrawBalances,
+  withdrawalsUnavailableFor,
   type StUsdsProviderSelectionResult
 } from '@/hooks';
 import { calculateApyFromStr, formatNumber } from '@/utils';
@@ -55,6 +56,8 @@ export interface StUsdsTransactionForm {
   rate: number | undefined;
   /** USDS-denominated position value, for the entry grid's before→after deltas. */
   position: bigint;
+  /** 100% utilization: module liquidity is fully lent out (comms warnings). */
+  withdrawalsUnavailable?: boolean;
   engineParams: StUsdsEngineParams;
   providerSelection: StUsdsProviderSelectionResult;
   /** Price impact of the selected Curve quote (bps). */
@@ -285,6 +288,11 @@ export function useStUsdsTransactionForm({
     amountReady,
     rate,
     position: stUsdsData?.userSuppliedUsds ?? 0n,
+    withdrawalsUnavailable: withdrawalsUnavailableFor(
+      'stusds',
+      stUsdsData?.availableLiquidity,
+      stUsdsData?.totalAssets
+    ),
     engineParams,
     providerSelection,
     priceImpactBps,

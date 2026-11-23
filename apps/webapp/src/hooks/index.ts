@@ -139,6 +139,7 @@ export {
   RISK_TIER_BY_PROFILE
 } from './earn/earnProducts';
 export { useProductNetworks } from './earn/useProductNetworks';
+export { isLiquidityExhausted, withdrawalsUnavailableFor } from './earn/withdrawalsUnavailable';
 export type {
   EarnProductKind,
   EarnRiskProfileId,

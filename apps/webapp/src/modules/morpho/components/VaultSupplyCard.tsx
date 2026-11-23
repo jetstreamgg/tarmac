@@ -11,10 +11,11 @@ import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
 import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';
+import { HighRateInfo, WithdrawalsUnavailableNotice } from '@/components/product/WithdrawalsUnavailable';
 import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/modules/icons';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_VAULTS_URL } from '@/lib/constants';
 
 /**
  * Per-vault blurb (APP-526 item 7): the same one-liner the risk card shows,
@@ -57,6 +58,7 @@ export function VaultSupplyCard({
   vaultName,
   netRate,
   rateData,
+  withdrawalsUnavailable,
   onSupply
 }: {
   assetToken: Token;
@@ -65,6 +67,8 @@ export function VaultSupplyCard({
   netRate?: number;
   /** Full rate breakdown; drives the stars mark and its tooltip. */
   rateData?: MorphoVaultRateData;
+  /** Liquidity fully lent out (100% utilization): warn above the rate and explain it. */
+  withdrawalsUnavailable?: boolean;
   onSupply: () => void;
 }) {
   const chainId = useChainId();
@@ -98,6 +102,11 @@ export function VaultSupplyCard({
         </Trans>
       }
       description={<VaultDescription vaultName={vaultName} />}
+      notice={
+        withdrawalsUnavailable ? (
+          <WithdrawalsUnavailableNotice assetSymbol={assetToken.symbol} risksHref={USER_RISKS_VAULTS_URL} />
+        ) : undefined
+      }
       stats={
         <SupplyCardStats
           rate={rate}
@@ -113,7 +122,11 @@ export function VaultSupplyCard({
                 {rate}
                 {hasRateBreakdown(rateData) && <VaultRateMark className="text-statusInfoSolid" />}
               </VaultRateTooltip>
-              <RateInfo type="morpho" />
+              {withdrawalsUnavailable ? (
+                <HighRateInfo assetSymbol={assetToken.symbol} />
+              ) : (
+                <RateInfo type="morpho" />
+              )}
             </>
           }
           idle={idleBalance}
