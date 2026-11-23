@@ -29,7 +29,8 @@ export function StakeTakeoverStakeCard({
   minStakeLoading,
   minStakeReached,
   error,
-  rewardPicker
+  rewardPicker,
+  notice
 }: {
   amount: bigint;
   onAmountChange: (amount: bigint) => void;
@@ -52,6 +53,8 @@ export function StakeTakeoverStakeCard({
   error?: string;
   /** The reward token block rendered between the amount and the stat rows. */
   rewardPicker?: ReactNode;
+  /** A prepare failure about this card's input, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const onPercentClick = (percent: number) => {
     if (balance === undefined) return;
@@ -59,7 +62,12 @@ export function StakeTakeoverStakeCard({
   };
 
   return (
-    <StakeTakeoverCard step={1} title={<Trans>Stake SKY</Trans>} dataTestId="stake-takeover-stake-card">
+    <StakeTakeoverCard
+      step={1}
+      title={<Trans>Stake SKY</Trans>}
+      dataTestId="stake-takeover-stake-card"
+      notice={notice}
+    >
       <div className="flex flex-col gap-6 md:gap-8">
         <div className="flex flex-col gap-6 md:gap-5">
           <div className="flex flex-col gap-2 md:gap-3">
@@ -90,8 +98,6 @@ export function StakeTakeoverStakeCard({
                 <Trans>Min. stake to borrow</Trans>
                 <InfoTooltip
                   title={t`Minimum stake to borrow`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={
                     minStakeToBorrow !== undefined
                       ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
@@ -139,7 +145,7 @@ export function StakeTakeoverStakeCard({
             label={
               <>
                 <Trans>Staking Rewards Rate</Trans>
-                <RateInfo type="srr" size={12} />
+                <RateInfo type="srr" />
               </>
             }
             current={rewardsRate ?? (rateLoading ? <Skeleton className="h-4 w-14" /> : NO_VALUE)}

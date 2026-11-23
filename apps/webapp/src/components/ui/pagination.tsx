@@ -14,8 +14,10 @@ import { cn } from '@/lib/cn';
  *   ring flush against the edge. The ellipsis is the same base at 24px, radius
  *   8, in fg-quaternary.
  * - `_pagination arrow` (5984:10367): a 32px bordered circle around a 24px
- *   chevron. The DS draws its hover identical to default; focus is the 2px
- *   fg-brand-primary ring one pixel off the edge.
+ *   chevron. The DS draws its hover identical to default; focus is a 2px ring
+ *   one pixel off the edge. The DS strokes it in fg-brand-primary, unlike the
+ *   number base beside it; it takes the app's one focus ring instead, which
+ *   is that same colour in light mode (APP-582).
  * - The component itself: arrows 24px from the number group on web (gap 2px
  *   between numbers), and on mobile a "Page 1 of 10" Label 6 pill between the
  *   arrows instead of the list, 16px apart. `PaginationContent` hides below
@@ -80,7 +82,7 @@ PaginationLink.displayName = 'PaginationLink';
 
 /** `_pagination arrow`: the bordered chevron circle. */
 const arrowClasses =
-  'border-glassBorder hover:bg-glassBadge border focus-visible:outline-offset-1 focus-visible:outline-fgBrand disabled:border-glassBadge';
+  'border-glassBorder hover:bg-glassBadge border focus-visible:outline-offset-1 focus-visible:outline-focusRing disabled:border-glassBadge';
 
 const PaginationPrevious = ({ className, ...props }: React.ComponentProps<'button'>) => (
   <button

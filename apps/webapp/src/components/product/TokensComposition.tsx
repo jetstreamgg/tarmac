@@ -236,7 +236,7 @@ function Label({
   children: ReactNode;
 }) {
   const classes = cn(
-    'flex min-w-0 items-center gap-1.5 text-sm transition-colors duration-150',
+    'flex min-w-0 items-center gap-1.5 rounded-xs text-sm transition-colors duration-150 focus-visible:outline-focusRing focus-visible:outline-2 focus-visible:outline-offset-2',
     active
       ? 'text-text font-circle leading-4 font-medium tracking-[-0.28px]'
       : cn('font-graphik leading-[22px]', dimmed ? 'text-fgQuaternary' : 'text-fgSecondary')

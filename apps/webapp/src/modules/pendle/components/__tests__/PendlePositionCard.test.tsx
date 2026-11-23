@@ -1,8 +1,9 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
+import { chainId, forkChainId } from '@/utils/chainId';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -22,14 +23,15 @@ const MARKET: PendleMarketConfig = {
 };
 
 const h = vi.hoisted(() => ({
+  chainId: 1,
+  balanceChainIds: [] as (number | undefined)[],
   connected: true,
   ptBalance: 0n as bigint,
   walletBalance: 0n as bigint,
   // The API's expiry stat — display-only (dates, progress). The matured
   // branch keys on the registry's market.expiry, so these specs reach it by
   // rendering a market config with a past expiry instead.
-  expirySec: undefined as number | undefined,
-  earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined }
+  expirySec: undefined as number | undefined
 }));
 
 const openSupply = vi.fn();
@@ -46,7 +48,7 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChains: () => [{ id: 1, name: 'Ethereum' }],
-    useChainId: () => 1,
+    useChainId: () => h.chainId,
     useConnection: () => ({
       address: h.connected ? '0x000000000000000000000000000000000000beef' : undefined,
       isConnected: h.connected
@@ -72,20 +74,15 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false }),
-    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
-    usePendleMaturedPositionEarnings: () => h.earnings
+    useTokenBalance: ({ chainId }: { chainId?: number }) => {
+      h.balanceChainIds.push(chainId);
+      return { data: { value: h.walletBalance }, isLoading: false };
+    }
   };
 });
 
 vi.mock('../../hooks/usePendleRedeemModal', () => ({
-  usePendleRedeemModal: () => ({ openRedeemModal, isRedeemable: true, isPrepared: true, ptBalance: 0n })
-}));
-
-// The mainnet auto-switch pulls navigation/network-switch contexts — covered
-// by usePendleMaturedPositions.test.
-vi.mock('../../hooks/usePendleMaturedPositions', () => ({
-  usePendleMaturedNetworkSwitch: () => undefined
+  usePendleRedeemModal: () => ({ openRedeemModal, isRedeemable: true, ptBalance: 0n })
 }));
 
 vi.mock('../../hooks/usePendleModal', () => ({
@@ -140,16 +137,26 @@ const wrap = (market: PendleMarketConfig = MARKET) => (
 
 const renderCard = (market?: PendleMarketConfig) => render(wrap(market));
 
+// Before MARKET's 26 Nov 2026 expiry, so the live-market specs keep passing after that date.
+const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
+
 describe('PendlePositionCard', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
     vi.useRealTimers();
+    vi.unstubAllEnvs();
+    h.chainId = 1;
+    h.balanceChainIds = [];
     h.connected = true;
     h.ptBalance = 0n;
     h.walletBalance = 0n;
     h.expirySec = undefined;
-    h.earnings = { earnings: 184.8, currency: 'USDS' };
   });
 
   it('shows the supply CTA card with the current rate when the user has no position', () => {
@@ -162,6 +169,18 @@ describe('PendlePositionCard', () => {
     expect(screen.queryByTestId('pendle-position-card')).toBeNull();
   });
 
+  it.each(Object.entries(forkChainId))(
+    'reads the wallet USDS on the Ethereum fork from fork %s, never real mainnet',
+    (_, id) => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+      h.chainId = id;
+      renderCard();
+
+      expect(h.balanceChainIds.length).toBeGreaterThan(0);
+      expect(h.balanceChainIds.every(read => read === chainId.tenderly)).toBe(true);
+    }
+  );
+
   it('opens the supply modal from the CTA', () => {
     renderCard();
 
@@ -171,6 +190,7 @@ describe('PendlePositionCard', () => {
 
   it('keeps the CTA enabled while disconnected and routes the click into the connect flow', () => {
     vi.useFakeTimers();
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
     h.connected = false;
     const view = renderCard();
 
@@ -213,22 +233,24 @@ describe('PendlePositionCard', () => {
     // market.expiry); the API stat only feeds display labels.
     const MATURED_MARKET: PendleMarketConfig = { ...MARKET, expiry: MATURED_SEC };
 
-    it('shows the claim card with the accrued figure and ready-to-withdraw copy', () => {
+    it('mirrors the live card: PT hero, accrued, claim amount and an ended rate', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 100_184n * 10n ** 18n;
       renderCard(MATURED_MARKET);
 
       const card = screen.getByTestId('pendle-matured-position-card');
       expect(card.textContent).toContain('100,184');
-      expect(card.textContent).toContain('Accrued');
-      expect(card.textContent).toContain('184.8');
-      expect(card.textContent).toContain('ready to withdraw');
-      // The figure is the redeem preview, denominated in the underlying — not
-      // USDS, even on a pegged market.
-      const heroSymbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]'))
-        .slice(0, 2)
-        .map(el => el.getAttribute('data-symbol'));
-      expect(heroSymbols).toEqual(['USDG', 'USDG']);
+      expect(card.textContent).toContain('Accrued to date');
+      expect(screen.getByTestId('pendle-accrued-to-date')).toBeTruthy();
+      expect(card.textContent).toContain("You'll claim");
+      expect(card.textContent).toContain('Ended');
+      expect(card.textContent).toContain('Your position matured on');
+      // Same symbols as the live card: the PT on the hero, USDS (pegged) on the claim.
+      const symbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]')).map(el =>
+        el.getAttribute('data-symbol')
+      );
+      expect(symbols).toContain('PT-USDG');
+      expect(symbols).toContain('USDS');
       // The active-position actions are gone — claiming is the only move.
       expect(screen.queryByTestId('pendle-position-supply')).toBeNull();
       expect(screen.queryByTestId('pendle-position-withdraw')).toBeNull();
@@ -241,17 +263,6 @@ describe('PendlePositionCard', () => {
 
       fireEvent.click(screen.getByTestId('pendle-matured-redeem-button'));
       expect(openRedeemModal).toHaveBeenCalledTimes(1);
-    });
-
-    it('falls back to the deposit-only line when earnings are unavailable', () => {
-      h.expirySec = MATURED_SEC;
-      h.ptBalance = 100_184n * 10n ** 18n;
-      h.earnings = { earnings: undefined, currency: undefined };
-      renderCard(MATURED_MARKET);
-
-      const card = screen.getByTestId('pendle-matured-position-card');
-      expect(card.textContent).toContain('Your deposit is ready to withdraw');
-      expect(card.textContent).not.toContain('in yield');
     });
 
     it('shows the closed-market state — never the supply pitch — when a connected user holds nothing', () => {

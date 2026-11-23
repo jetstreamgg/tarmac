@@ -12,13 +12,15 @@ import {
   useProductNetworks,
   useStUsdsCapacityData,
   useStUsdsChartInfo,
-  useStUsdsData
+  useStUsdsData,
+  withdrawalsUnavailableFor
 } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
+import { HighRateInfo, NoLiquidityInfo } from '@/components/product/WithdrawalsUnavailable';
 import {
   ProductDetailTemplate,
   ProductDetailRow,
@@ -27,7 +29,7 @@ import {
 import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
-import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 
 /**
  * stUSDS product detail page (D7) — composes the reusable ProductDetailTemplate,
@@ -43,6 +45,11 @@ export function StUsdsProductDetail() {
   const { data: capacityData, isLoading: capacityLoading } = useStUsdsCapacityData();
   const { data: overall, isLoading: overallLoading } = useOverallSkyData();
   const { data: chartInfo, isLoading: chartLoading } = useStUsdsChartInfo();
+  const withdrawalsUnavailable = withdrawalsUnavailableFor(
+    'stusds',
+    stUsdsData?.availableLiquidity,
+    stUsdsData?.totalAssets
+  );
 
   const currentRate = (
     <DetailValue
@@ -98,7 +105,7 @@ export function StUsdsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="stusds" size={12} />,
+      info: withdrawalsUnavailable ? <HighRateInfo assetSymbol="USDS" /> : <RateInfo type="stusds" />,
       value: currentRate
     },
     {
@@ -125,6 +132,9 @@ export function StUsdsProductDetail() {
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
+      info: withdrawalsUnavailable ? (
+        <NoLiquidityInfo assetSymbol="USDS" risksHref={USER_RISKS_STUSDS_URL} />
+      ) : undefined,
       // Real value (unlike Savings' "Unlimited") — module TVL minus what the
       // staking engine has borrowed; withdrawals above it route through Curve.
       value:
@@ -161,7 +171,7 @@ export function StUsdsProductDetail() {
       details={details}
       about={{
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
-        learnMoreHref: USER_RISKS_URL
+        learnMoreHref: USER_RISKS_STUSDS_URL
       }}
       transactions={<StUsdsTransactionsTable />}
       transactionsTitle={<Trans>All transactions</Trans>}

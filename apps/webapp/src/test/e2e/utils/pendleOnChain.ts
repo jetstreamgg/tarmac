@@ -76,10 +76,22 @@ export async function advanceChainPastPendleExpiry(
 
 /** Pendle UI maturity uses `Date.now()` — freeze one day past expiry before goto. */
 export async function installPendleUiMaturity(page: Page, expirySec = PT_SUSDS_EXPIRY_SEC): Promise<void> {
+  await freezePageDate(page, expirySec + 86_400);
+}
+
+/** Freeze the UI clock 30 days before expiry so live-market specs keep passing after the real expiry. */
+export async function installPendleUiBeforeMaturity(
+  page: Page,
+  expirySec = PT_SUSDS_EXPIRY_SEC
+): Promise<void> {
+  await freezePageDate(page, expirySec - 30 * 86_400);
+}
+
+async function freezePageDate(page: Page, atSec: number): Promise<void> {
   // Prefer Date override over page.clock — fake clocks freeze timers and stall
   // React Query / wagmi settlement on Portfolio.
-  await page.addInitScript(expiry => {
-    const frozenMs = (expiry + 86_400) * 1000;
+  await page.addInitScript(sec => {
+    const frozenMs = sec * 1000;
     const RealDate = Date;
     class FrozenDate extends RealDate {
       constructor(...args: ConstructorParameters<typeof Date> | []) {
@@ -96,7 +108,7 @@ export async function installPendleUiMaturity(page: Page, expirySec = PT_SUSDS_E
     });
     // Browser init script — FrozenDate only needs now() + construction override.
     (globalThis as any).Date = FrozenDate;
-  }, expirySec);
+  }, atSec);
 }
 
 /** Stage UI clock + chain warp + on-chain PT balance for matured Portfolio e2e. */

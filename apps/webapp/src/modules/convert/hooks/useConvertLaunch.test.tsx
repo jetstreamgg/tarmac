@@ -218,6 +218,20 @@ describe('useConvertLaunch', () => {
     expect(callerSuccess).toHaveBeenCalledTimes(1);
   });
 
+  it('getDispatchBlocked reads the live engine guard after launch', () => {
+    const { result, rerender } = renderHook(() =>
+      useConvertLaunch({ direction: 'USDC_TO_USDS', amount: AMOUNT_USDS })
+    );
+
+    act(() => result.current.launch());
+    const config = h.launchMock.mock.calls[0][0];
+    expect(config.getDispatchBlocked()).toBe(false);
+
+    h.disabledReason = 'non_zero_fee';
+    rerender();
+    expect(config.getDispatchBlocked()).toBe(true);
+  });
+
   it.each([
     ['zero amount', () => ({ amount: 0n }), {}],
     ['engine guard', () => ({}), { disabledReason: 'insufficient_liquidity' }],

@@ -208,6 +208,34 @@ describe('deriveTransactionStepItems — wallet rejection', () => {
 });
 
 describe('deriveTransactionStepItems — bundled flow', () => {
+  it('an unknown outcome collapses the same way on a list not drawn as a bundle (APP-651)', () => {
+    const items = deriveTransactionStepItems({
+      steps: supplySteps,
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      outcomeUnknown: true
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ label: 'Transaction status unknown', state: 'failed' });
+    expect(items.some(item => item.retry)).toBe(false);
+  });
+
+  it('a bundle the wallet lost track of collapses to one "status unknown" row, with no retry (APP-651)', () => {
+    const items = deriveTransactionStepItems({
+      steps: [{ label: 'Accept terms', kind: 'signature' as const }, ...supplySteps],
+      currentStep: 1,
+      txStatus: TxStatus.ERROR,
+      bundled: true,
+      outcomeUnknown: true
+    });
+    expect(items).toHaveLength(2);
+    expect(items[0]).toMatchObject({ label: 'Accept terms', state: 'completed' });
+    expect(items[1]).toMatchObject({ label: 'Transaction status unknown', state: 'failed' });
+    expect(items[1].description).toMatch(/may still have gone through/);
+    expect(items.some(item => item.retry)).toBe(false);
+  });
+
   it('marks every step active while the bundle is in flight, completed together on success', () => {
     const inFlight = deriveTransactionStepItems({
       steps: supplySteps,
@@ -379,5 +407,54 @@ describe('deriveTransactionStepItems — signature step, bundled flow', () => {
       expect.objectContaining({ stepNumber: 2, label: 'Transaction failed', state: 'failed' }),
       expect.objectContaining({ stepNumber: 3, label: '', state: 'active', retry: 'slot' })
     ]);
+  });
+});
+
+describe('deriveTransactionStepItems — contract revert reason (APP-663)', () => {
+  const reason = 'Your position is below the required collateralization ratio.';
+
+  it('replaces the rollback sentence with the reason, keeping the step consequence', () => {
+    const items = deriveTransactionStepItems({
+      steps: [{ label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }],
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      failureReason: reason
+    });
+    expect(items[0]).toEqual(
+      expect.objectContaining({ state: 'failed', description: `${reason} The SKY hasn't been staked.` })
+    );
+  });
+
+  it('carries the reason on a bundled failure', () => {
+    const items = deriveTransactionStepItems({
+      steps: supplySteps,
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: true,
+      failureReason: reason
+    });
+    expect(items[0]).toEqual(expect.objectContaining({ label: 'Transaction failed', description: reason }));
+  });
+
+  it('is ignored for a wallet Reject and for a failed signature', () => {
+    const rejected = deriveTransactionStepItems({
+      steps: supplySteps,
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      userRejected: true,
+      failureReason: reason
+    });
+    expect(rejected[0].description).toBe('You declined the request in your wallet. Nothing was sent.');
+
+    const signature = deriveTransactionStepItems({
+      steps: [{ label: 'Sign terms', kind: 'signature' }, ...supplySteps],
+      currentStep: 0,
+      txStatus: TxStatus.ERROR,
+      bundled: false,
+      failureReason: reason
+    });
+    expect(signature[0].description).toBe('The signature request was declined or could not be completed.');
   });
 });

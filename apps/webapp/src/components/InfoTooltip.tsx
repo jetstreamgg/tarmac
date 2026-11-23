@@ -1,92 +1,71 @@
-import { Info, X } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
-import { useIsTouchDevice } from '@/hooks';
+import type { ComponentPropsWithRef, ReactElement, ReactNode } from 'react';
+import { Info } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { ResponsiveTooltip } from './ui/tooltip';
 
-// The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).
-const TRIGGER_CLASS =
-  'focus-visible:ring-focusRing rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
+// The one info glyph every tooltip trigger wears (Figma Icons/General/info,
+// 12px): fg-secondary with no hover effect, and the DS focus ring rather
+// than the browser outline (Design QA 3314:135504). Callers don't pick its
+// size — only a semantic color override (e.g. an error notice).
+const GLYPH_TRIGGER_CLASS =
+  'focus-visible:ring-focusRing text-fgSecondary z-10 inline-flex shrink-0 rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
+
+/** The info glyph button, for triggers that wrap `ResponsiveTooltip` directly. */
+export function InfoGlyph({ className, ...props }: ComponentPropsWithRef<'button'>) {
+  return (
+    <button
+      type="button"
+      aria-label="Show additional information"
+      className={cn(GLYPH_TRIGGER_CLASS, className)}
+      {...props}
+    >
+      <Info className="size-3" aria-hidden />
+    </button>
+  );
+}
 
 /**
- * Info glyph opening the design-system Tooltip (Figma 5043:58210). Desktop
- * hovers the Radix tooltip; touch devices, which can't hover, tap a Popover
- * wearing the same chrome. Body-only is the Simple type; pass `title` for the
- * Default type (5043:58197): Label 5 heading over fg-secondary body copy.
+ * Body of the design-system Tooltip: body-only is the Simple type (5043:58208);
+ * with a `title` it is the Default type (5043:58197) — a Label 5 heading over
+ * fg-secondary body copy, 8px apart.
+ */
+export function TooltipBody({ title, children }: { title?: ReactNode; children: ReactNode }) {
+  // Non-string children (e.g. copy with a parsed markdown link, a fragment of
+  // text runs and anchors) get one block, so under a title they stay a single
+  // paragraph instead of becoming separate items of the flex column.
+  const body = typeof children === 'string' ? <p>{children}</p> : <div>{children}</div>;
+  if (!title) return body;
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">{title}</p>
+      {body}
+    </div>
+  );
+}
+
+/**
+ * Info glyph (or a custom `trigger`) opening the design-system Tooltip (Figma
+ * 5043:58210): hover on pointer devices, tap on touch — see `ResponsiveTooltip`.
  */
 export function InfoTooltip({
   title,
   content,
-  contentClassname,
   iconClassName,
-  iconSize = 13,
-  shouldShowCloseButton = false
+  trigger
 }: {
-  title?: React.ReactNode;
-  content: string | React.ReactNode;
-  contentClassname?: string;
+  title?: ReactNode;
+  content: ReactNode;
+  /** Semantic color override for the glyph (its size is fixed). */
   iconClassName?: string;
-  iconSize?: number;
-  shouldShowCloseButton?: boolean;
+  /**
+   * Custom trigger rendered in place of the info glyph (e.g. a whole rate
+   * badge). Must be a single focusable element that accepts a ref.
+   */
+  trigger?: ReactElement;
 }) {
-  const isTouchDevice = useIsTouchDevice();
-
-  const body = (
-    <div className={title ? 'text-fgSecondary flex flex-col gap-2' : undefined}>
-      {title && (
-        <p className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">{title}</p>
-      )}
-      {typeof content === 'string' ? <p>{content}</p> : content}
-    </div>
-  );
-
-  return isTouchDevice ? (
-    <Popover>
-      <PopoverTrigger
-        onClick={e => e.stopPropagation()}
-        className={cn(TRIGGER_CLASS, 'z-10')}
-        aria-label="Show additional information"
-      >
-        <Info size={iconSize} className={iconClassName} />
-      </PopoverTrigger>
-      {/* Touch fallback mirrors the DS tooltip chrome (Figma 5043:57748). */}
-      <PopoverContent
-        align="center"
-        side="top"
-        className={`bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl text-[11px] leading-4 font-normal backdrop-blur-[20px] ${contentClassname}`}
-      >
-        {shouldShowCloseButton && (
-          <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
-            <X className="text-text h-5 w-5 cursor-pointer" />
-          </PopoverClose>
-        )}
-        <div
-          className="max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto"
-          onWheel={e => e.stopPropagation()}
-          onTouchMove={e => e.stopPropagation()}
-        >
-          {body}
-        </div>
-      </PopoverContent>
-    </Popover>
-  ) : (
-    // Own provider (same 300ms delay as the app root's, which nests harmlessly
-    // under it) so the trigger is self-contained on any surface — pages, cards,
-    // full-page takeovers, tests — with no host setup. Same precedent as
-    // RiskTierDetailsTrigger.
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger className={TRIGGER_CLASS} aria-label="Show additional information">
-          <Info size={iconSize} className={iconClassName} />
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent className={contentClassname}>
-            <div className="max-h-[calc(var(--radix-tooltip-content-available-height)-64px)] overflow-y-auto">
-              {body}
-            </div>
-          </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-    </TooltipProvider>
+  return (
+    <ResponsiveTooltip trigger={trigger ?? <InfoGlyph className={iconClassName} />}>
+      <TooltipBody title={title}>{content}</TooltipBody>
+    </ResponsiveTooltip>
   );
 }

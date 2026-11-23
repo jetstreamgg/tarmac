@@ -3,7 +3,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 const { version: APP_VERSION } = JSON.parse(readFileSync('./package.json', 'utf-8'));
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
@@ -12,6 +12,9 @@ import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { preloadRouteChunks } from './vite.preloadRouteChunks';
+import { forkIris } from './vite.forkIris';
+import { tenderlyForkRpcUrl } from './src/data/wagmi/config/tenderlyForkRpc';
+import { FORK_L2_NETWORKS } from './src/utils/chainId';
 
 enum modeEnum {
   development = 'development',
@@ -37,7 +40,14 @@ export default ({ mode }: { mode: modeEnum }) => {
   );
 
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
+  const TENDERLY_RPC_NAME = process.env.VITE_TENDERLY_RPC_NAME || '';
+  const RPC_PROVIDER_TENDERLY_L2S = TENDERLY_RPC_NAME
+    ? FORK_L2_NETWORKS.map(network => tenderlyForkRpcUrl(TENDERLY_RPC_NAME, network)).join(' ')
+    : '';
   const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
+  const CCTP_FORK_IRIS_ORIGIN = process.env.VITE_CCTP_FORK_IRIS_URL
+    ? new URL(process.env.VITE_CCTP_FORK_IRIS_URL).origin
+    : '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
   // connect-src includes `data:` so the MetaMask SDK can fetch its embedded fox-logo SVG, which is
@@ -57,6 +67,8 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://staging-proxy.sky.money
       ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
+      ${RPC_PROVIDER_TENDERLY_L2S}
+      ${CCTP_FORK_IRIS_ORIGIN}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
@@ -86,6 +98,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://api.morpho.org/
       https://api.spark.fi
       https://api-v2.pendle.finance
+      https://iris-api.circle.com
       https://*.google-analytics.com
       https://*.analytics.google.com
       https://*.googletagmanager.com
@@ -162,7 +175,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     test: {
       exclude: [
         ...configDefaults.exclude,
-        '**/test/e2e/**',
+        '**/test/e2e/tests/**',
         // Inlined hooks (formerly @jetstreamgg/sky-hooks) are vnet-backed integration tests.
         // They run via vitest.hooks.config.ts, not the fast suite below.
         path.resolve(__dirname, 'src/hooks/**/*.test.{ts,tsx}')
@@ -176,7 +189,7 @@ export default ({ mode }: { mode: modeEnum }) => {
         '@': path.resolve(__dirname, './src')
       },
       // Dedupe wagmi/viem to prevent multiple instances causing WagmiProviderNotFoundError
-      dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
+      dedupe: ['wagmi', 'viem', '@tanstack/react-query', 'react', 'react-dom']
     },
     optimizeDeps: {
       // Optimize safe-apps-provider dependency to get rid of the Safe connector issue
@@ -214,12 +227,11 @@ export default ({ mode }: { mode: modeEnum }) => {
         generatedRouteTree: path.resolve(__dirname, 'src/routeTree.gen.ts'),
         autoCodeSplitting: true
       }),
-      react({
-        plugins: [['@lingui/swc-plugin', {}]]
-      }),
+      react(),
       tailwindcss(),
       preloadRouteChunks(),
-      lingui(),
+      forkIris({ l1Rpc: RPC_PROVIDER_TENDERLY, rpcName: TENDERLY_RPC_NAME }),
+      lingui({ macroTransform: true }),
       sentryVitePlugin({
         applicationKey: 'sky-webapp',
         org: process.env.SENTRY_ORG,

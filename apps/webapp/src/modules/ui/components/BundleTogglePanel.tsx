@@ -17,7 +17,7 @@ import { BundleExplainer } from './BundleExplainer';
  * needs to read as one).
  */
 const TRIGGER_CLASSES =
-  'rounded-full transition-shadow hover:ring-1 hover:ring-inset hover:ring-glassBorder focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden';
+  'rounded-full transition-shadow hover:ring-1 hover:ring-inset hover:ring-glassBorder focus-visible:ring-2 focus-visible:ring-focusRing focus-visible:outline-hidden';
 
 /**
  * The `Bundled` / `Not bundled` badge that sits beside the network fee, and the panel it

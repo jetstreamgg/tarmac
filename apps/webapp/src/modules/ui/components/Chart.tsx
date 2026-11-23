@@ -364,6 +364,10 @@ interface ChartProps {
   error?: Error | null;
   dataTestId?: string;
   displayValue?: number;
+  /** detail variant: label only, no headline figure (e.g. a matured market, which has no current rate). */
+  hideValue?: boolean;
+  /** Timeframe selected on mount. */
+  initialTimeFrame?: TimeFrame;
   tooltipLabel?: React.ReactNode;
   icons?: React.ReactNode;
   /** Token(s) the series represents; drives the tooltip's trailing token
@@ -830,6 +834,8 @@ export function Chart({
   error,
   dataTestId,
   displayValue,
+  hideValue = false,
+  initialTimeFrame = 'w',
   tooltipLabel,
   icons,
   tokenSymbols,
@@ -879,7 +885,7 @@ export function Chart({
     showTrend && !isLoading && !isZeroPercentage && data.length > 1 && hasBaseline ? (
       <TrendBadge percentage={percentage} formatted={formattedPercentage.replace('-', '')} />
     ) : undefined;
-  const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');
+  const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>(initialTimeFrame);
   const [width, setWidth] = useState<number>(0);
   const dateAxis = formatedXAxis(data, activeTimeframe, bpi);
 
@@ -931,18 +937,20 @@ export function Chart({
               )}
               <div className="flex flex-col gap-0.5">
                 {label && <span className="text-textSecondary text-xs leading-[18px]">{label}</span>}
-                <DetailHeaderValue
-                  mobile
-                  data={data}
-                  displayValue={displayValue}
-                  isPercentage={isPercentage}
-                  symbol={symbol}
-                  prefix={prefix}
-                  isLoading={isLoading}
-                  icons={icons}
-                  valueSuffix={valueSuffix}
-                  trend={trendBadge}
-                />
+                {!hideValue && (
+                  <DetailHeaderValue
+                    mobile
+                    data={data}
+                    displayValue={displayValue}
+                    isPercentage={isPercentage}
+                    symbol={symbol}
+                    prefix={prefix}
+                    isLoading={isLoading}
+                    icons={icons}
+                    valueSuffix={valueSuffix}
+                    trend={trendBadge}
+                  />
+                )}
               </div>
             </div>
           ) : isDetail ? (
@@ -953,17 +961,19 @@ export function Chart({
                 {label && (
                   <span className="text-fgSecondary font-graphik text-sm leading-[22px]">{label}</span>
                 )}
-                <DetailHeaderValue
-                  data={data}
-                  displayValue={displayValue}
-                  isPercentage={isPercentage}
-                  symbol={symbol}
-                  prefix={prefix}
-                  isLoading={isLoading}
-                  icons={icons}
-                  valueSuffix={valueSuffix}
-                  trend={trendBadge}
-                />
+                {!hideValue && (
+                  <DetailHeaderValue
+                    data={data}
+                    displayValue={displayValue}
+                    isPercentage={isPercentage}
+                    symbol={symbol}
+                    prefix={prefix}
+                    isLoading={isLoading}
+                    icons={icons}
+                    valueSuffix={valueSuffix}
+                    trend={trendBadge}
+                  />
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {metrics && activeMetric !== undefined && onMetricChange && (

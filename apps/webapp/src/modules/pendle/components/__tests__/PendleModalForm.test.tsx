@@ -7,6 +7,7 @@ import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
+import { chainId, forkChainId } from '@/utils/chainId';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -47,6 +48,8 @@ type BatchCallbacks = {
 };
 
 const hoisted = vi.hoisted(() => ({
+  chainId: 1,
+  balanceChainIds: [] as (number | undefined)[],
   quoteArgs: undefined as Record<string, unknown> | undefined,
   batchArgs: undefined as (Record<string, unknown> & BatchCallbacks) | undefined,
   executeSpy: vi.fn(),
@@ -64,6 +67,7 @@ const hoisted = vi.hoisted(() => ({
       sessionId: string,
       partial: {
         entry?: { confirmDisabled?: boolean };
+        errorMessage?: string;
         steps?: string[];
         rightHeaderComponent?: unknown;
         transactionContent?: ReactNode;
@@ -83,7 +87,7 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1,
+    useChainId: () => hoisted.chainId,
     useChains: () => [{ id: 1, name: 'Ethereum' }],
     useConnection: () => ({
       address: '0x000000000000000000000000000000000000beef',
@@ -118,12 +122,15 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useTokenBalance: () => ({
-      data: { value: WALLET_BALANCE },
-      isLoading: false,
-      error: null,
-      refetch: () => undefined
-    }),
+    useTokenBalance: ({ chainId }: { chainId?: number }) => {
+      hoisted.balanceChainIds.push(chainId);
+      return {
+        data: { value: WALLET_BALANCE },
+        isLoading: false,
+        error: null,
+        refetch: () => undefined
+      };
+    },
     useTokenAllowance: () => ({
       data: hoisted.allowance,
       isLoading: false,
@@ -224,13 +231,20 @@ const renderLastReviewContent = () => {
   );
 };
 
+// Before MARKET's 26 Nov 2026 expiry, so the live-market specs keep passing after that date.
+const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
+
 describe('PendleModalForm', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
     hoisted.quoteArgs = undefined;
     hoisted.batchArgs = undefined;
     hoisted.onPush = undefined;
     hoisted.allowance = 0n;
     hoisted.debounceLagged = undefined;
+    hoisted.chainId = 1;
+    hoisted.balanceChainIds = [];
   });
 
   it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
@@ -259,7 +273,60 @@ describe('PendleModalForm', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
   });
+
+  describe('matured market', () => {
+    beforeEach(() => {
+      vi.setSystemTime((MARKET.expiry + 60) * 1000);
+    });
+
+    it('blocks a supply left open past expiry and says why', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(hoisted.quoteArgs?.enabled).toBe(false);
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+      expect(lastEntryUpdate()?.errorMessage).toContain('no longer accepts deposits');
+    });
+
+    it('blocks an early withdrawal past expiry and points to claiming', () => {
+      renderForm('withdraw');
+      typeAmount('200');
+
+      expect(hoisted.quoteArgs?.enabled).toBe(false);
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+      expect(lastEntryUpdate()?.errorMessage).toContain('early withdrawal is closed');
+    });
+
+    it('blocks a modal opened before expiry once the minute tick crosses it', () => {
+      vi.useFakeTimers({
+        toFake: ['Date', 'setInterval', 'clearInterval'],
+        now: (MARKET.expiry - 30) * 1000
+      });
+      renderForm('supply');
+      typeAmount('100');
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
+
+      act(() => vi.advanceTimersByTime(60_000));
+
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+      expect(lastEntryUpdate()?.errorMessage).toContain('no longer accepts deposits');
+    });
+  });
+
+  it.each(Object.entries(forkChainId))(
+    'reads the wallet balance on the Ethereum fork from fork %s, never real mainnet',
+    (_, id) => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+      hoisted.chainId = id;
+      renderForm('supply');
+
+      expect(hoisted.balanceChainIds.length).toBeGreaterThan(0);
+      expect(hoisted.balanceChainIds.every(read => read === chainId.tenderly)).toBe(true);
+    }
+  );
 
   describe('supply flow', () => {
     it('quotes the selected input token against the market PT', () => {

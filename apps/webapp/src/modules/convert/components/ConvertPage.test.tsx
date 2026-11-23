@@ -81,6 +81,11 @@ vi.mock('../hooks/useConvertLaunch', () => ({
 vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({
   useTransactionRunActive: () => h.runActive
 }));
+// The tabs read only the open session, to keep a Bridge run's tab mounted.
+vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/modules/ui/context/TransactionContext')>()),
+  useTransaction: () => ({ activeSessionId: null })
+}));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (action: () => void) => action
 }));
@@ -89,6 +94,14 @@ vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
 // only asserts composition around it.
 vi.mock('./ConvertCard', () => ({
   ConvertCard: () => <div data-testid="convert-card" />
+}));
+
+// The Swap | Bridge tabs read `?tab=` from the router; the page test renders without one.
+vi.mock('@/lib/navigation', () => ({
+  useAppSearchParams: () => [new URLSearchParams(), vi.fn()]
+}));
+vi.mock('@/modules/bridge/components/BridgePanel', () => ({
+  BridgePanel: () => <div data-testid="bridge-panel" />
 }));
 
 import { ConvertPage } from './ConvertPage';

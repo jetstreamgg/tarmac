@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipPortal,
   TooltipProvider,
+  TOOLTIP_SURFACE_CLASSES,
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import {
@@ -32,7 +33,7 @@ import { withdrawalWording } from './withdrawalAvailability';
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
 // decision — the comp treats it as editorial content, not product data.
-import { USER_RISKS_URL } from '@/lib/constants';
+import { USER_RISKS_STUSDS_URL, USER_RISKS_URL, USER_RISKS_VAULTS_URL } from '@/lib/constants';
 
 /**
  * The severity presentation per tier (1036:201215): display name + scale.
@@ -200,14 +201,15 @@ function ExposureFactValue({ symbols }: { symbols: string[] }) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-1 focus-visible:outline-hidden"
+          className="focus-visible:ring-focusRing inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
         >
           {stack}
         </button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
-        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[20px]"
+        // Same chrome as every tooltip (DS Tooltip, Simple type).
+        className={cn(TOOLTIP_SURFACE_CLASSES, 'w-auto shadow-none')}
       >
         {names}
       </PopoverContent>
@@ -226,6 +228,13 @@ function FactRow({ label, value }: { label: ReactNode; value: ReactNode }) {
       </span>
     </div>
   );
+}
+
+/** The profile's section of the user risks doc; profiles without one land on the top. */
+function riskDocUrl(profile: EarnRiskProfileId): string {
+  if (profile === 'stusds') return USER_RISKS_STUSDS_URL;
+  if (profile.startsWith('vault-')) return USER_RISKS_VAULTS_URL;
+  return USER_RISKS_URL;
 }
 
 /** Scale + description + divider + fact rows — shared by the tooltip card and the bottom sheet. */
@@ -291,10 +300,10 @@ export function RiskTierDetailsCard({
       <RiskTierDetailsBody tier={tier} profile={profile} />
       <div className="border-borderPrimary w-full border-b" />
       <a
-        href={USER_RISKS_URL}
+        href={riskDocUrl(profile)}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-circle text-fgPrimary flex w-full items-center justify-between text-xs leading-3.5 font-medium tracking-[-0.24px]"
+        className="font-circle text-fgPrimary focus-visible:outline-focusRing flex w-full items-center justify-between rounded-xs text-xs leading-3.5 font-medium tracking-[-0.24px] focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         <Trans>Learn more about risk</Trans>
         <MoveUpRight size={12} aria-hidden />
@@ -332,7 +341,7 @@ export function RiskTierDetailsTrigger({
     />
   );
   const triggerClassName = cn(
-    'focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-1 focus-visible:outline-hidden',
+    'focus-visible:ring-focusRing inline-flex cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden',
     className
   );
 
@@ -379,7 +388,7 @@ export function RiskTierDetailsTrigger({
             </div>
             <RiskTierDetailsBody tier={tier} profile={profile} />
             <Button variant="secondary" size="m" className="mt-1 w-full" asChild>
-              <a href={USER_RISKS_URL} target="_blank" rel="noopener noreferrer">
+              <a href={riskDocUrl(profile)} target="_blank" rel="noopener noreferrer">
                 <Trans>Learn more about risk</Trans>
                 <MoveUpRight size={12} aria-hidden />
               </a>

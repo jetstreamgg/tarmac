@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { vi } from 'vitest';
+import './blankForkEnv';
 
 // Stub the walletConnect connector at the module level. Its real implementation
 // (Reown AppKit) fires a `pulse.walletconnect.org/batch` telemetry POST at
@@ -43,13 +44,15 @@ vi.mock('@sentry/react', async () => {
         setExtras: (extras: Record<string, unknown>) => void;
         setLevel: (level: string) => void;
         setTag: (key: string, value: string) => void;
+        setFingerprint: (fingerprint: string[]) => void;
       }) => void
     ) =>
       callback({
         setContext: vi.fn(),
         setExtras: vi.fn(),
         setLevel: vi.fn(),
-        setTag: vi.fn()
+        setTag: vi.fn(),
+        setFingerprint: vi.fn()
       })
   );
 

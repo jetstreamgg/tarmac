@@ -21,6 +21,8 @@ export interface EngineLaunchResult {
   calls: Call[];
   /** Whether those calls go out bundled — the batch costs less than the sequence. */
   isBatch: boolean;
+  /** The calls `execute` would send from here — see `BatchWriteHook.nextCalls`. */
+  nextCalls: Call[];
 }
 
 /** The slice of a routed engine hook's result the launch seam reads. */
@@ -31,6 +33,7 @@ export type EngineHookResult = {
   error: Error | null;
   calls?: Call[];
   isBatch?: boolean;
+  nextCalls?: Call[];
   /** Plain-write engines report a failed prepare simulation here. */
   prepareError?: Error | null;
 };
@@ -46,6 +49,13 @@ export function useShouldUseBatch(also: boolean = true): boolean {
   const [batchEnabled] = useBatchToggle();
   const { data: batchSupported } = useIsBatchSupported();
   return !!batchEnabled && !!batchSupported && also;
+}
+
+/** The user opted into batching and the wallet's batch support is still being probed: `useShouldUseBatch` reads false until it answers. */
+export function useBatchSupportPending(): boolean {
+  const [batchEnabled] = useBatchToggle();
+  const { isLoading } = useIsBatchSupported();
+  return !!batchEnabled && isLoading;
 }
 
 /**
@@ -67,6 +77,8 @@ export function toLaunchResult(
     isLoading: activeHook.isLoading,
     error: activeHook.error ?? activeHook.prepareError ?? null,
     calls: activeHook.calls ?? [],
-    isBatch: !!activeHook.isBatch
+    isBatch: !!activeHook.isBatch,
+    // A single write sends exactly its calls, so it needs no separate report.
+    nextCalls: activeHook.nextCalls ?? activeHook.calls ?? []
   };
 }

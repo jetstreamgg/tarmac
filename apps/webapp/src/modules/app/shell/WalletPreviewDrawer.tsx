@@ -68,8 +68,6 @@ export function WalletPreviewDrawer({
           overlayClassName={NO_SCRIM}
           hideCloseButton
           className="bg-containerDark border-borderPrimary inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] h-auto max-h-[calc(100dvh-92px)] gap-0 overflow-hidden rounded-[28px] border p-0 backdrop-blur-sm"
-          onOpenAutoFocus={e => e.preventDefault()}
-          onCloseAutoFocus={e => e.preventDefault()}
         >
           <SheetTitle className="sr-only">{t`Account`}</SheetTitle>
           <WalletPreviewHeader
@@ -99,15 +97,13 @@ export function WalletPreviewDrawer({
         overlayClassName={NO_SCRIM}
         className="border-glassBorder bg-glassSurface inset-y-3 right-3 h-auto w-[calc(100%-24px)] flex-row gap-0 overflow-hidden rounded-[28px] border p-0 backdrop-blur-sm sm:max-w-[538px]"
         closeButtonClassName="hidden"
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <SheetTitle className="sr-only">{t`Account`}</SheetTitle>
         <div className="hidden shrink-0 p-3 sm:block">
           <SheetClose
             data-testid="wallet-drawer-collapse"
             aria-label={t`Close`}
-            className="text-text border-borderPrimary light:hover:bg-surfaceAlt flex size-10 items-center justify-center rounded-full border bg-gradient-to-b from-white/0 to-white/8 bg-origin-border transition-colors hover:bg-white/10"
+            className="text-text border-borderPrimary light:hover:bg-surfaceAlt focus-visible:outline-focusRing flex size-10 items-center justify-center rounded-full border bg-gradient-to-b from-white/0 to-white/8 bg-origin-border transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <ChevronsRight className="size-4" />
           </SheetClose>

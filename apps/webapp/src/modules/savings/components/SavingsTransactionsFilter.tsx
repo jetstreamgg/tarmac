@@ -52,7 +52,7 @@ export function SavingsTransactionsFilter({
         data-testid="savings-transactions-filter"
         aria-label={t`Filter transactions`}
         className={cn(
-          'shrink-0 transition-colors focus-visible:ring-0',
+          'shrink-0 transition-colors',
           isMobile
             ? // Label 6 pill, 12px chevron ([&_svg] outranks the built-in h-4).
               'border-glassBorder text-text font-circle h-[30px] w-full justify-between rounded-full border bg-transparent py-2 pr-2 pl-3 text-xs leading-[14px] font-medium tracking-[-0.24px] [&_svg]:h-3 [&_svg]:w-3'

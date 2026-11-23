@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computePendleAssetValuations, ptDiscount } from './computePendleAssetValuations';
+import { computePendleAssetValuations, maturedPositionUsd, ptDiscount } from './computePendleAssetValuations';
 import type { PendleMarketConfig, PendleMarketStats } from './pendle';
 
 const SECONDS_PER_YEAR = 365.25 * 86400;
@@ -215,5 +215,22 @@ describe('computePendleAssetValuations', () => {
     expect(out.total).toBe(1_000_000_000_000_000_000n);
     expect(out.markets[0].ptBalance).toBe(1_000_000n);
     expect(out.markets[0].ptBalanceNormalized).toBe(1_000_000_000_000_000_000n);
+  });
+});
+
+describe('maturedPositionUsd', () => {
+  const asset = (ptBalance: bigint, valuationUsd: number) => ({
+    marketAddress: PT_MATURED.marketAddress,
+    ptBalance,
+    ptBalanceNormalized: 0n,
+    valuationUsd
+  });
+
+  it('values a pegged position at face from the balance, even with no USDS price', () => {
+    expect(maturedPositionUsd(PT_MATURED, asset(1_500_000_000n, 0))).toBe(1500);
+  });
+
+  it('keeps the feed valuation on a non-pegged market', () => {
+    expect(maturedPositionUsd({ ...PT_SUSDS, expiry: NOW - 60 }, asset(10n ** 18n, 1.07))).toBe(1.07);
   });
 });

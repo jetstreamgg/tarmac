@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_CHAIN_ID, morphoDataSource } from './constants';
+import { toTokenSymbol } from '@/lib/tokenSymbol';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
 import { formatDecimalPercentage } from '@/utils';
@@ -98,11 +99,12 @@ async function fetchMorphoVaultRate(
   const rewardsMap = new Map<string, { apy: number; logoUri: string | null }>();
   for (const reward of rewards || []) {
     if (reward.supplyApr > 0) {
-      const existing = rewardsMap.get(reward.asset.symbol);
+      const symbol = toTokenSymbol(reward.asset.symbol);
+      const existing = rewardsMap.get(symbol);
       if (existing) {
         existing.apy += reward.supplyApr;
       } else {
-        rewardsMap.set(reward.asset.symbol, {
+        rewardsMap.set(symbol, {
           apy: reward.supplyApr,
           logoUri: reward.asset.logoURI
         });

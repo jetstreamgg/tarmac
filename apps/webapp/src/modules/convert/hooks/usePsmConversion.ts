@@ -65,11 +65,13 @@ export interface UsePsmConversionResult {
   error: Error | null;
   execute: () => void;
   currentCallIndex: number;
-  reset: () => void;
+  reset: (onCleared?: () => void) => void;
   /** The routed engine's calls, for estimating the conversion's network fee. */
   calls: Call[];
   /** Whether those calls go out bundled — the batch costs less than the sequence. */
   isBatch: boolean;
+  /** The calls `execute` would send now — see `BatchWriteHook.nextCalls`. */
+  nextCalls: Call[];
   execution: {
     l2AmountIn: bigint;
     l2MinAmountOut: bigint;
@@ -104,7 +106,11 @@ export function usePsmConversion({
     ? psm3L2Address[chainId as keyof typeof psm3L2Address]
     : usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
 
-  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
+  const {
+    data: allowance,
+    error: allowanceError,
+    mutate: mutateAllowance
+  } = useTokenAllowance({
     chainId,
     contractAddress: originToken?.address,
     owner: address,
@@ -177,7 +183,10 @@ export function usePsmConversion({
     hasSufficientLiquidity
   });
 
-  const needsAllowance = !!originToken?.address && amount > 0n && (!allowance || allowance < amount);
+  const needsAllowance =
+    !!originToken?.address &&
+    amount > 0n &&
+    (allowance !== undefined ? allowance < amount : !!allowanceError);
   const effectiveShouldUseBatch = !!shouldUseBatch && !!batchSupported && needsAllowance;
   const hookEnabled =
     paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;
@@ -262,6 +271,7 @@ export function usePsmConversion({
     reset: activeHook.reset,
     calls: activeHook.calls ?? [],
     isBatch: !!activeHook.isBatch,
+    nextCalls: activeHook.nextCalls ?? activeHook.calls ?? [],
     execution: {
       l2AmountIn: execution.l2AmountIn,
       l2MinAmountOut: execution.l2MinAmountOut,

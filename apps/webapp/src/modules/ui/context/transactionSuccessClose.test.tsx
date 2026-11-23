@@ -74,6 +74,7 @@ vi.mock('motion/react', async io => {
 });
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -98,12 +99,17 @@ function Harness({ config, onReady }: { config: TransactionConfig; onReady: (cb:
 
 // Mounts the provider, opens the modal and advances it to the transaction screen.
 // `onReady` sees the callbacks of every render, for a test that re-renders mid-flow.
-function renderFlow(config: TransactionConfig, onReady?: (cb: TxCallbacks) => void): TxCallbacks {
+function renderFlow(
+  config: TransactionConfig,
+  onReady?: (cb: TxCallbacks) => void,
+  page?: ReactNode
+): TxCallbacks {
   let cb!: TxCallbacks;
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
+          {page}
           <Harness
             config={config}
             onReady={c => {
@@ -218,5 +224,21 @@ describe('TransactionModal success handoff', () => {
     act(() => cb!.onSuccess(HASH, 123n));
 
     expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), { chainId: 1, blockNumber: 123n });
+  });
+
+  it('a page-hosted flow reloads its allowances after a success, so its next run sees the spent approval', () => {
+    const reset = vi.fn((onCleared?: () => void) => onCleared?.());
+    const refetchAllowances = vi.fn();
+    function PageEngine() {
+      useResetUnfinishedRunOnClose(reset, refetchAllowances);
+      return null;
+    }
+    const cb = renderFlow(CONFIG, undefined, <PageEngine />);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart(HASH));
+    act(() => cb.onSuccess(HASH, 123n));
+
+    expect(refetchAllowances).toHaveBeenCalledTimes(1);
   });
 });

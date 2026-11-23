@@ -1,13 +1,15 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NO_VALUE } from '@/lib/constants';
 
 i18n.load('en', {});
 i18n.activate('en');
 
-// Historic series feeding the Borrow Rate / Total SKY staked / TVL / Protocol
-// SKY Price / Users rows (latest point first by datetime sort in the strip).
+// Historic series feeding the Total SKY staked / TVL / Users rows (newest point
+// by datetime). Its borrowRate only proves the Borrow Rate row ignores it: that
+// row reads the onchain stability fee (APP-640).
 const HISTORIC = [
   {
     datetime: '2026-07-01T00:00:00Z',
@@ -29,6 +31,11 @@ const HISTORIC = [
 
 const ts = (date: string) => new Date(date).getTime() / 1000;
 
+// Onchain collateral read: capped OSM price + a 6.65% annualized stability fee
+// (WAD ratio), distinct from the historic 8.1%. Reset per test.
+const COLLATERAL = { delayedPrice: 60_000_000_000_000_000n, stabilityFee: 665n * 10n ** 14n };
+let collateral: { data?: typeof COLLATERAL; isLoading: boolean; error: Error | null };
+
 // Rewards-rate series: latest point is 2026-07-01 (rate 0.10 -> Staking Reward Rate).
 const FARM = [
   { blockTimestamp: ts('2026-07-01'), rate: '0.1' },
@@ -46,11 +53,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null }),
-    useCollateralData: () => ({
-      data: { delayedPrice: 60_000_000_000_000_000n },
-      isLoading: false,
-      error: null
-    }),
+    useCollateralData: () => collateral,
     useStakeRewardContracts: () => ({ data: [{ contractAddress: '0xfarm' }], isLoading: false }),
     useMultipleRewardsChartInfo: () => ({ data: [FARM], isLoading: false, error: null })
   };
@@ -65,7 +68,14 @@ const renderStrip = () =>
     </I18nProvider>
   );
 
+// The value cell of a Details row, found from its label.
+const rowValue = (label: string) => screen.getByText(label).closest('div')?.lastElementChild;
+
 describe('StakeDetailsStrip', () => {
+  beforeEach(() => {
+    collateral = { data: COLLATERAL, isLoading: false, error: null };
+  });
+
   afterEach(cleanup);
 
   it('renders all six detail labels per the comp (1036:208698)', () => {
@@ -87,10 +97,29 @@ describe('StakeDetailsStrip', () => {
     expect(screen.getByText('10.00%')).toBeTruthy();
   });
 
-  it('renders the latest historic borrow rate, total staked, TVL and users', () => {
+  it('renders the onchain borrow rate, not the lagging historic one (APP-640)', () => {
     renderStrip();
 
-    expect(screen.getByText('8.10%')).toBeTruthy();
+    expect(rowValue('Borrow Rate')?.textContent).toBe('6.65%');
+    expect(screen.queryByText('8.10%')).toBeNull();
+  });
+
+  it('holds the Borrow Rate row on the onchain read: skeleton while loading, dash on error', () => {
+    collateral = { data: undefined, isLoading: true, error: null };
+    renderStrip();
+    expect(rowValue('Borrow Rate')?.textContent).toBe('');
+    expect(rowValue('Borrow Rate')?.firstElementChild?.className).toContain('bg-skeletonTrack');
+    cleanup();
+
+    collateral = { data: undefined, isLoading: false, error: new Error('jug read failed') };
+    renderStrip();
+    expect(rowValue('Borrow Rate')?.textContent).toBe(NO_VALUE);
+    expect(screen.queryByText('8.10%')).toBeNull();
+  });
+
+  it('renders the latest historic total staked, TVL and users', () => {
+    renderStrip();
+
     expect(screen.getByText('17,106,043,933')).toBeTruthy();
     expect(screen.getByText('$1,000')).toBeTruthy();
     expect(screen.getByText('50')).toBeTruthy();

@@ -6,7 +6,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     },
-    dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
+    dedupe: ['wagmi', 'viem', '@tanstack/react-query', 'react', 'react-dom']
   },
   test: {
     include: ['src/hooks/**/*.test.{ts,tsx}'],
@@ -14,7 +14,7 @@ export default defineConfig({
     environment: 'happy-dom',
     testTimeout: 90000,
     hookTimeout: 30000,
-    setupFiles: ['./test/hooks/setup.ts'],
+    setupFiles: ['./src/test/blankForkEnv.ts', './test/hooks/setup.ts'],
     globalSetup: ['./test/hooks/globalSetup.ts'],
     pool: 'forks',
     maxWorkers: 1

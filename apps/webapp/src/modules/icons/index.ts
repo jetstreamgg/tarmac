@@ -1,5 +1,8 @@
 import { ArrowDown } from './ArrowDown';
 import { ArrowRightLong } from './ArrowRightLong';
+import { ArrowTopRight } from './ArrowTopRight';
+import { CircleLogo } from './CircleLogo';
+import { SkyLinkLogo } from './SkyLinkLogo';
 import { Copy } from './Copy';
 import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
@@ -46,11 +49,14 @@ import { Morpho } from './Morpho';
 import { NoResults } from './NoResults';
 import { CurveLogo } from './CurveLogo';
 import { Info } from './Info';
-import { InProgress, SuccessCheck, FailedX, Cancel } from './Icons';
+import { InProgress, SuccessCheck, FailedX, Cancel, Refresh } from './Icons';
 
 export {
   ArrowDown,
   ArrowRightLong,
+  ArrowTopRight,
+  CircleLogo,
+  SkyLinkLogo,
   Copy,
   Failure,
   RewardsModule,
@@ -100,5 +106,6 @@ export {
   InProgress,
   SuccessCheck,
   FailedX,
-  Cancel
+  Cancel,
+  Refresh
 };

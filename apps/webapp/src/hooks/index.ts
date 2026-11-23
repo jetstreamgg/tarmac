@@ -84,8 +84,6 @@ export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useAllPendleMarketsHistory } from './pendle/useAllPendleMarketsHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
-export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
-export { usePendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
 export type { PendleMarketConfig, PendleConvertQuote } from './pendle/pendle';
 
 // Authentication
@@ -141,6 +139,7 @@ export {
   RISK_TIER_BY_PROFILE
 } from './earn/earnProducts';
 export { useProductNetworks } from './earn/useProductNetworks';
+export { isLiquidityExhausted, withdrawalsUnavailableFor } from './earn/withdrawalsUnavailable';
 export type {
   EarnProductKind,
   EarnRiskProfileId,
@@ -163,7 +162,7 @@ export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 export { usePrices } from './prices/usePrices';
 export { useSkyPrice } from './prices/useSkyPrice';
 export { useStakeHistory } from './stake/useStakeHistory';
-export { useStakeHistoricData } from './stake/useStakeHistoricData';
+export { useStakeHistoricData, newestStakeHistoricPoint } from './stake/useStakeHistoricData';
 
 // Stake Module
 export { useStakeRewardContracts } from './stake/useStakeRewardContracts';
@@ -214,7 +213,7 @@ export {
 } from './constants';
 
 export { getIlkName } from './vaults/helpers';
-export { toError } from './helpers';
+export { toError, isStalledStep } from './helpers';
 
 export { TOKENS, getTokenDecimals } from './tokens/tokens.constants';
 
@@ -259,7 +258,7 @@ export { contracts, l2Contracts } from './contracts';
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
-export { useNetworkFee } from './shared/useNetworkFee';
+export { useFeePerGas, useNetworkFee } from './shared/useNetworkFee';
 export type { NetworkFeeData, UseNetworkFeeParameters } from './shared/useNetworkFee';
 
 // UI utility hooks

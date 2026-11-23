@@ -1,9 +1,17 @@
+import type { AnyRouter } from '@tanstack/react-router';
+
 /**
  * A tab left open across a deploy still holds the old build's hashed chunk
  * URLs. Production answers an unknown asset path with index.html, so the
- * dynamic import rejects and Vite dispatches `vite:preloadError`. Reloading
- * fetches the current index.html with the live chunk hashes. The reload is
- * allowed once per window so a real outage cannot loop.
+ * dynamic import rejects and Vite dispatches `vite:preloadError`. A full page
+ * load fetches the current index.html with the live chunk hashes.
+ *
+ * Hovering a link preloads its chunks, so the failure alone must not move the
+ * page: it marks the tab stale, and the full load happens on a navigation to
+ * another page. Search-param updates (network, tabs, flows) stay in place. An
+ * action that needs a chunk outside navigation (wallet SDKs load on click)
+ * recovers through reloadIfChunkError. The full load is allowed once per window
+ * so a real outage cannot loop.
  *
  * The event is deliberately not prevented: a prevented event makes Vite
  * resolve the failed import to `undefined` instead of rejecting, which would
@@ -14,16 +22,51 @@
 const STORAGE_KEY = 'staleChunkReloadedAt';
 const RELOAD_WINDOW_MS = 60_000;
 
-export function installStaleChunkReload(): void {
-  window.addEventListener('vite:preloadError', () => {
-    try {
-      const reloadedAt = Number(sessionStorage.getItem(STORAGE_KEY) ?? 0);
-      const now = Date.now();
-      if (Math.abs(now - reloadedAt) < RELOAD_WINDOW_MS) return;
-      sessionStorage.setItem(STORAGE_KEY, String(now));
-    } catch {
-      return;
+let isStale = false;
+// Vite rethrows the event's payload, so the caller's error is this same object.
+const chunkErrors = new WeakSet<object>();
+
+const claimFullLoad = (): boolean => {
+  try {
+    const reloadedAt = Number(sessionStorage.getItem(STORAGE_KEY) ?? 0);
+    const now = Date.now();
+    if (Math.abs(now - reloadedAt) < RELOAD_WINDOW_MS) return false;
+    sessionStorage.setItem(STORAGE_KEY, String(now));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export function reloadIfChunkError(error: unknown): void {
+  if (chunkErrors.has(error as object) && claimFullLoad()) window.location.reload();
+}
+
+export function installStaleChunkReload(router: AnyRouter): () => void {
+  isStale = false;
+
+  const loadDocument = (href: string) => {
+    // replace, not assign: the router has already pushed this entry (or is about to, in a microtask).
+    if (claimFullLoad()) window.location.replace(href);
+  };
+
+  const onPreloadError = (event: VitePreloadErrorEvent) => {
+    isStale = true;
+    chunkErrors.add(event.payload);
+    const destination = router.latestLocation;
+    // Read off the locations, not `status`: the router only turns pending after its preflight.
+    if (destination.href !== router.state.resolvedLocation?.href) {
+      loadDocument(destination.publicHref);
     }
-    window.location.reload();
+  };
+
+  window.addEventListener('vite:preloadError', onPreloadError);
+  const unsubscribe = router.subscribe('onBeforeNavigate', ({ toLocation, pathChanged }) => {
+    if (isStale && pathChanged) loadDocument(toLocation.publicHref);
   });
+
+  return () => {
+    window.removeEventListener('vite:preloadError', onPreloadError);
+    unsubscribe();
+  };
 }

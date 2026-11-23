@@ -4,8 +4,12 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { getVaultByAddress, type Token, useVaultMarketData } from '@/hooks';
+import { getVaultByAddress, type Token, useVaultMarketData, withdrawalsUnavailableFor } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
+import {
+  WITHDRAWALS_UNAVAILABLE_WORDING,
+  WithdrawalsUnavailableDepositNotice
+} from '@/components/product/WithdrawalsUnavailable';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
@@ -89,7 +93,7 @@ export function VaultModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   // Kept on while a new amount settles, showing the settled one's fee: turning it off
@@ -106,6 +110,14 @@ export function VaultModalForm({
   // popover (`MorphoRateBreakdownPopover`) — read from the same market data.
   const { data: marketData } = useVaultMarketData({ vaultAddress });
   const boostedRate = (marketData?.rate?.rewards?.length ?? 0) > 0;
+  // 100% utilization on a Risk Capital vault: the supply flow warns on entry
+  // and again on the review, and the Withdrawal cell states it.
+  const withdrawalsUnavailable = withdrawalsUnavailableFor(
+    riskProfile,
+    marketData?.liquidity,
+    marketData?.totalAssets
+  );
+  const showDepositWarning = isSupply && withdrawalsUnavailable;
 
   const networkName = useNetworkName(chainId);
   const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
@@ -178,11 +190,19 @@ export function VaultModalForm({
   const amountDisplay = formatAsset(debouncedAmount);
   const earningsAfterDisplay = projectEarnings(positionAfter);
   // Resolved outside the memo so it keys on the string, not the i18n object.
-  const withdrawalLabel = i18n._(withdrawalWording(riskProfile, flow));
+  const withdrawalLabel = i18n._(
+    withdrawalsUnavailable ? WITHDRAWALS_UNAVAILABLE_WORDING : withdrawalWording(riskProfile, flow)
+  );
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`vault-modal-${flow}-review`}>
         {transactionScreenContent}
+        {showDepositWarning && (
+          <WithdrawalsUnavailableDepositNotice
+            assetSymbol={assetToken.symbol}
+            testId="vault-modal-review-withdrawals-unavailable"
+          />
+        )}
         <ModalSummaryGrid
           rows={toGridCells(
             buildVaultReviewRows(flow, {
@@ -214,7 +234,8 @@ export function VaultModalForm({
       boostedRate,
       networkName,
       feeCell,
-      withdrawalLabel
+      withdrawalLabel,
+      showDepositWarning
     ]
   );
 
@@ -243,6 +264,7 @@ export function VaultModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,
@@ -306,13 +328,20 @@ export function VaultModalForm({
             className={`ml-3 flex items-start ${liquidityNotice.tone}`}
             data-testid={liquidityNotice.testId}
           >
-            <PopoverRateInfo type="morphoLiquidity" iconClassName={`mt-1 shrink-0 ${liquidityNotice.tone}`} />
+            <PopoverRateInfo type="morphoLiquidity" iconClassName={`mt-1 ${liquidityNotice.tone}`} />
             <Text variant="small" className="ml-2">
               {liquidityNotice.text}
             </Text>
           </div>
         )}
       </div>
+
+      {showDepositWarning && (
+        <WithdrawalsUnavailableDepositNotice
+          assetSymbol={assetToken.symbol}
+          testId="vault-modal-withdrawals-unavailable"
+        />
+      )}
 
       <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
     </div>

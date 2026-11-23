@@ -6,6 +6,10 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
+import {
+  WITHDRAWALS_UNAVAILABLE_WORDING,
+  WithdrawalsUnavailableDepositNotice
+} from '@/components/product/WithdrawalsUnavailable';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -15,6 +19,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { tightensOnly } from '@/modules/ui/lib/callIntent';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
@@ -23,13 +28,27 @@ import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
 import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } from '../lib/providerNotice';
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
 const DECIMALS = 18;
+
+// The Curve swap follows the live quote: `min_dy` on a supply or Max withdraw,
+// and on a specific-amount withdraw the stUSDS spent (`dx`, and the approve
+// for it). Each may only move in the user's favour after the confirm, `min_dy`
+// up and `dx` down; the pool moving against the user is refused. A supply's
+// `dx` and approve are the entered amount, so they never move.
+export const CURVE_SWAP_BOUND_ARGS = {
+  exchange: [
+    { index: 2, kind: 'max' },
+    { index: 3, kind: 'min' }
+  ],
+  approve: { index: 1, kind: 'max' }
+} as const;
+const CURVE_SWAP_BOUNDS = tightensOnly(CURVE_SWAP_BOUND_ARGS);
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
 const formatUsds = (units: bigint) =>
@@ -79,6 +98,7 @@ export function StUsdsModalForm({
     debouncePending,
     rate,
     position,
+    withdrawalsUnavailable,
     engineParams,
     providerSelection,
     priceImpactBps,
@@ -94,7 +114,10 @@ export function StUsdsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  // 100% utilization: the supply flow warns on entry and again on the review,
+  // and the Withdrawal cell states it.
+  const showDepositWarning = isSupply && withdrawalsUnavailable;
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   // Kept on while a new amount settles, showing the settled one's fee: turning it off
@@ -158,12 +181,20 @@ export function StUsdsModalForm({
   // screen) — this line explains the disabled confirm in place.
   const impactLapsed = needsImpactAcknowledgement && !impactAccepted;
   // Resolved outside the memo so it keys on the string, not the i18n object.
-  const withdrawalLabel = i18n._(withdrawalWording('stusds', flow));
+  const withdrawalLabel = i18n._(
+    withdrawalsUnavailable ? WITHDRAWALS_UNAVAILABLE_WORDING : withdrawalWording('stusds', flow)
+  );
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-review`}>
         {transactionScreenContent}
         <div className="flex flex-col gap-4">
+          {showDepositWarning && (
+            <WithdrawalsUnavailableDepositNotice
+              assetSymbol="USDS"
+              testId="stusds-modal-review-withdrawals-unavailable"
+            />
+          )}
           <ModalSummaryGrid
             rows={toGridCells(
               buildStUsdsReviewRows(flow, {
@@ -208,7 +239,8 @@ export function StUsdsModalForm({
       feeCell,
       impactLapsed,
       impactPercent,
-      withdrawalLabel
+      withdrawalLabel,
+      showDepositWarning
     ]
   );
 
@@ -238,6 +270,8 @@ export function StUsdsModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
+    callMatches: CURVE_SWAP_BOUNDS,
     confirmDisabled: disabled,
     transactionContent,
     transactionScreenContent,
@@ -249,7 +283,7 @@ export function StUsdsModalForm({
     analytics
   });
 
-  const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
+  const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error), [error]);
 
   const impactColor =
     priceImpactBps !== undefined && priceImpactBps > PRICE_IMPACT_HIGH_THRESHOLD_BPS
@@ -295,6 +329,12 @@ export function StUsdsModalForm({
       />
 
       <div className="flex flex-col gap-4">
+        {showDepositWarning && (
+          <WithdrawalsUnavailableDepositNotice
+            assetSymbol="USDS"
+            testId="stusds-modal-withdrawals-unavailable"
+          />
+        )}
         <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
 
         <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
@@ -330,11 +370,7 @@ export function StUsdsModalForm({
                 <Trans>
                   I understand stUSDS is an expert module that may function differently than other modules,
                   and I have reviewed the associated{' '}
-                  <ExternalLink
-                    href="https://docs.sky.money/user-risks"
-                    showIcon={false}
-                    className="text-fgBrand"
-                  >
+                  <ExternalLink href={USER_RISKS_STUSDS_URL} showIcon={false} className="text-fgBrand">
                     User Risks
                   </ExternalLink>
                   .

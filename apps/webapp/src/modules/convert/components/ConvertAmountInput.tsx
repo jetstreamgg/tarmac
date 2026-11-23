@@ -90,9 +90,17 @@ export function ConvertAmountInput({
 
   return (
     <div
-      className="bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-[9px] md:px-8 md:py-7"
+      className="group/amount bg-glassSurface relative flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-[9px] md:px-8 md:py-7"
       data-testid={`convert-${side}`}
     >
+      {/* Focus lights the From/To seam with the DS Input / Amount Active gradient
+          (5620:26710), the same signal the modal amount fields give. */}
+      {isFrom && (
+        <div
+          aria-hidden
+          className="from-slider-brand-start to-slider-brand-end pointer-events-none absolute inset-x-0 -bottom-[2px] h-[2px] bg-linear-to-r opacity-0 transition-opacity group-focus-within/amount:opacity-100"
+        />
+      )}
       {/* Body 5 meta row: side label left, balance right (1036:205449). */}
       <div className="flex items-center justify-between gap-2">
         <Text className="text-fgSecondary text-xs md:text-sm md:leading-[22px]">

@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Run tests with automatic retry for failures
-# Supports both standard and alternate VNet configurations
 
 # Detect shard mode
 SHARD_INDEX=${PLAYWRIGHT_SHARD_INDEX:-}
@@ -17,15 +16,11 @@ fi
 
 # Determine which tests to run based on project argument
 PROJECT_ARG=""
-if [[ "$@" == *"--project=chromium-alternate"* ]] || [[ "$USE_ALTERNATE_VNET" == "true" ]]; then
-  echo "🔵 Running alternate VNet tests"
-  PROJECT_ARG="--project=chromium-alternate"
-  export USE_ALTERNATE_VNET=true
-elif [[ "$@" == *"--project=chromium"* ]]; then
+if [[ "$@" == *"--project=chromium"* ]]; then
   echo "🔵 Running standard tests"
   PROJECT_ARG="--project=chromium"
 else
-  echo "🔵 Running all tests (standard and alternate)"
+  echo "🔵 Running all tests"
 fi
 
 # Now run tests in parallel

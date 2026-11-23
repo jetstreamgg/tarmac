@@ -1,7 +1,6 @@
 import { cn } from '@/lib/cn';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClipboard } from '@/modules/ui/hooks/useClipboard';
-import { Text } from '@/modules/layout/components/Typography';
 import { Copy } from '@/modules/icons/Icons';
 import { motion } from 'motion/react';
 import { iconAnimations } from '@/modules/ui/animation/presets';
@@ -15,6 +14,7 @@ export function CopyToClipboard({ text, iconClassName }: { text: string; iconCla
       <TooltipTrigger asChild>
         <motion.div
           data-testid="copy-to-clipboard"
+          className="focus-visible:outline-focusRing rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           whileTap={{ scale: 0.8 }}
           initial={AnimationLabels.initial}
           animate={AnimationLabels.animate}
@@ -28,9 +28,7 @@ export function CopyToClipboard({ text, iconClassName }: { text: string; iconCla
         </motion.div>
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent>
-          <Text>Copied</Text>
-        </TooltipContent>
+        <TooltipContent>Copied</TooltipContent>
       </TooltipPortal>
     </Tooltip>
   );
