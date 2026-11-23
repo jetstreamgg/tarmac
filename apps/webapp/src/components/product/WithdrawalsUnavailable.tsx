@@ -47,8 +47,9 @@ export function WithdrawalsUnavailableBadge({ assetSymbol }: { assetSymbol: stri
         title={<Trans>1 active warning</Trans>}
         content={
           <Trans>
-            0% of this vault&apos;s {assetSymbol} is currently available to withdraw. You will not be able to
-            exit your position immediately.
+            This vault currently has 0% of its {assetSymbol} available for instant withdrawal. You won&apos;t
+            be able to exit your position immediately. Make sure you understand the risks before you supply
+            funds.
           </Trans>
         }
         trigger={
