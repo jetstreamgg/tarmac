@@ -38,7 +38,10 @@ export enum QueryParams {
    * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
    * (opened + stripped) by useUpgradeDeepLink on any module route.
    */
-  Upgrade = 'upgrade'
+  Upgrade = 'upgrade',
+  /** A CCTP claim link's source network and burn hash, e.g. /convert?tab=bridge&claim_network=base&claim_tx=0x… */
+  ClaimNetwork = 'claim_network',
+  ClaimTx = 'claim_tx'
 }
 
 export enum Environment {
@@ -77,6 +80,8 @@ export const ALLOWED_EXTERNAL_DOMAINS = [
 export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.Production;
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
+
+export { USE_TESTNET_CONFIG } from '@/data/wagmi/config/testnetConfig';
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';

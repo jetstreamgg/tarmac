@@ -45,7 +45,7 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
     // marks toasts with data-mounted/data-removed and has no data-state at
     // all, so those rules had matched nothing since the sonner migration.
     toast:
-      'group flex items-start! gap-3! rounded-2xl! bg-bgTertiary! border-none! shadow-none! text-fgPrimary! p-4! pr-12! backdrop-blur-[20px] min-w-[356px] md:min-w-[420px] max-w-[420px] duration-300! ease-in-out-quart! data-[expanded=false]:overflow-hidden',
+      'group flex items-center! gap-3! rounded-2xl! bg-bgTertiary! border-none! shadow-none! text-fgPrimary! p-4! pr-12! backdrop-blur-[20px] min-w-[356px] md:min-w-[420px] max-w-[420px] duration-300! ease-in-out-quart! data-[expanded=false]:overflow-hidden',
     title: 'font-circle text-base leading-[18px]! font-medium tracking-[-0.32px] text-fgPrimary!',
     description: 'font-graphik text-[11px] leading-4! font-normal text-fgSecondary! mt-1',
     icon: 'size-auto! shrink-0',
@@ -55,11 +55,10 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
       'inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 font-circle text-sm font-medium transition-colors hover:bg-secondary disabled:pointer-events-none disabled:opacity-50',
     // transform-none (not translate-none): sonner hangs its close button off
     // the corner via `transform: translate(-35%,-35%)`, which the translate
-    // property doesn't reset. 24px box at 12px insets = a 16px visual gap on
-    // both sides (matching the toast's p-4) with the icon centered on the
-    // title line.
+    // property doesn't reset. 24px box 12px from the right edge, centered
+    // on the toast's height like the icon and the text (Figma 72).
     closeButton:
-      'text-fgSecondary! hover:text-fgPrimary! absolute right-3! left-auto! top-3! transform-none! flex items-center justify-center rounded-md bg-transparent! border-none! p-1! opacity-100 transition-colors hover:opacity-100 h-6! w-6!',
+      'text-fgSecondary! hover:text-fgPrimary! absolute right-3! left-auto! top-[calc(50%-12px)]! transform-none! flex items-center justify-center rounded-md bg-transparent! border-none! p-1! opacity-100 transition-colors hover:opacity-100 h-6! w-6!',
     content: ''
   };
 

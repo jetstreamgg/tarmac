@@ -32,6 +32,8 @@ const wagmi = vi.hoisted(() => ({
   mutationHash: undefined as `0x${string}` | undefined,
   // a write waiting in the wallet
   isPending: false,
+  // the outcome hook's speed-up callback, as the engine last passed it
+  onRepriced: undefined as undefined | ((from: string, to: string) => void),
   // current receipt state, keyed off the active hash by the test driver
   receipt: {
     isLoading: false,
@@ -51,13 +53,20 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined, address: wagmi.address }),
   // Echo the simulated call back on the request so a test can see WHICH call a
   // dispatch was prepared from.
-  useSimulateContract: (params: { functionName?: string }) => {
+  useSimulateContract: (params: { functionName?: string; value?: bigint; gas?: bigint }) => {
     const simulate = () => {
       const error = params.functionName ? wagmi.simulationErrors[params.functionName] : undefined;
       return error
         ? { data: undefined, isLoading: false, error }
         : {
-            data: { request: { __mock: 'request', functionName: params.functionName } },
+            data: {
+              request: {
+                __mock: 'request',
+                functionName: params.functionName,
+                value: params.value,
+                gas: params.gas
+              }
+            },
             isLoading: false,
             error: null
           };
@@ -97,12 +106,15 @@ vi.mock('wagmi', () => ({
 // cancel as `failure`); an RPC error while watching never reaches the engine.
 // `receipt.error` / `failureReason` stand in for that final failure.
 vi.mock('@/hooks/shared/useTransactionOutcome', () => ({
-  useTransactionOutcome: () => ({
-    isPending: wagmi.receipt.isLoading,
-    isSuccess: wagmi.receipt.isSuccess,
-    failure: wagmi.receipt.error ?? wagmi.receipt.failureReason,
-    receipt: wagmi.receipt.data
-  })
+  useTransactionOutcome: (params: { onRepriced?: (from: string, to: string) => void }) => {
+    wagmi.onRepriced = params.onRepriced;
+    return {
+      isPending: wagmi.receipt.isLoading,
+      isSuccess: wagmi.receipt.isSuccess,
+      failure: wagmi.receipt.error ?? wagmi.receipt.failureReason,
+      receipt: wagmi.receipt.data
+    };
+  }
 }));
 
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
@@ -210,6 +222,41 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it('simulates and sends a payable call with its ETH, after an approve that carries none', () => {
+    const deposit = { ...makeCall('deposit'), value: 7n } as Call;
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, deposit] })
+    );
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'approve', value: undefined })
+    );
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'deposit', value: 7n })
+    );
+  });
+
+  it("simulates and sends a call with its explicit gas instead of the wallet's estimate", () => {
+    const relay = { ...makeCall('relayMessage'), gas: 712_090n };
+    const { result } = renderHook(() => useSequentialTransactionFlow({ calls: [relay] }));
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'relayMessage', gas: 712_090n })
+    );
+  });
+
   it('single-call sequence fires onSuccess once after its receipt', () => {
     const onSuccess = vi.fn();
     const calls: Call[] = [SUPPLY];
@@ -235,6 +282,31 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(onSuccess).toHaveBeenCalledWith('0xsupply', undefined);
     expect(result.current.currentCallIndex).toBe(0); // reset on completion
+  });
+
+  it('hands the receipt to onReceipt right before onSuccess', () => {
+    const order: string[] = [];
+    const onReceipt = vi.fn(() => order.push('receipt'));
+    const onSuccess = vi.fn(() => order.push('success'));
+    const receipt = { blockNumber: 42n, logs: [] };
+
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [SUPPLY], onReceipt, onSuccess })
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null, data: receipt };
+    });
+    rerender();
+
+    expect(onReceipt).toHaveBeenCalledWith(receipt);
+    expect(order).toEqual(['receipt', 'success']);
   });
 
   // APP-417. `useSimulateContract` hands back a NEW object whenever it refetches —
@@ -1154,5 +1226,130 @@ describe('useSequentialTransactionFlow — reset while a write is out (the modal
 
     act(() => result.current.execute());
     expect(lastDispatchedCall()).toBe('supply-edited');
+  });
+});
+
+describe('useSequentialTransactionFlow — release once the caller read the outcome on chain', () => {
+  beforeEach(() => {
+    resetWagmi();
+    // Like wagmi's reset, it drops the hash, and the receipt hook stops waiting.
+    wagmi.resetWrite = vi.fn(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    });
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  const lastDispatchedCall = () =>
+    (wagmi.writeContract.mock.calls.at(-1)?.[0] as { functionName?: string } | undefined)?.functionName;
+
+  // A hash the wallet returned whose receipt never arrives.
+  const sendWithoutReceipt = (result: { current: { execute: () => void } }, rerender: () => void) => {
+    act(() => result.current.execute());
+    act(() => wagmi.onWriteSuccess?.('0xnever'));
+    // Mock state is read during render, so a real re-render must carry it.
+    wagmi.mutationHash = '0xnever';
+    wagmi.receipt = { isLoading: true, isSuccess: false, error: null, failureReason: null };
+    rerender();
+  };
+
+  it('clears the run, so the next confirm sends its own call instead of the held one', () => {
+    let calls: Call[] = [makeCall('proveA')];
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
+    sendWithoutReceipt(result, rerender);
+
+    act(() => result.current.release());
+    calls = [makeCall('finalizeB')];
+    rerender();
+
+    expect(result.current.detached).toBe(false);
+    expect(result.current.isLoading).toBe(false);
+    act(() => result.current.execute());
+    expect(lastDispatchedCall()).toBe('finalizeB');
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+  });
+
+  it('control: a reset alone keeps the held call while its write is out', () => {
+    let calls: Call[] = [makeCall('proveA')];
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
+    sendWithoutReceipt(result, rerender);
+
+    act(() => result.current.reset());
+    calls = [makeCall('finalizeB')];
+    rerender();
+
+    expect(result.current.detached).toBe(true);
+  });
+
+  it('reports nothing for the released write', () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [makeCall('proveA')], onSuccess, onError })
+    );
+    sendWithoutReceipt(result, rerender);
+
+    act(() => result.current.release());
+    rerender();
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("never reports the released write's speed-up, which a wait still running can see", () => {
+    const onStart = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [makeCall('proveA')], onStart, failOnReplaced: true })
+    );
+    sendWithoutReceipt(result, rerender);
+    onStart.mockClear();
+
+    act(() => result.current.release());
+    rerender();
+    act(() => wagmi.onRepriced?.('0xnever', '0xfaster'));
+
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it("control: the run's own speed-up is reported under the new hash", () => {
+    const onStart = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [makeCall('proveA')], onStart, failOnReplaced: true })
+    );
+    sendWithoutReceipt(result, rerender);
+    onStart.mockClear();
+
+    act(() => wagmi.onRepriced?.('0xnever', '0xfaster'));
+
+    expect(onStart).toHaveBeenCalledWith('0xfaster');
+  });
+
+  it('ends a detached run as its reset would, its onCleared included', () => {
+    const onCleared = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [makeCall('proveA')] })
+    );
+    sendWithoutReceipt(result, rerender);
+    act(() => result.current.reset(onCleared));
+    expect(onCleared).not.toHaveBeenCalled();
+
+    act(() => result.current.release());
+
+    expect(onCleared).toHaveBeenCalledTimes(1);
+    expect(result.current.detached).toBe(false);
+  });
+
+  it('a prompt still open in the wallet is detached as by a reset, never dropped', () => {
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [makeCall('proveA')] })
+    );
+    act(() => result.current.execute());
+    wagmi.isPending = true;
+    rerender();
+
+    act(() => result.current.release());
+
+    expect(result.current.detached).toBe(true);
+    expect(wagmi.resetWrite).not.toHaveBeenCalled();
   });
 });

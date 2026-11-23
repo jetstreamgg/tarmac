@@ -70,6 +70,7 @@ export default defineConfig({
         '**/pendle.spec.ts',
         '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
+        '**/terms-check-failure.spec.ts',
         '**/address-screening.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
@@ -77,7 +78,20 @@ export default defineConfig({
         '**/unichain-savings.spec.ts',
         '**/sequential-tx.spec.ts',
         '**/batch-simulation.spec.ts',
-        '**/safe-savings.spec.ts'
+        '**/safe-savings.spec.ts',
+        '**/bridge-native.spec.ts',
+        '**/bridge-native-activity.spec.ts',
+        '**/bridge-native-arbitrum.spec.ts',
+        '**/bridge-native-form.spec.ts',
+        '**/bridge-native-pending.spec.ts',
+        '**/bridge-native-safe.spec.ts',
+        '**/bridge-native-wallets.spec.ts',
+        '**/bridge-native-withdrawal.spec.ts',
+        '**/bridge-cctp.spec.ts',
+        '**/bridge-cctp-gate.spec.ts',
+        '**/bridge-cctp-recovery.spec.ts',
+        '**/bridge-cctp-safe.spec.ts'
+
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
@@ -86,7 +100,10 @@ export default defineConfig({
 
   webServer: {
     // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-    command: 'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true pnpm dev:mock',
+    // The terms endpoint matches CI too. An empty value makes checkTermsWithRetry
+    // return before fetch, so a forced /check (terms-check-failure) never fires.
+    command:
+      'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true VITE_TERMS_ENDPOINT=https://staging-api.sky.money/terms-acceptance pnpm dev:mock',
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,

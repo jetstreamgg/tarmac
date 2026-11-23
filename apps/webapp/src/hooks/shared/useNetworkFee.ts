@@ -64,6 +64,29 @@ const MAINNET_FEE_STALE_TIME = 12_000;
 const L2_FEE_STALE_TIME = 30_000;
 
 /**
+ * The expected fee per gas on `chainId`. Priced from fee history rather than
+ * `useEstimateFeesPerGas`: that hook prefers `eth_maxPriorityFeePerGas`, which reports
+ * the tip needed to be included at all and not the one wallets actually bid. See
+ * PRIORITY_FEE_PERCENTILE for the measurement.
+ */
+export function useFeePerGas(chainId: number, enabled = true) {
+  const publicClient = usePublicClient({ chainId });
+  return useQuery({
+    queryKey: ['network-fee-per-gas', chainId],
+    queryFn: async () =>
+      computeFeePerGas(
+        await publicClient!.getFeeHistory({
+          blockCount: FEE_HISTORY_BLOCK_COUNT,
+          blockTag: 'latest',
+          rewardPercentiles: [PRIORITY_FEE_PERCENTILE]
+        })
+      ),
+    enabled: enabled && !!publicClient,
+    staleTime: chainId === mainnet.id ? MAINNET_FEE_STALE_TIME : L2_FEE_STALE_TIME
+  });
+}
+
+/**
  * Estimated network fee for a transaction flow, in USD.
  *
  * Returns both the sequential and the bundled cost regardless of which one applies, so
@@ -137,27 +160,12 @@ export function useNetworkFee({
     placeholderData: keepPreviousData
   });
 
-  // Priced from fee history rather than `useEstimateFeesPerGas`: that hook prefers
-  // `eth_maxPriorityFeePerGas`, which reports the tip needed to be included at all and
-  // not the one wallets actually bid. See PRIORITY_FEE_PERCENTILE for the measurement.
   const {
     data: feePerGas,
     isLoading: isFeesLoading,
     error: feesError,
     refetch: refetchFees
-  } = useQuery({
-    queryKey: ['network-fee-per-gas', resolvedChainId],
-    queryFn: async () =>
-      computeFeePerGas(
-        await publicClient!.getFeeHistory({
-          blockCount: FEE_HISTORY_BLOCK_COUNT,
-          blockTag: 'latest',
-          rewardPercentiles: [PRIORITY_FEE_PERCENTILE]
-        })
-      ),
-    enabled: enabled && !!publicClient,
-    staleTime: resolvedChainId === mainnet.id ? MAINNET_FEE_STALE_TIME : L2_FEE_STALE_TIME
-  });
+  } = useFeePerGas(resolvedChainId, enabled);
 
   const data = useMemo((): NetworkFeeData | undefined => {
     // `keepPreviousData` hands back the last result whenever this observer has none of

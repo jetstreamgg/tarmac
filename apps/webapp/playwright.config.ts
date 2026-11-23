@@ -51,7 +51,11 @@ export default defineConfig({
   ],
   // Run your local dev server before starting the tests.
   webServer: {
-    command: 'VITE_SKIP_AUTH_CHECK=true pnpm dev:mock',
+    // The terms endpoint matches the parallel suite. Specs in this directory that
+    // force the compliance checks on (terms-check-failure) only issue /check
+    // when it is a well-formed URL.
+    command:
+      'VITE_SKIP_AUTH_CHECK=true VITE_TERMS_ENDPOINT=https://staging-api.sky.money/terms-acceptance pnpm dev:mock',
     //running dev:mock is faster, but building and serving like below more closely mimics the production environment
     //command: 'pnpm build:mock && pnpm exec serve dist -sL -p 3000',
     port: 3000,

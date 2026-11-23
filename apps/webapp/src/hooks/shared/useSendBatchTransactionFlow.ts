@@ -46,6 +46,20 @@ export class TransactionOutcomeUnknownError extends Error {
   }
 }
 
+/** A bundle that settled as failed, with the receipts the wallet reported: a leg may have mined anyway. */
+export class BatchFailedError extends Error {
+  constructor(
+    readonly receipts: readonly {
+      status: 'success' | 'reverted';
+      transactionHash: `0x${string}`;
+      blockNumber: bigint;
+      logs: readonly { address: `0x${string}`; data: `0x${string}`; topics: readonly `0x${string}`[] }[];
+    }[] = []
+  ) {
+    super('ERROR: Batch transaction failed');
+  }
+}
+
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
 ): BatchTransactionFlowHook {
@@ -56,6 +70,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     onSuccess = () => null,
     onError = () => null,
     onStart = () => null,
+    onCallsSent,
     ...sendCallsParameters
   } = parameters;
 
@@ -102,7 +117,8 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         settledRef.current = undefined;
         onMutate?.();
       },
-      onSuccess: () => {
+      onSuccess: data => {
+        onCallsSent?.(data.id);
         if (onStart) {
           onStart(undefined);
         }
@@ -166,7 +182,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
-  const emitSuccess = useEffectEvent((hash?: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
+  const emitSuccess = useEffectEvent((...settled: Parameters<typeof onSuccess>) => onSuccess(...settled));
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     const id = mutationData?.id;
@@ -176,14 +192,17 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
       const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
       if (isSuccess && (revertedReceipt || data.status === 'failure')) {
-        emitError(new Error('ERROR: Batch transaction failed'), revertedReceipt?.transactionHash);
+        emitError(new BatchFailedError(data.receipts ?? []), revertedReceipt?.transactionHash);
       } else if (isSuccess && data.status === 'success') {
         // A non-atomic bundle can land across blocks; the history refresh waits for the last.
         const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
-        emitSuccess(
-          data.receipts?.[0]?.transactionHash,
-          blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined
-        );
+        const hash = data.receipts?.[0]?.transactionHash;
+        const blockNumber =
+          blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined;
+        const txHashes = (data.receipts ?? []).map(receipt => receipt.transactionHash);
+        // Ran as separate transactions: a call that landed apart from the first is in another receipt.
+        if (txHashes.length > 1) emitSuccess(hash, blockNumber, txHashes);
+        else emitSuccess(hash, blockNumber);
       } else if (miningError && !settled) {
         // Only a permanent status error ends the polling (see `retry` above).
         emitError(new TransactionOutcomeUnknownError(miningError), data?.receipts?.[0]?.transactionHash);
