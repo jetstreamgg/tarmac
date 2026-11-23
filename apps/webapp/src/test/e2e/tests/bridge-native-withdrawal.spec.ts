@@ -11,7 +11,7 @@ import {
   confirmArbitrumWithdrawalOnFork,
   executeArbitrumWithdrawalOnFork
 } from '../utils/arbitrumWithdrawalProof';
-import { awaitDepositTxHash, l1AccountState, l2UsdsBalance } from '../utils/bridgeRelay';
+import { awaitDepositTxHash, l1AccountState, l2UsdsBalance, pendingTxHashes } from '../utils/bridgeRelay';
 import {
   finalizeOpStackWithdrawalOnFork,
   proveOpStackWithdrawalOnFork,
@@ -73,12 +73,13 @@ async function withdrawThroughSkyLink(
   await expect(bridge.modalRow('Bridge type')).toContainText('SkyLink');
   await expect(page.getByTestId('bridge-modal-footnote')).toContainText(footnote);
 
+  const known = await pendingTxHashes(page, 'ethereum');
   await bridge.confirmButton().click();
   await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
   await expect
     .poll(async () => before - (await l2UsdsBalance(id, account)), { timeout: 30_000 })
     .toBe(parseUnits(amount, 18));
-  return awaitDepositTxHash(page, 'ethereum');
+  return awaitDepositTxHash(page, 'ethereum', known);
 }
 
 test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
