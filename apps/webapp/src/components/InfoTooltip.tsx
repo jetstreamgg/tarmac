@@ -20,7 +20,9 @@ export function InfoTooltip({
   contentClassname,
   iconClassName,
   iconSize = 13,
-  shouldShowCloseButton = false
+  shouldShowCloseButton = false,
+  icon,
+  triggerLabel = 'Show additional information'
 }: {
   title?: React.ReactNode;
   content: string | React.ReactNode;
@@ -28,8 +30,13 @@ export function InfoTooltip({
   iconClassName?: string;
   iconSize?: number;
   shouldShowCloseButton?: boolean;
+  /** Custom glyph rendered in place of the info icon (e.g. a warning triangle). */
+  icon?: React.ReactNode;
+  /** Accessible name of the trigger. */
+  triggerLabel?: string;
 }) {
   const isTouchDevice = useIsTouchDevice();
+  const glyph = icon ?? <Info size={iconSize} className={iconClassName} />;
 
   const body = (
     <div className={title ? 'text-fgSecondary flex flex-col gap-2' : undefined}>
@@ -45,9 +52,9 @@ export function InfoTooltip({
       <PopoverTrigger
         onClick={e => e.stopPropagation()}
         className={cn(TRIGGER_CLASS, 'z-10')}
-        aria-label="Show additional information"
+        aria-label={triggerLabel}
       >
-        <Info size={iconSize} className={iconClassName} />
+        {glyph}
       </PopoverTrigger>
       {/* Touch fallback mirrors the DS tooltip chrome (Figma 5043:57748). */}
       <PopoverContent
@@ -76,8 +83,8 @@ export function InfoTooltip({
     // RiskTierDetailsTrigger.
     <TooltipProvider delayDuration={300}>
       <Tooltip>
-        <TooltipTrigger className={TRIGGER_CLASS} aria-label="Show additional information">
-          <Info size={iconSize} className={iconClassName} />
+        <TooltipTrigger className={TRIGGER_CLASS} aria-label={triggerLabel}>
+          {glyph}
         </TooltipTrigger>
         <TooltipPortal>
           <TooltipContent className={contentClassname}>

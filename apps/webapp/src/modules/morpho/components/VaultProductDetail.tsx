@@ -10,20 +10,22 @@ import {
   type VaultConfig,
   useMorphoVaultChartInfo,
   useMorphoVaultMarketApiData,
-  useProductNetworks
+  useProductNetworks,
+  withdrawalsUnavailableFor
 } from '@/hooks';
 import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { Morpho } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import { HighRateInfo, NoLiquidityInfo } from '@/components/product/WithdrawalsUnavailable';
 import { VaultDetailChart } from './VaultDetailChart';
 import { VaultStrategy } from './VaultStrategy';
 import { VaultPositionCard } from './VaultPositionCard';
 import { VaultTransactionsTable } from './VaultTransactionsTable';
 import { VaultRateBreakdown } from './VaultRateBreakdown';
 import { trailing30DayRate } from '../helpers/vaultRates';
-import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_VAULTS_URL } from '@/lib/constants';
 
 /**
  * About copy per vault (APP-526), keyed by the config name - the one stable,
@@ -91,6 +93,12 @@ export function VaultProductDetail({
   // (not the default `undefined`) so the query key matches the chart's daily fetch
   // and TanStack serves both from one request.
   const { data: dailyChart } = useMorphoVaultChartInfo({ vaultAddress, useHourlyInterval: false });
+  const withdrawalsUnavailable = withdrawalsUnavailableFor(
+    vault.riskProfile,
+    marketData?.liquidity,
+    marketData?.totalAssets
+  );
+  const assetSymbol = vault.assetToken.symbol;
 
   const decimals = getTokenDecimals(vault.assetToken, chainId);
   const rate = marketData?.rate;
@@ -101,7 +109,11 @@ export function VaultProductDetail({
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="morpho" size={12} />,
+      info: withdrawalsUnavailable ? (
+        <HighRateInfo assetSymbol={assetSymbol} />
+      ) : (
+        <RateInfo type="morpho" size={12} />
+      ),
       // Incentive-boosted vaults tag the figure with the DS stars mark and
       // explain it through the breakdown tooltip (APP-443 item 14).
       value: <VaultRateBreakdown rate={rate} value={rate?.formattedNetRate ?? NO_VALUE} />
@@ -122,6 +134,9 @@ export function VaultProductDetail({
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
+      info: withdrawalsUnavailable ? (
+        <NoLiquidityInfo assetSymbol={assetSymbol} risksHref={USER_RISKS_VAULTS_URL} />
+      ) : undefined,
       value: marketData?.liquidity !== undefined ? formatWholeUsd(marketData.liquidity, decimals) : NO_VALUE
     },
     {
@@ -166,7 +181,7 @@ export function VaultProductDetail({
       }
       details={details}
       afterDetails={{ title: <Trans>Strategy</Trans>, body: <VaultStrategy vaultAddress={vaultAddress} /> }}
-      about={{ body: VAULT_ABOUT[vault.name] ?? NO_VALUE, learnMoreHref: USER_RISKS_URL }}
+      about={{ body: VAULT_ABOUT[vault.name] ?? NO_VALUE, learnMoreHref: USER_RISKS_VAULTS_URL }}
       transactions={<VaultTransactionsTable vaultAddress={vaultAddress} />}
     />
   );

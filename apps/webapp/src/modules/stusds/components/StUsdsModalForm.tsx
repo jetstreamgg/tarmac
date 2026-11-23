@@ -6,6 +6,10 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { StUsdsProviderType, TOKENS, stUsdsAddress } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
+import {
+  WITHDRAWALS_UNAVAILABLE_WORDING,
+  WithdrawalsUnavailableDepositNotice
+} from '@/components/product/WithdrawalsUnavailable';
 import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Text } from '@/modules/layout/components/Typography';
@@ -23,7 +27,7 @@ import { stUsdsPrepareErrorMessage } from '../lib/prepareErrorMessage';
 import { PRICE_IMPACT_HIGH_THRESHOLD_BPS, PRICE_IMPACT_WARNING_THRESHOLD_BPS } from '../lib/providerNotice';
 import { StUsdsProviderNotice } from './StUsdsProviderNotice';
 import { buildStUsdsEntryRows, buildStUsdsReviewRows } from './stUsdsModalRows';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
@@ -79,6 +83,7 @@ export function StUsdsModalForm({
     debouncePending,
     rate,
     position,
+    withdrawalsUnavailable,
     engineParams,
     providerSelection,
     priceImpactBps,
@@ -95,6 +100,9 @@ export function StUsdsModalForm({
   } = form;
 
   const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  // 100% utilization: the supply flow warns on entry and again on the review,
+  // and the Withdrawal cell states it.
+  const showDepositWarning = isSupply && withdrawalsUnavailable;
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   // Kept on while a new amount settles, showing the settled one's fee: turning it off
@@ -158,12 +166,20 @@ export function StUsdsModalForm({
   // screen) — this line explains the disabled confirm in place.
   const impactLapsed = needsImpactAcknowledgement && !impactAccepted;
   // Resolved outside the memo so it keys on the string, not the i18n object.
-  const withdrawalLabel = i18n._(withdrawalWording('stusds', flow));
+  const withdrawalLabel = i18n._(
+    withdrawalsUnavailable ? WITHDRAWALS_UNAVAILABLE_WORDING : withdrawalWording('stusds', flow)
+  );
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-review`}>
         {transactionScreenContent}
         <div className="flex flex-col gap-4">
+          {showDepositWarning && (
+            <WithdrawalsUnavailableDepositNotice
+              assetSymbol="USDS"
+              testId="stusds-modal-review-withdrawals-unavailable"
+            />
+          )}
           <ModalSummaryGrid
             rows={toGridCells(
               buildStUsdsReviewRows(flow, {
@@ -208,7 +224,8 @@ export function StUsdsModalForm({
       feeCell,
       impactLapsed,
       impactPercent,
-      withdrawalLabel
+      withdrawalLabel,
+      showDepositWarning
     ]
   );
 
@@ -295,6 +312,12 @@ export function StUsdsModalForm({
       />
 
       <div className="flex flex-col gap-4">
+        {showDepositWarning && (
+          <WithdrawalsUnavailableDepositNotice
+            assetSymbol="USDS"
+            testId="stusds-modal-withdrawals-unavailable"
+          />
+        )}
         <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
 
         <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
@@ -330,11 +353,7 @@ export function StUsdsModalForm({
                 <Trans>
                   I understand stUSDS is an expert module that may function differently than other modules,
                   and I have reviewed the associated{' '}
-                  <ExternalLink
-                    href="https://docs.sky.money/user-risks"
-                    showIcon={false}
-                    className="text-fgBrand"
-                  >
+                  <ExternalLink href={USER_RISKS_STUSDS_URL} showIcon={false} className="text-fgBrand">
                     User Risks
                   </ExternalLink>
                   .

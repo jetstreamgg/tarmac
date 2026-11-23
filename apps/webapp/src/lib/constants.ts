@@ -97,6 +97,10 @@ export const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-internat
 
 /** The "Learn more in the User Risk Documentation." target shared by every product About section. */
 export const USER_RISKS_URL = 'https://docs.sky.money/user-risks';
+/** Section 5.2 of the user risks doc: Vaults (built on Morpho). */
+export const USER_RISKS_VAULTS_URL = `${USER_RISKS_URL}#id-5.2-vaults-built-on-morpho`;
+/** Section 5.4 of the user risks doc: Staking and borrowing (including stUSDS). */
+export const USER_RISKS_STUSDS_URL = `${USER_RISKS_URL}#id-5.4-staking-and-borrowing-including-stusds`;
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

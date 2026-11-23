@@ -5,7 +5,8 @@ import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { RateInfo } from '@/components/product/RateInfo';
-import { useStUsdsData } from '@/hooks';
+import { useStUsdsData, withdrawalsUnavailableFor } from '@/hooks';
+import { HighRateInfo, WithdrawalsUnavailableNotice } from '@/components/product/WithdrawalsUnavailable';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
@@ -26,7 +27,7 @@ import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPos
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useStUsdsModal } from '../hooks/useStUsdsModal';
-import { NO_VALUE } from '@/lib/constants';
+import { NO_VALUE, USER_RISKS_STUSDS_URL } from '@/lib/constants';
 
 /**
  * No-position stUSDS entry card: "Supply USDS and earn X%" headline, the
@@ -37,6 +38,11 @@ import { NO_VALUE } from '@/lib/constants';
 function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => void }) {
   const { isConnected } = useConnection();
   const { data: stUsdsData } = useStUsdsData();
+  const withdrawalsUnavailable = withdrawalsUnavailableFor(
+    'stusds',
+    stUsdsData?.availableLiquidity,
+    stUsdsData?.totalAssets
+  );
 
   // The CTA stays enabled while disconnected: clicking routes through the
   // connect flow and continues into the supply modal once connected.
@@ -84,6 +90,11 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
           Withdrawals may be delayed during periods of high utilization.
         </Trans>
       }
+      notice={
+        withdrawalsUnavailable ? (
+          <WithdrawalsUnavailableNotice assetSymbol="USDS" risksHref={USER_RISKS_STUSDS_URL} />
+        ) : undefined
+      }
       stats={
         <ProductStatPair>
           <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
@@ -95,7 +106,11 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
-              <PopoverRateInfo type="stusds" width={14} height={14} iconClassName="text-fgSecondary" />
+              {withdrawalsUnavailable ? (
+                <HighRateInfo assetSymbol="USDS" />
+              ) : (
+                <PopoverRateInfo type="stusds" width={14} height={14} iconClassName="text-fgSecondary" />
+              )}
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
@@ -136,6 +151,11 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
 export function StUsdsPositionCard() {
   const { isConnected } = useConnection();
   const { data: stUsdsData, mutate: mutateStUsds } = useStUsdsData();
+  const withdrawalsUnavailable = withdrawalsUnavailableFor(
+    'stusds',
+    stUsdsData?.availableLiquidity,
+    stUsdsData?.totalAssets
+  );
 
   const suppliedUsds = stUsdsData?.userSuppliedUsds ?? 0n;
   const rate = stUsdsData ? calculateApyFromStr(stUsdsData.moduleRate) / 100 : undefined;
@@ -175,6 +195,9 @@ export function StUsdsPositionCard() {
       // No comp of its own (APP-432 item 16) — the grid follows the savings card.
       stats={
         <>
+          {withdrawalsUnavailable && (
+            <WithdrawalsUnavailableNotice assetSymbol="USDS" risksHref={USER_RISKS_STUSDS_URL} />
+          )}
           <ProductStatPair grow>
             <ProductStat label={<Trans>Supply</Trans>}>
               {usdsIcon}

@@ -33,6 +33,7 @@ import { useStUsdsData } from '../stusds/useStUsdsData';
 import { useStUsdsChartInfo } from '../stusds/useStUsdsChartInfo';
 import { buildEarnProducts } from './earnProducts';
 import { deriveEndedRewardPositions } from './endedRewardPositions';
+import { withdrawalsUnavailableFor } from './withdrawalsUnavailable';
 import type { EarnMarketplaceResult, EarnProductRow, EarnRate, EarnUsdAmount } from './types';
 
 const NO_RATE = '—';
@@ -327,7 +328,8 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
             const morphoIndex = MORPHO_VAULTS.findIndex(
               v => v.vaultAddress[familyMainnetId] === product.address
             );
-            const tvlUsd = morphoMarketResults[morphoIndex]?.data?.totalAssetsUsd;
+            const marketData = morphoMarketResults[morphoIndex]?.data;
+            const tvlUsd = marketData?.totalAssetsUsd;
             const userVault = vaultUserAssets.vaults.find(v => v.vaultAddress === product.address);
             const positionUsd =
               connected && userVault
@@ -337,6 +339,11 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               ...product,
               rate,
               rate30d,
+              withdrawalsUnavailable: withdrawalsUnavailableFor(
+                product.riskProfile,
+                marketData?.liquidity,
+                marketData?.totalAssets
+              ),
               tvl: tvlUsd !== undefined ? singleChainAmount(familyMainnetId, tvlUsd) : undefined,
               position:
                 positionUsd !== undefined ? singleChainAmount(familyMainnetId, positionUsd) : undefined,
@@ -388,6 +395,11 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
                   : undefined
               ),
               rate30d: stUsdsRate30d,
+              withdrawalsUnavailable: withdrawalsUnavailableFor(
+                product.riskProfile,
+                stUsdsData?.availableLiquidity,
+                stUsdsData?.totalAssets
+              ),
               tvl:
                 stUsdsData?.totalAssets !== undefined
                   ? singleChainAmount(familyMainnetId, bigintToUsd(stUsdsData.totalAssets, usdsPrice))
