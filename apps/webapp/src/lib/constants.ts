@@ -81,6 +81,10 @@ export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
 
+// Kill switch for routing stUSDS supply through the Curve pool. On unless explicitly
+// set to 'false'; withdrawals keep the Curve route either way.
+export const STUSDS_CURVE_SUPPLY_ENABLED = import.meta.env.VITE_STUSDS_CURVE_SUPPLY_ENABLED !== 'false';
+
 export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) || 0;
 
 // The bundled-transaction legal notice lives in the docs, not in the app: a
