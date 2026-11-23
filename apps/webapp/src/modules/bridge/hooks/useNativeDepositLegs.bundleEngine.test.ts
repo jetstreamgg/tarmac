@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress, parseEther } from 'viem';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { BatchFailedError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useNativeDepositLegs } from './useNativeDepositLegs';
 
 // The open bundles are counted per account across mounts: each test signs with its own.
@@ -144,7 +145,12 @@ describe('useNativeDepositLegs, a bundle the wallet answers after its run ended'
     await act(async () => wallet.resolve({ id: '0xcalls' }));
     await settle();
     expect(current.onStart).toHaveBeenCalledWith(undefined);
-    expect(current.onError).toHaveBeenCalledWith(new Error('ERROR: Batch transaction failed'), undefined);
+    const [error, hash] = vi.mocked(current.onError).mock.calls.at(-1)!;
+    expect(error).toBeInstanceOf(BatchFailedError);
+    expect(error.message).toBe('ERROR: Batch transaction failed');
+    // The wallet's receipts go with it: a leg may have mined anyway.
+    expect((error as BatchFailedError).receipts).toEqual([{ transactionHash: '0xabc', blockNumber: 5n }]);
+    expect(hash).toBeUndefined();
   });
 
   it('frees the account once it rejects a bundle opened before the account changed', async () => {

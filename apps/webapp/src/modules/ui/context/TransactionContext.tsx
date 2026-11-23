@@ -37,6 +37,7 @@ import {
 } from '@/hooks/shared/useTransactionOutcome';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
+import { isUnauthorizedRequestError } from '@/modules/utils/isUnauthorizedRequestError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
@@ -606,6 +607,7 @@ export function TransactionProvider({
         txStatusRef.current === TxStatus.LOADING ||
         (txStatusRef.current === TxStatus.INITIALIZED && hasMinedStepRef.current);
       if (inProgress && configRef.current) {
+        minimizedRef.current = false;
         setMinimized(false);
         toastWithClose(
           () => (
@@ -947,7 +949,7 @@ export function TransactionProvider({
           title={lostBundle ? t`Couldn't confirm transaction` : titleFor(state)}
           hash={txHashRef.current}
           unconfirmed={lostBundle}
-          onView={() => setMinimized(false)}
+          onView={restore}
         />
       ),
       { id: MINIMIZED_TOAST_ID, duration: inFlight ? Infinity : 10000 }
@@ -956,7 +958,7 @@ export function TransactionProvider({
     return () => {
       toast.dismiss(MINIMIZED_TOAST_ID);
     };
-  }, [minimized, txStatus, outcomeUnknown]);
+  }, [minimized, txStatus, outcomeUnknown, restore]);
 
   // The single gate point between the user's confirm and the config callback
   // (APP-496): every way a write can start — confirm, the entry's secondary
@@ -1429,8 +1431,14 @@ export function TransactionProvider({
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
       setOutcomeUnknown(unknown);
-      // A Reject has its own copy; anything else that reverted says why.
-      setFailureReason(rejected || unknown ? undefined : revertMessage(error));
+      // A Reject has its own copy; a send the wallet didn't allow, or one that reverted, says why.
+      setFailureReason(
+        rejected || unknown
+          ? undefined
+          : isUnauthorizedRequestError(error)
+            ? t`Your wallet didn't allow this request. Reconnect it and try again.`
+            : revertMessage(error)
+      );
       // A bridge refusal can come on a Retry too, after the first attempt failed.
       setRefusal(
         error instanceof TransactionRefusedError
@@ -1677,6 +1685,7 @@ export function TransactionProvider({
   // Memoized: TransactionProvider is composed under ConnectedProvider (the
   // gate reads terms/auth state), so without this every terms or auth state
   // change would hand a fresh context value to every useTransaction consumer.
+  const failureMayStillMine = txStatus === TxStatus.ERROR && (outcomeUnknown || unconfirmed !== null);
   const contextValue = useMemo<TransactionContextValue>(
     () => ({
       launch,
@@ -1688,7 +1697,8 @@ export function TransactionProvider({
       activeSessionId,
       closeOnNavigation,
       txCallbacks,
-      txStatus
+      txStatus,
+      failureMayStillMine
     }),
     [
       launch,
@@ -1700,7 +1710,8 @@ export function TransactionProvider({
       activeSessionId,
       closeOnNavigation,
       txCallbacks,
-      txStatus
+      txStatus,
+      failureMayStillMine
     ]
   );
 

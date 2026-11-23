@@ -12,6 +12,7 @@ import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { ArrowTopRight, LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { pendingClaimLink } from '../adapters/cctp/claimLink';
@@ -49,6 +50,7 @@ import { buildContinueBridgeRows } from './continueBridgeRows';
 import {
   bridgeCounterparty,
   buildPendingBridgeRows,
+  formatArrivalTime,
   formatBridgeDate,
   formatTimeLeft,
   nextActionLabel,
@@ -56,6 +58,7 @@ import {
   type PendingBridgeCell,
   type PendingBridgeNote
 } from './pendingBridgeRows';
+import { OpenTransactionMessage } from '@/modules/ui/components/OpenTransactionMessage';
 
 const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
   pending: 'bg-statusWarningBg text-statusWarning',
@@ -513,6 +516,10 @@ type PendingBridgeCardProps = {
   canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
   actionHint: (bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined;
   actionLocked: boolean;
+  /** Brings back the session the lock waits on. */
+  onOpenTransaction: () => void;
+  /** Its claim is being sent here, sale included. */
+  claiming: boolean;
   /** This browser keeps the list across visits: without it, a claim link is the only way back. */
   storageWritable: boolean;
 };
@@ -530,6 +537,8 @@ function PendingBridgeCard({
   canAction,
   actionHint,
   actionLocked,
+  onOpenTransaction,
+  claiming,
   storageWritable
 }: PendingBridgeCardProps) {
   const dismissible = !incoming && canDismiss(bridge, now);
@@ -538,7 +547,12 @@ function PendingBridgeCard({
   const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
-  const { offer: convertAmount, nothingLeft } = useCctpConvertOffer(bridge, now);
+  const { offer, nothingLeft, saleOpenUntil, saleSentUntil } = useCctpConvertOffer(bridge, now);
+  // Mid-claim, the USDC its sale is selling isn't left over.
+  const convertAmount = claiming ? undefined : offer;
+  // A sale prompt a reload lost may still be signed in the wallet, or a leg the run sent may still mine:
+  // the card reads Claiming until it expires.
+  const saleWaiting = !claiming && (saleOpenUntil !== undefined || saleSentUntil !== undefined);
   const cardRef = useRef<HTMLDivElement>(null);
   const onSeen = useCallback(() => {
     if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
@@ -565,6 +579,12 @@ function PendingBridgeCard({
   // Figma "Ready to claim by the recipient (sender)": once ready, the sender is pointed to the destination wallet.
   const pointsToRecipient = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
   const sentHint = !!hint && hint.kind !== 'switch-network';
+  // Buttons greyed only by the open transaction: the note above the list may be out of view.
+  const lockedHint =
+    actionLocked &&
+    !claiming &&
+    !hint &&
+    (offersConvert || (actionButton && !dismissible && !thirdWallet && canAction(bridge)));
   return (
     <div ref={cardRef} className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
@@ -618,6 +638,18 @@ function PendingBridgeCard({
           </Trans>
         </Text>
       )}
+      {saleWaiting && (
+        <Text
+          className="text-fgSecondary text-xs leading-[18px]"
+          dataTestId="pending-bridge-sale-waiting-note"
+        >
+          {saleOpenUntil !== undefined ? (
+            <SaleWaitingText until={saleOpenUntil} now={now} />
+          ) : (
+            saleSentUntil !== undefined && <SaleSentText until={saleSentUntil} now={now} />
+          )}
+        </Text>
+      )}
       {offersConvert && (
         <div className="flex gap-3.5">
           <Button
@@ -642,6 +674,7 @@ function PendingBridgeCard({
           </Button>
         </div>
       )}
+      {lockedHint && <LockedHint onOpen={onOpenTransaction} />}
 
       {counterparty?.role === 'sender' && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-incoming-note">
@@ -758,7 +791,14 @@ function PendingBridgeCard({
       )}
 
       <CardRows
-        rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined, counterparty)}
+        rows={buildPendingBridgeRows(
+          bridge,
+          now,
+          familyChainId,
+          convertAmount !== undefined,
+          counterparty,
+          claiming || saleWaiting
+        )}
       />
 
       {claimLink && !claimedElsewhere && storageWritable && (
@@ -771,6 +811,55 @@ function PendingBridgeCard({
       )}
     </div>
   );
+}
+
+function SaleWaitingText({ until, now }: { until: number; now: number }) {
+  const time = formatArrivalTime(until, now);
+  return (
+    <Trans>
+      Your wallet may still be asking you to confirm the conversion to USDS. Confirm it there, or convert here
+      from {time}.
+    </Trans>
+  );
+}
+
+function SaleSentText({ until, now }: { until: number; now: number }) {
+  const time = formatArrivalTime(until, now);
+  return (
+    <Trans>
+      Your last transaction is still confirming on Ethereum. If it doesn&apos;t go through, you can convert
+      your USDC here from {time}.
+    </Trans>
+  );
+}
+
+function LockedHint({ onOpen }: { onOpen: () => void }) {
+  const { txStatus } = useTransaction();
+  return (
+    <div className="flex items-center justify-between gap-4" data-testid="pending-bridge-locked-hint">
+      <Text className="text-fgSecondary text-xs leading-[18px]">
+        {txStatus === TxStatus.ERROR ? (
+          <Trans>A transaction failed. Open it to try again or close it.</Trans>
+        ) : (
+          <Trans>Finish your open transaction first.</Trans>
+        )}
+      </Text>
+      <button
+        type="button"
+        className="font-circle text-fgBrand shrink-0 text-xs leading-[18px] font-medium whitespace-nowrap hover:underline"
+        onClick={onOpen}
+        data-testid="pending-bridge-locked-open"
+      >
+        <Trans>Open transaction</Trans>
+      </button>
+    </div>
+  );
+}
+
+/** The live session failed and nothing it sent can still mine. */
+function useFailureSettled() {
+  const { txStatus, failureMayStillMine } = useTransaction();
+  return txStatus === TxStatus.ERROR && !failureMayStillMine;
 }
 
 type ContinueBlockedMessageProps = { reason: CctpResumeBlockReason; network: string };
@@ -834,8 +923,10 @@ function ContinueBridgeCard({
   onDismiss
 }: ContinueBridgeCardProps) {
   const { blockedReason } = useCctpResumeForm(swap);
-  // Another session may be signing a bridge of this same USDC.
-  const busy = useTransaction().activeSessionId !== null;
+  // Another session may be signing a bridge of this same USDC; one that failed with nothing left to mine isn't.
+  const { activeSessionId } = useTransaction();
+  const failureSettled = useFailureSettled();
+  const busy = activeSessionId !== null && !failureSettled;
   const network = getBridgeNetwork(swap.network).name;
   const amount = formatBigInt(swap.usdcAmount, { unit: 6, minDecimals: 2, maxDecimals: 2 });
   return (
@@ -884,7 +975,7 @@ function ContinueBridgeCard({
       </div>
       {busy ? (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="continue-bridge-hint">
-          <Trans>A transaction is in progress. Open it to continue.</Trans>
+          <OpenTransactionMessage />
         </Text>
       ) : (
         blockedReason &&
@@ -909,6 +1000,10 @@ type PendingBridgesProps = {
   actionHint: (bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
+  /** Brings that minimized session back. */
+  onOpenTransaction: () => void;
+  /** The card whose claim is being sent, by the scope it is stored under. */
+  claiming?: { scope: string; bridgeId: string };
   /** Sends a card stored in another account's list, a CCTP bridge sent to this wallet, and records it there. */
   onActionIn: (
     scope: string,
@@ -931,6 +1026,8 @@ export function PendingBridges({
   canAction,
   actionHint,
   actionLocked,
+  onOpenTransaction,
+  claiming,
   onContinue,
   onConvert,
   lookup
@@ -941,6 +1038,9 @@ export function PendingBridges({
   const swaps = useUnfinishedCctpSwaps();
   const incoming = useIncomingCctpBridges();
   const [storageWritable] = useState(isStorageWritable);
+  // A failed run has nothing in flight unless its outcome is unread: the cards are free, and the note still offers it back.
+  const failureSettled = useFailureSettled();
+  const cardsLocked = actionLocked && !failureSettled;
   // The sender's list is stored under the sender's scope: that's where its actions go.
   const cards = [
     ...bridges.map(bridge => ({ bridge, owner: undefined as string | undefined })),
@@ -955,6 +1055,23 @@ export function PendingBridges({
       <h2 className="font-circle text-fgPrimary text-lg leading-5.5 font-medium tracking-[-0.36px]">
         <Trans>Pending bridges</Trans>
       </h2>
+      {/* The cards' actions wait on it; its toast can be closed, so this is the way back. */}
+      {actionLocked && (
+        <div className="flex items-center justify-between gap-4" data-testid="pending-bridges-locked">
+          <Text className="text-textSecondary text-sm">
+            <OpenTransactionMessage />
+          </Text>
+          <Button
+            variant="secondary"
+            size="m"
+            className="shrink-0"
+            onClick={onOpenTransaction}
+            data-testid="pending-bridges-open-transaction"
+          >
+            <Trans>Open transaction</Trans>
+          </Button>
+        </div>
+      )}
       {swaps.map(swap => (
         <ContinueBridgeCard
           key={swap.swapTxHash}
@@ -991,7 +1108,9 @@ export function PendingBridges({
             toast.success(t`You can convert your USDC to USDS anytime from the Convert tab.`);
           }}
           incoming={owner !== undefined}
-          actionLocked={actionLocked}
+          actionLocked={cardsLocked}
+          onOpenTransaction={onOpenTransaction}
+          claiming={claiming?.scope === (owner ?? scope) && claiming?.bridgeId === bridge.id}
           storageWritable={storageWritable}
         />
       ))}

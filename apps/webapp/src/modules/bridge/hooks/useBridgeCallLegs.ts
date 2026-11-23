@@ -14,6 +14,7 @@ import { reportError } from '@/modules/sentry/reportError';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { createPromptRegistry, PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { usePromptIssuers } from './usePromptIssuers';
+import { SEND_OUT_MESSAGE } from './useActionLegFlow';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // Ceiling on the gap between receipt attempts while the RPC keeps failing, as the engine's.
@@ -50,8 +51,6 @@ const answerLeg = (variables: object | undefined) => {
   legReleases.delete(variables);
 };
 
-const SEND_OUT_MESSAGE =
-  'A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.';
 // The modal's own copy for a send refused without a reason: a failed read's message is not user copy.
 const READ_FAILED_MESSAGE = 'The transaction could not be sent.';
 const asRefusal = (error: Error) =>
@@ -82,6 +81,7 @@ export function useBridgeCallLegs({
   onAccountSwitch,
   onLegSent,
   onLegPrompt,
+  onBundlePrompt,
   onLegFailed,
   getCallbacks
 }: {
@@ -110,6 +110,8 @@ export function useBridgeCallLegs({
   onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
   /** The wallet is about to prompt for one leg, for the run executed with `context`; the release returned runs once it is answered. */
   onLegPrompt?: (variables: TxMutateVariables, context?: unknown) => (() => void) | undefined;
+  /** The wallet is about to prompt for a bundle, for the run executed with `context`; the release returned runs once it is answered. */
+  onBundlePrompt?: (context?: unknown) => (() => void) | undefined;
   /** A leg sent one at a time reverted or was replaced, under `hash`; called after its run ended too. */
   onLegFailed?: (hash: string) => void;
   getCallbacks: () => TxCallbacks;
@@ -203,7 +205,16 @@ export function useBridgeCallLegs({
     // Not while a send is out: the bundle already signed has nothing left to gate.
     simulateEnabled: walletBatches && sendRoute === null,
     onMutate: () => {
-      bundlePromptsRef.current.push(openBundle(runFromRef.current ?? from));
+      const window = openBundle(runFromRef.current ?? from);
+      const prompt = onBundlePrompt?.(runContextRef.current);
+      bundlePromptsRef.current.push(
+        prompt
+          ? () => {
+              window();
+              prompt();
+            }
+          : window
+      );
       // An earlier bundle's verdict no longer reaches the modal: recovery reads it from the chain.
       acceptedIssuerRef.current = undefined;
       pausedRef.current = false;
@@ -336,7 +347,7 @@ export function useBridgeCallLegs({
   const { execute: executeFlow } = flow;
   const { reset: resetBatch } = batchFlow;
   // A reset run's sequential leg is still out: the engine holds that run's frozen calls until it settles.
-  const { reset: resetSequential, detached: busy, nextCalls } = sequentialFlow;
+  const { reset: resetSequential, release: releaseSequential, detached: busy, nextCalls } = sequentialFlow;
   const reset = useCallback(
     (onCleared?: () => void) => {
       runRef.current += 1;
@@ -351,6 +362,16 @@ export function useBridgeCallLegs({
     },
     [resetBatch, resetSequential]
   );
+  // The card read the run's outcome on chain: the engine drops its leg, receipt wait included.
+  const release = useCallback(() => {
+    runRef.current += 1;
+    checkingRef.current = false;
+    runFromRef.current = undefined;
+    pausedRef.current = false;
+    broadcastRef.current = false;
+    setSendRoute(null);
+    releaseSequential();
+  }, [releaseSequential]);
   const execute = useCallback(
     // `context` reaches `onLegSent` with every leg this run sends.
     (context?: unknown) => {
@@ -469,6 +490,7 @@ export function useBridgeCallLegs({
     error: calls.length > 0 ? flow.error : null,
     execute,
     reset,
+    release,
     /** Ends a run whose pre-send check is still out, so it never reaches the wallet. */
     dropCheck,
     stop

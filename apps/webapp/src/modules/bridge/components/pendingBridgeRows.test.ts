@@ -207,6 +207,22 @@ describe('buildPendingBridgeRows', () => {
     expect(buildPendingBridgeRows(claimed, 0, 1)[1][0]).not.toHaveProperty('tone');
   });
 
+  it('says a claim still being sent is claiming, in progress, until its sale is done', () => {
+    const claimed = { ...base, routeKind: 'cctp' as const, status: 'claimed' as const };
+    const [status, eta] = buildPendingBridgeRows(claimed, 0, 1, false, undefined, true)[1];
+    expect(status).toEqual({ kind: 'status', label: 'Status', status: 'pending', value: 'Claiming' });
+    expect(eta).toMatchObject({ value: 'Ready' });
+    // Before its receive mined too, and over the USDC its sale is selling.
+    const ready = { ...claimed, status: 'ready' as const, nextAction: 'claim' as const };
+    expect(buildPendingBridgeRows(ready, 0, 1, false, undefined, true)[1][0]).toMatchObject({
+      value: 'Claiming'
+    });
+    expect(buildPendingBridgeRows(claimed, 0, 1, true, undefined, true)[1][0]).toMatchObject({
+      status: 'pending',
+      value: 'Claiming'
+    });
+  });
+
   it('truncates the hash like the comp and links the source explorer', () => {
     const tx = buildPendingBridgeRows(base, 0, 1)[2][1];
     expect(tx).toMatchObject({ value: '0xff9s...dsa6' });

@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { BatchFailedError } from '@/hooks/shared/useSendBatchTransactionFlow';
+import { unconfirmedReason } from '@/hooks/shared/useTransactionOutcome';
 import { withSourceRecording } from './sourceRecording';
 
 // The batch engine reports a bundle with no function name and no hash when the wallet accepts it.
-const setup = (isSafe = false) => {
+const setup = (isSafe = false, onBundleSent?: () => boolean) => {
   const inner: TxCallbacks = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
   const spies = {
     onSent: vi.fn(),
@@ -14,7 +16,12 @@ const setup = (isSafe = false) => {
     onBundled: vi.fn(() => 'bundle-1'),
     onBundleMined: vi.fn()
   };
-  const callbacks = withSourceRecording(() => inner, { isSafe, bridgeFunctionName: 'send', ...spies });
+  const callbacks = withSourceRecording(() => inner, {
+    isSafe,
+    bridgeFunctionName: 'send',
+    ...spies,
+    onBundleSent
+  });
   const accept = () => {
     callbacks.onMutate(undefined);
     callbacks.onStart(undefined);
@@ -44,6 +51,29 @@ describe('withSourceRecording, a wallet bundle', () => {
     const { callbacks, accept, onFailed } = setup();
     accept();
     callbacks.onError(new Error('ERROR: Batch transaction failed'), undefined);
+    expect(onFailed).toHaveBeenCalledWith('bundle-1', 'source-tx-reverted');
+  });
+
+  it("doesn't fail the card when the failed bundle's send mined anyway", () => {
+    const onBundleSent = vi.fn(() => true);
+    const { callbacks, accept, onFailed, inner } = setup(false, onBundleSent);
+    accept();
+    const receipts = [
+      { status: 'success', transactionHash: '0xdeposit', blockNumber: 7n, logs: [] }
+    ] as const;
+    const error = new BatchFailedError(receipts);
+    callbacks.onError(error, undefined);
+    expect(onBundleSent).toHaveBeenCalledWith('bundle-1', receipts);
+    expect(onFailed).not.toHaveBeenCalled();
+    // The modal tells to follow its card, not to send again.
+    expect(unconfirmedReason(error)).toMatch(/follow it on its card/);
+    expect(inner.onError).toHaveBeenCalledWith(error, undefined);
+  });
+
+  it("fails the card when the failed bundle's receipts hold no send of it", () => {
+    const { callbacks, accept, onFailed } = setup(false, () => false);
+    accept();
+    callbacks.onError(new BatchFailedError([]), undefined);
     expect(onFailed).toHaveBeenCalledWith('bundle-1', 'source-tx-reverted');
   });
 

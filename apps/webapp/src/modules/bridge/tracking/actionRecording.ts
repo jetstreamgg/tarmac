@@ -29,7 +29,8 @@ export function withActionRecording(
     readBundle
   }: {
     onSent: (txHash: string) => void;
-    onConfirmed: (txHash: string, bundleTxHashes?: string[]) => void;
+    /** `bundle` is the calls id of a run sent as a wallet bundle. */
+    onConfirmed: (txHash: string, bundleTxHashes?: string[], bundle?: string) => void;
     onReverted: (txHash: string) => void;
     actionFunctionName?: string;
     confirmOnNextLeg?: boolean;
@@ -70,7 +71,8 @@ export function withActionRecording(
         onConfirmed(current, [current, hash]);
       } else if (hash) {
         confirmed = true;
-        if (bundleTxHashes) onConfirmed(hash, bundleTxHashes);
+        if (bundle) onConfirmed(hash, bundleTxHashes, bundle);
+        else if (bundleTxHashes) onConfirmed(hash, bundleTxHashes);
         else onConfirmed(hash);
       }
       getCallbacks().onSuccess(...settled);

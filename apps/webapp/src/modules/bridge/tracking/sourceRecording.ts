@@ -4,6 +4,7 @@ import {
   TransactionRevertedError
 } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import type { BundleReceipt } from './bundleDeposit';
 
 /**
  * Wraps the modal's callbacks to tell when the source bridge tx is known.
@@ -19,7 +20,8 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * wallet starts again under a new hash, passed to `onRepriced`. A wallet
  * bundle has no hash when accepted: `onBundled` records it under the id it
  * returns, `onBundleMined` gets that id and the hash the bundle reported once
- * it mines, and a failed bundle is passed to `onFailed` with that id.
+ * it mines, and a failed bundle is passed to `onFailed` with that id, unless
+ * `onBundleSent` finds its send among the receipts the wallet reported.
  */
 export function withSourceRecording(
   getCallbacks: () => TxCallbacks,
@@ -32,7 +34,8 @@ export function withSourceRecording(
     onFailed,
     onRepriced,
     onBundled,
-    onBundleMined
+    onBundleMined,
+    onBundleSent
   }: {
     isSafe: boolean;
     /** The function name of the call that moves the funds, e.g. `depositForBurn`. */
@@ -45,6 +48,8 @@ export function withSourceRecording(
     /** Records an accepted wallet bundle and returns its card id. */
     onBundled?: () => string;
     onBundleMined?: (bundleId: string, hash: string | undefined) => void;
+    /** A failed bundle's receipts: true when its send mined anyway, so it isn't failed. */
+    onBundleSent?: (bundleId: string, receipts: readonly BundleReceipt[]) => boolean;
   }
 ): TxCallbacks {
   let isBridgeLeg = true;
@@ -83,7 +88,9 @@ export function withSourceRecording(
     // Any other error after the send leaves its outcome unknown: the card follows it.
     onError: (error, hash) => {
       if (bundled && recorded) {
-        if (isBundleFailure(error)) onFailed(recorded, 'source-tx-reverted');
+        const receipts = isBundleFailure(error) ? bundleReceipts(error) : undefined;
+        const sent = !!receipts && !!onBundleSent?.(recorded, receipts);
+        if (isBundleFailure(error) && !sent) onFailed(recorded, 'source-tx-reverted');
         else markUnconfirmed(error, UNCONFIRMED_MESSAGE);
       } else if (!isSafe && recorded && (hash === recorded || hash === current)) {
         if (error instanceof TransactionReplacedError) onFailed(recorded, 'source-tx-replaced');
@@ -102,6 +109,12 @@ export function isBundleFailure(error: unknown): boolean {
     error instanceof TransactionRevertedError
   );
 }
+
+// The batch engine's `BatchFailedError` carries the receipts the wallet reported.
+const bundleReceipts = (error: unknown): readonly BundleReceipt[] | undefined => {
+  const receipts = (error as { receipts?: unknown }).receipts;
+  return Array.isArray(receipts) ? receipts : undefined;
+};
 
 const BATCH_FAILED_MESSAGE = 'ERROR: Batch transaction failed';
 

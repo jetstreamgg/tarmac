@@ -82,6 +82,7 @@ export function createBridgeTracker({
   let lastSent: string | undefined;
   let action = mainAction;
   let isBundled = false;
+  let settledOnChain = false;
   const stepActionOf = (functionName: string | undefined) =>
     functionName === 'approve'
       ? 'approve'
@@ -110,8 +111,13 @@ export function createBridgeTracker({
       includes_swap: includesSwap,
       bridge_id: bridge,
       source_tx_hash: source,
-      wallet_name: walletName
+      wallet_name: walletName,
+      ...(settledOnChain && { confirmed_by: 'chain' })
     }),
+    /** The run ended on the card's chain read, without the wallet's receipt. */
+    recordSettledOnChain: () => {
+      settledOnChain = true;
+    },
     /** The bridge's card id and, once it has one, its source transaction. */
     recordBridge: (id: string, txHash?: string) => {
       bridge = id;
@@ -124,6 +130,10 @@ export function createBridgeTracker({
     /** The on-chain hash of a Safe transaction or bundle, known after it was first reported. */
     recordExecuted: (txHash: string) => {
       source = txHash;
+      send({ action: mainAction, hash_kind: 'tx', tx_hash: txHash });
+    },
+    /** The on-chain hash of a follow-up action's bundle (claim, convert): the bridge keeps its source. */
+    recordBundleMined: (txHash: string) => {
       send({ action: mainAction, hash_kind: 'tx', tx_hash: txHash });
     },
     wrap: (callbacks: TxCallbacks): TxCallbacks => ({

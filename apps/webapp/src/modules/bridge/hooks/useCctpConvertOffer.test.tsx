@@ -4,14 +4,23 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
-import { encodeAbiParameters, encodeEventTopics, erc20Abi, parseUnits, zeroAddress, type Hex } from 'viem';
+import {
+  encodeAbiParameters,
+  encodeEventTopics,
+  erc20Abi,
+  parseUnits,
+  TransactionReceiptNotFoundError,
+  zeroAddress,
+  type Hex
+} from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { L1_USDC, L1_USDS } from '../adapters/cctp/contracts';
 import {
   applyProgress,
   createPendingBridge,
   recordAction,
-  recordActionSent
+  recordActionSent,
+  recordNextLeg
 } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { useCctpConvertOffer } from './useCctpConvertOffer';
@@ -184,6 +193,24 @@ describe('useCctpConvertOffer', () => {
     expect(result.current).toBeUndefined();
   });
 
+  it("keeps reading until the run's approve mines, which takes a block or more on mainnet", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    try {
+      const run = recordNextLeg(claimed(), 'claim', '0xapprove', NOW);
+      let pendingReads = 5;
+      mocks.receipt.mockImplementation(async ({ hash }: { hash: Hex }) => {
+        if (hash === '0xapprove' && pendingReads-- > 0) throw new TransactionReceiptNotFoundError({ hash });
+        return { status: 'success', logs: [transfer(L1_USDC, ACCOUNT)] };
+      });
+      const result = render(run);
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(pendingReads).toBeLessThan(0);
+      expect(result.current).toBe(USDC('100'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('offers nothing while the balance is unknown', async () => {
     mocks.balance.value = undefined;
     mocks.receipt.mockResolvedValue({ status: 'success', logs: [] });
@@ -191,6 +218,56 @@ describe('useCctpConvertOffer', () => {
     await waitFor(() => expect(mocks.receipt).toHaveBeenCalled());
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(result.current).toBeUndefined();
+  });
+});
+
+describe('useCctpConvertOffer, a leg its claim run sent', () => {
+  const state = (bridge: ReturnType<typeof claimed>) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+    return renderHook(() => useCctpConvertOffer(bridge, NOW), { wrapper }).result;
+  };
+
+  beforeEach(() => {
+    mocks.account = ACCOUNT;
+    mocks.receipt.mockReset();
+    mocks.balance = { params: undefined, value: USDC('500') };
+  });
+
+  it('says until when the leg may still mine while its receipt is unknown, and nothing once it mined', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    try {
+      let mined = false;
+      mocks.receipt.mockImplementation(async ({ hash }: { hash: Hex }) => {
+        if (hash === '0xsale' && !mined) throw new TransactionReceiptNotFoundError({ hash });
+        return { status: 'success', logs: [transfer(L1_USDC, ACCOUNT)] };
+      });
+      const result = state(recordNextLeg(claimed(), 'claim', '0xsale', NOW));
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(result.current.saleSentUntil).toBe(NOW + 35 * 60_000);
+      expect(result.current.offer).toBeUndefined();
+
+      mined = true;
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(result.current.saleSentUntil).toBeUndefined();
+      expect(result.current.offer).toBe(USDC('100'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives up after three tries when the read fails for another reason', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    try {
+      mocks.receipt.mockRejectedValue(new Error('rpc down'));
+      state(recordNextLeg(claimed(), 'claim', '0xsale', NOW));
+      await vi.advanceTimersByTimeAsync(120_000);
+      // Each try reads the claim and the leg.
+      expect(mocks.receipt).toHaveBeenCalledTimes(8);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

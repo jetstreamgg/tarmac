@@ -31,10 +31,12 @@ import { depositsInLogs } from '../adapters/nativeDeposit/discovery';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
 import { useBridgeLaunch } from './useBridgeLaunch';
+import { BatchFailedError } from '@/hooks/shared/useSendBatchTransactionFlow';
 
 const SENDER = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
 const ONE = 10n ** 18n;
 const HASH: Hex = `0x${'ab'.repeat(32)}`;
+const OTHER_TX: Hex = `0x${'cd'.repeat(32)}`;
 
 type LegsArgs = {
   enabled: boolean;
@@ -488,6 +490,66 @@ describe('useBridgeLaunch with wallet bundles', () => {
       expect(cards).toHaveLength(1);
       expect(cards[0]).toMatchObject({ status: 'failed', failureReason: 'source-tx-reverted' });
       expect(recoveryReads(view.invalidate, SENDER)).toHaveLength(1);
+    });
+
+    it("follows its deposit when the failed bundle's receipts hold it, and sends nothing on Retry", async () => {
+      const base = depositIn(BASE_DEPOSIT_LOGS, BASE_DEPOSIT_TX.from);
+      const account = getAddress(BASE_DEPOSIT_TX.from);
+      mocks.account = account;
+      mocks.balance = base.amount + ONE;
+      const view = renderBridge();
+      const callbacks = acceptBundle(
+        await confirm(view, {
+          to: 'base',
+          amount: base.amount,
+          recipient: base.recipient.toLowerCase() === account.toLowerCase() ? undefined : base.recipient
+        }),
+        '0xcalls'
+      );
+
+      // The wallet ran the calls apart: the deposit mined, a later call reverted.
+      const reverted = { ...minedReceipt([], 'reverted'), transactionHash: OTHER_TX };
+      act(() => callbacks.onError(new BatchFailedError([minedReceipt(BASE_DEPOSIT_LOGS), reverted])));
+
+      const cards = pendingBridgeStore.getSnapshot(scopeOf(account));
+      expect(cards).toHaveLength(1);
+      expect(cards[0]).toMatchObject({ status: 'pending', txHash: base.txHash });
+      expect(cards[0]!.failureReason).toBeUndefined();
+      expect(recoveryReads(view.invalidate, account)).toHaveLength(0);
+
+      mocks.execute.mockClear();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.execute).not.toHaveBeenCalled();
+      expect((mocks.onError.mock.calls.at(-1)?.[0] as Error).message).toMatch(/already sent/);
+    });
+
+    it('fails its card when the receipts hold no deposit of it, and Retry sends again', async () => {
+      const view = renderBridge();
+      const callbacks = acceptBundle(await confirm(view, { to: 'base', amount: ONE }), '0xcalls');
+
+      act(() => callbacks.onError(new BatchFailedError([minedReceipt(BASE_DEPOSIT_LOGS, 'reverted')])));
+
+      expect(bundleCards(SENDER)[0]).toMatchObject({ status: 'failed', failureReason: 'source-tx-reverted' });
+      mocks.execute.mockClear();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.execute).toHaveBeenCalledTimes(1);
+    });
+
+    // A wallet can report a failed bundle with receipts that leave out a send that mined.
+    it('keeps Retry refused when no receipt reverted, so a send it may have made is not sent twice', async () => {
+      const view = renderBridge();
+      const callbacks = acceptBundle(await confirm(view, { to: 'base', amount: ONE }), '0xcalls');
+
+      const approve = { ...minedReceipt([]), transactionHash: OTHER_TX };
+      act(() => callbacks.onError(new BatchFailedError([approve])));
+
+      expect(bundleCards(SENDER)[0]).toMatchObject({ status: 'failed' });
+      mocks.execute.mockClear();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.execute).not.toHaveBeenCalled();
+      const refusal = mocks.onError.mock.calls.at(-1)?.[0] as Error & { final?: boolean };
+      expect(refusal.message).toMatch(/still pending/);
+      expect(refusal.final).toBeFalsy();
     });
 
     it('keeps its card pending when the wallet rejected', async () => {

@@ -160,7 +160,7 @@ const statusText = (bridge: PendingBridge): string =>
 export const formatBridgeDate = (ms: number): string => format(ms, 'dd/MM/yy HH:mm');
 
 /** "15:46" on the same local day as `now`, else the full date; rounded up to the minute. */
-const formatArrivalTime = (ms: number, now: number): string => {
+export const formatArrivalTime = (ms: number, now: number): string => {
   const arrival = Math.ceil(ms / 60_000) * 60_000;
   return isSameDay(arrival, now) ? format(arrival, 'HH:mm') : formatBridgeDate(arrival);
 };
@@ -199,7 +199,9 @@ export function buildPendingBridgeRows(
   familyChainId: number,
   /** A claim that kept its USDC, offered for conversion (Figma 93). */
   arrivedAsUsdc = false,
-  counterparty?: BridgeCounterparty
+  counterparty?: BridgeCounterparty,
+  /** Its claim is still being sent here: done only once its sale is, not once its receive mined. */
+  claiming = false
 ): PendingBridgeCell[][] {
   const sourceChainId = bridgeChainId(bridge.from, familyChainId);
   const sourceName = getBridgeNetwork(bridge.from).name;
@@ -207,13 +209,15 @@ export function buildPendingBridgeRows(
     { kind: 'network', label: t`Source`, network: bridge.from },
     { kind: 'network', label: t`Destination`, network: bridge.to }
   ];
-  const status: PendingBridgeCell = arrivedAsUsdc
-    ? { kind: 'status', label: t`Status`, status: bridge.status, value: t`Arrived as USDC`, tone: 'info' }
-    : { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) };
+  const status: PendingBridgeCell = claiming
+    ? { kind: 'status', label: t`Status`, status: 'pending', value: t`Claiming` }
+    : arrivedAsUsdc
+      ? { kind: 'status', label: t`Status`, status: bridge.status, value: t`Arrived as USDC`, tone: 'info' }
+      : { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) };
   const arrival: PendingBridgeCell = {
     kind: 'text',
     label: t`Estimated arrival`,
-    value: arrivalText(bridge, now)
+    value: claiming ? t`Ready` : arrivalText(bridge, now)
   };
   const logo = bridgeTypeLogo(bridge.routeKind);
   const bridgeType: PendingBridgeCell = {

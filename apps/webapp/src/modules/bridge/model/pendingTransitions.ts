@@ -292,6 +292,32 @@ export function canLaunchKeepalive(bridge: PendingBridge, now: number): boolean 
   );
 }
 
+/**
+ * The card read from the chain that `action` landed: a prove moved it on to its finalize, a
+ * finalize or a relay retry settled it or left a Replay, a recovery or a claim-only claim settled
+ * it. A claim with a sale to follow and a keepalive never count: the chain can't tell their run ended.
+ */
+export function actionLandedOnChain(
+  bridge: PendingBridge,
+  action: PendingBridgeNextAction,
+  claimOnly: boolean
+): boolean {
+  const settled = bridge.status === 'arrived' || bridge.status === 'claimed';
+  switch (action) {
+    case 'prove':
+      return settled || bridge.nextAction === 'finalize';
+    case 'finalize':
+      return settled || (bridge.status === 'ready' && bridge.nextAction === 'replay');
+    case 'redeem':
+    case 'replay':
+      return settled;
+    case 'claim':
+      return claimOnly && settled;
+    default:
+      return false;
+  }
+}
+
 /** The card shows the next action's button: always for a claim route, only once ready for a recovery. */
 export const showsActionButton = (bridge: PendingBridge): boolean =>
   !isSettled(bridge) &&

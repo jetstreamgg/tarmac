@@ -7,7 +7,12 @@ import { i18n } from '@lingui/core';
 import { createElement, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
+import {
+  applyProgress,
+  createPendingBridge,
+  recordAction,
+  recordActionSent
+} from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { readsBalanceOn } from './balanceQueries';
@@ -29,12 +34,16 @@ const mocks = vi.hoisted(() => ({
   walletChainId: 1,
   launched: [] as TransactionConfig[],
   claim: undefined as unknown as Legs,
-  convert: undefined as unknown as Legs
+  convert: undefined as unknown as Legs,
+  capture: vi.fn()
 }));
+
+vi.mock('posthog-js/react', () => ({ usePostHog: () => ({ capture: mocks.capture }) }));
 
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address, chainId: mocks.walletChainId }),
   useChainId: () => 1,
+  useConfig: () => ({}),
   useChains: () => [{ id: 1 }, { id: 8453 }]
 }));
 vi.mock('@/hooks', async io => ({
@@ -204,6 +213,7 @@ describe('useDestinationActionLaunch: destination balances after the action conf
     mocks.launched = [];
     mocks.claim = freshLegs();
     mocks.convert = freshLegs();
+    mocks.capture.mockClear();
   });
 
   it('invalidates the Ethereum balances once a CCTP claim confirms', async () => {
@@ -222,6 +232,60 @@ describe('useDestinationActionLaunch: destination balances after the action conf
     const entry = pendingBridgeStore.getSnapshot(scope()).find(bridge => bridge.id === card.id)!;
     expect(entry.status).toBe('claimed');
     expectDestinationBalancesInvalidated(view);
+  });
+
+  it("re-reads the card's progress once its action confirms", async () => {
+    const card = seed({ claimed: false });
+    const view = render();
+    act(() => view.result.current.launch(card));
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+
+    const callbacks = mocks.claim.params!.getCallbacks();
+    act(() => callbacks.onStart('0xclaim'));
+    expect(view.invalidate).not.toHaveBeenCalledWith({ queryKey: ['bridge-progress', scope(), card.id] });
+    act(() => callbacks.onSuccess('0xclaim'));
+    await settle();
+
+    expect(view.invalidate).toHaveBeenCalledWith({ queryKey: ['bridge-progress', scope(), card.id] });
+  });
+
+  it("reports a bundled claim's mined hash, though the tracker confirmed it on the card first", async () => {
+    const card = seed({ claimed: false });
+    const view = render();
+    act(() => view.result.current.launch(card));
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+
+    const callbacks = mocks.claim.params!.getCallbacks();
+    // The wallet accepted the bundle: its calls id is recorded as sent.
+    pendingBridgeStore.update(scope(), card.id, current =>
+      recordActionSent(current, { action: 'claim', txHash: '0xcalls', at: NOW, bundle: true })
+    );
+    act(() => callbacks.onStart(undefined));
+    // A tracker poll read the bundle's hash and confirmed the claim before the wallet reported it.
+    pendingBridgeStore.update(scope(), card.id, current =>
+      recordAction(current, { action: 'claim', txHash: '0xclaim', at: NOW })
+    );
+    act(() => callbacks.onSuccess('0xclaim'));
+    await settle();
+
+    expect(mocks.capture).toHaveBeenCalledWith(
+      'app_bridge_tx_sent',
+      expect.objectContaining({ action: 'claim', hash_kind: 'tx', tx_hash: '0xclaim' })
+    );
+  });
+
+  it('sends no second hash for a claim sent as a single transaction', async () => {
+    const card = seed({ claimed: false });
+    const view = render();
+    act(() => view.result.current.launch(card));
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.claim.params!.getCallbacks();
+    act(() => callbacks.onStart('0xclaim'));
+    act(() => callbacks.onSuccess('0xclaim'));
+    await settle();
+
+    const sent = mocks.capture.mock.calls.filter(([event]) => event === 'app_bridge_tx_sent');
+    expect(sent.filter(([, props]) => props.tx_hash === '0xclaim')).toHaveLength(1);
   });
 
   it('invalidates the Ethereum balances once the follow-up convert to USDS confirms', async () => {

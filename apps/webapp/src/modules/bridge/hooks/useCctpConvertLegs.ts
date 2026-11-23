@@ -11,9 +11,12 @@ import {
   cctpL2ConvertCalls
 } from '../adapters/cctp/calls';
 import { L1_USDC, USDS_PSM_WRAPPER, cctpL2Contracts } from '../adapters/cctp/contracts';
+import { findLostSale } from '../adapters/cctp/convert';
 import { cctpConvertRefusal, cctpL2ConvertRefusal } from '../adapters/cctp/gate';
+import { recordActionSent } from '../model/pendingTransitions';
 import { cctpSwapStore, isSwapSpendable, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { lostSaleIntent, lostSaleRead, openClaimedSale } from '../store/saleIntentStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { unfinishedSwapRefusal } from '../store/unfinishedSwapRefusal';
@@ -27,7 +30,7 @@ type ConvertRun = { scope: string; swapTxHash: string };
 const isConvertRun = (run: unknown): run is ConvertRun =>
   typeof run === 'object' && run !== null && 'scope' in run && 'swapTxHash' in run;
 /** The claimed bridge an Ethereum convert run is sent for. */
-type ClaimedConvertRun = { scope: string; bridgeId: string };
+type ClaimedConvertRun = { scope: string; bridgeId: string; amount?: bigint };
 const isClaimedConvertRun = (run: unknown): run is ClaimedConvertRun =>
   typeof run === 'object' && run !== null && 'scope' in run && 'bridgeId' in run;
 
@@ -106,6 +109,22 @@ export function useCctpConvertLegs({
       if (!swap) {
         if (scope && bridgeId && isCctpSpendOpen(scope, bridgeId))
           return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
+        // A sale prompt a reload lost may still be signed in the wallet, or have mined since.
+        const lost = bridgeId ? lostSaleIntent(bridgeId, Date.now()) : undefined;
+        if (lost) {
+          const cards = pendingBridgeStore.getSnapshot(lost.scope);
+          const card = cards.find(entry => entry.id === bridgeId);
+          const sale =
+            card &&
+            (await findLostSale({ l1: reader, recipient: from!, ...lostSaleRead(lost, card, cards) }));
+          if (card && sale) {
+            pendingBridgeStore.update(lost.scope, card.id, current =>
+              recordActionSent(current, { action: 'convert', txHash: sale, at: Date.now() })
+            );
+            return new TransactionRefusedError(SETTLED_MESSAGE, { final: true });
+          }
+          return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
+        }
         return cctpConvertRefusal(params);
       }
       const kept = cctpSwapStore.get(scope!, swap.swapTxHash);
@@ -145,9 +164,12 @@ export function useCctpConvertLegs({
       if (isConvertRun(run))
         return isConvertLeg(variables) ? openCctpSpend(run.scope, run.swapTxHash) : undefined;
       return isClaimedConvertRun(run) && isSale(variables)
-        ? openCctpSpend(run.scope, run.bridgeId)
+        ? openClaimedSale(run.scope, run.bridgeId, run.amount)
         : undefined;
     },
+    // A bundle with the sale: kept across a reload until answered, as the sale's own prompt.
+    onBundlePrompt: run =>
+      isClaimedConvertRun(run) ? openClaimedSale(run.scope, run.bridgeId, run.amount) : undefined,
     onLegSent: (hash, variables, run) => {
       if (isConvertLeg(variables)) link(run, hash);
     },
@@ -176,10 +198,10 @@ export function useCctpConvertLegs({
           : swapTxHash
             ? ({ scope, swapTxHash } satisfies ConvertRun)
             : bridgeId
-              ? ({ scope, bridgeId } satisfies ClaimedConvertRun)
+              ? ({ scope, bridgeId, amount } satisfies ClaimedConvertRun)
               : undefined
       ),
-    [executeLegs, swapTxHash, scope, bridgeId]
+    [executeLegs, swapTxHash, scope, bridgeId, amount]
   );
 
   return {
@@ -191,6 +213,9 @@ export function useCctpConvertLegs({
     error: (active && allowance.error) || legs.error || null,
     execute,
     reset: legs.reset,
+    release: legs.release,
+    /** An earlier run's send is still out: the engine waits on it. */
+    detached: legs.busy,
     dropCheck: legs.dropCheck
   };
 }

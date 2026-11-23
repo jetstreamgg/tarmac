@@ -81,6 +81,11 @@ vi.mock('../hooks/useConvertLaunch', () => ({
 vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({
   useTransactionRunActive: () => h.runActive
 }));
+// The tabs read only the open session, to keep a Bridge run's tab mounted.
+vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/modules/ui/context/TransactionContext')>()),
+  useTransaction: () => ({ activeSessionId: null })
+}));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (action: () => void) => action
 }));

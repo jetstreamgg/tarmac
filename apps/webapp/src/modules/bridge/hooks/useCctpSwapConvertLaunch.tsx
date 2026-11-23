@@ -162,6 +162,7 @@ export function useCctpSwapConvertLaunch() {
               modal().onStart(hash);
             },
             onSuccess: (...settled) => {
+              if (bundle && settled[0]) tracker.recordBundleMined(settled[0]);
               cctpSwapStore.clear(scope, swap.swapTxHash);
               void queryClient.invalidateQueries({ predicate: readsBalanceOn(chainId) });
               modal().onSuccess(...settled);

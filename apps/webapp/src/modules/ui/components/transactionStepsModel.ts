@@ -91,7 +91,8 @@ type DeriveInput = {
   outcomeUnknown?: boolean;
   /**
    * The failure is a contract revert, already worded for the user (the revert
-   * registry's copy, or the raw reason). It replaces the generic rollback
+   * registry's copy, or the raw reason), or a send the wallet didn't allow
+   * (4100). It replaces the generic rollback
    * sentence on the failed on-chain row: the user learns why, and a revert
    * caught before broadcast wasn't rolled back anyway. Ignored for a Reject
    * and for signature rows.

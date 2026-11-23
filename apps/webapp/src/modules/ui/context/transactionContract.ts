@@ -401,4 +401,6 @@ export type TransactionContextValue = {
    * side effect use the config's `onSuccess`, or compose the engine's.
    */
   txStatus: TxStatus;
+  /** The failed session's send or bundle has an outcome the app can't read: it may still mine. */
+  failureMayStillMine: boolean;
 };
