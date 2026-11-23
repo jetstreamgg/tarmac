@@ -36,8 +36,8 @@ const rpc = async <T>(network: NetworkName, method: string, params: unknown[]): 
 const client = async (network: NetworkName) =>
   createPublicClient({ transport: http(await getRpcUrlFromFile(network)) });
 
-/** The source tx hash of the newest pending bridge to `to`, read from the page's pending store. */
-export const pendingDepositTxHash = (page: Page, to: string) =>
+/** The source tx hashes of the pending bridges to `to`, newest first, read from the page's pending store. */
+export const pendingTxHashes = (page: Page, to: string) =>
   page.evaluate(destination => {
     const entries = Object.keys(localStorage)
       .filter(key => key.startsWith('bridgePending:v1:') && !key.endsWith(':unreadable'))
@@ -51,14 +51,18 @@ export const pendingDepositTxHash = (page: Page, to: string) =>
       )
       .filter(entry => entry.to === destination && entry.txHash)
       .sort((a, b) => b.startedAt - a.startedAt);
-    return entries[0]?.txHash as `0x${string}` | undefined;
+    return entries.map(entry => entry.txHash as `0x${string}`);
   }, to);
 
+/** The newest of those hashes, skipping `known` ones so a later bridge's isn't read as an earlier one's. */
+export const pendingDepositTxHash = async (page: Page, to: string, known: readonly Hash[] = []) =>
+  (await pendingTxHashes(page, to)).find(hash => !known.includes(hash));
+
 /** Waits for that hash: a bundle's card only gets it from the deposit scan, once the bundle is mined. */
-export async function awaitDepositTxHash(page: Page, to: string) {
+export async function awaitDepositTxHash(page: Page, to: string, known: readonly Hash[] = []) {
   let hash: Hash | undefined;
   await expect
-    .poll(async () => (hash = await pendingDepositTxHash(page, to)), { timeout: 60_000 })
+    .poll(async () => (hash = await pendingDepositTxHash(page, to, known)), { timeout: 60_000 })
     .toBeTruthy();
   return hash!;
 }
