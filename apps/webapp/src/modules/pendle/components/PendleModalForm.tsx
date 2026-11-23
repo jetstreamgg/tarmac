@@ -155,13 +155,14 @@ export function PendleModalForm({
   // token → Pendle router on the engine's chain) so TanStack dedupes the two.
   const engineChainId = familyMainnetId(chainId);
   const inputTokenAddress = isSupply ? selectedAddress : market.ptToken;
-  const { data: allowance } = useTokenAllowance({
+  const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId: engineChainId,
     contractAddress: inputTokenAddress,
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
-  const needsAllowance = allowance !== undefined && debouncedAmount > 0n && allowance < debouncedAmount;
+  const needsAllowance =
+    debouncedAmount > 0n && (allowance !== undefined ? allowance < debouncedAmount : !!allowanceError);
 
   // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.
