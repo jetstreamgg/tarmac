@@ -9,8 +9,9 @@ import {
   useSyncExternalStore
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatUnits } from 'viem';
-import { useChains, useConnection } from 'wagmi';
+import { formatUnits, type Hex } from 'viem';
+import { useChains, useConfig, useConnection } from 'wagmi';
+import { getPublicClient } from 'wagmi/actions';
 import { t } from '@lingui/core/macro';
 import { useIsSafeWallet } from '@/hooks';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
@@ -488,10 +489,13 @@ export function useDestinationActionLaunch() {
   // The Confirm whose callbacks may still reach the modal; none once the modal closes.
   const modalOwnerRef = useRef<TxCallbacks | undefined>(undefined);
   const claimClientRef = useRef(claimLegs.client);
+  const config = useConfig();
+  const configRef = useRef(config);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     addressRef.current = address;
     claimClientRef.current = claimLegs.client;
+    configRef.current = config;
     if (!isModalOpen) modalOwnerRef.current = undefined;
   });
 
@@ -859,8 +863,24 @@ export function useDestinationActionLaunch() {
                     )
                   : undefined;
               if (claimed) return readSale(claimed);
-              if (heldAsSent) endDropped();
+              if (heldAsSent) endUnlessMined();
             }
+          };
+          // The card's read drops a reverted hash too: a receipt is left for the engine to report as a revert.
+          const endUnlessMined = () => {
+            heldAsSent = false;
+            const hash = sentHash;
+            // Read on the action's own chain, pinned at Confirm.
+            const client =
+              nextRecovery && getPublicClient(configRef.current, { chainId: nextRecovery.chainId });
+            if (!client || !hash) return endDropped();
+            client.getTransactionReceipt({ hash: hash as Hex }).then(
+              () => undefined,
+              // No receipt, or a failed read, ends the run as before: the Retry is offered either way.
+              () => {
+                if (!ended && awaitingReceipt && sentHash === hash) endDropped();
+              }
+            );
           };
           const endDropped = () => {
             releaseEngine();

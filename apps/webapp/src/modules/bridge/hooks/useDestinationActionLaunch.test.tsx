@@ -91,6 +91,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address, chainId: mocks.walletChainId }),
   useChainId: () => 1,
+  useConfig: () => ({}),
   useChains: () => mocks.chainIds.map(id => ({ id }))
 }));
 vi.mock('@/hooks', async io => ({

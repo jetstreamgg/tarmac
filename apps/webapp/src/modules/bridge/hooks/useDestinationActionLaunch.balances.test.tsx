@@ -43,6 +43,7 @@ vi.mock('posthog-js/react', () => ({ usePostHog: () => ({ capture: mocks.capture
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address, chainId: mocks.walletChainId }),
   useChainId: () => 1,
+  useConfig: () => ({}),
   useChains: () => [{ id: 1 }, { id: 8453 }]
 }));
 vi.mock('@/hooks', async io => ({

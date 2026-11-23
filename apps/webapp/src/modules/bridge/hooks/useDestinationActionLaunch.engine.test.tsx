@@ -47,6 +47,7 @@ const mocks = vi.hoisted(() => ({
   claimRefusal: () => Promise.resolve(undefined) as Promise<Error | undefined>,
   // Ethereum's reader: every hash is in its mempool unless a test loses it, and every read answers unless it fails
   lostOnL1: new Set<string>(),
+  onChain: new Map<string, { status: 'success' | 'reverted' }>(),
   l1ReadsFail: false
 }));
 
@@ -126,7 +127,19 @@ vi.mock('wagmi', async () => {
     }
   };
 });
-vi.mock('wagmi/actions', () => ({ getPublicClient: () => ({}) }));
+// The action's chain: a hash has a receipt only once a test puts it on chain.
+vi.mock('wagmi/actions', async () => {
+  const { TransactionReceiptNotFoundError } = await import('viem');
+  return {
+    getPublicClient: () => ({
+      getTransactionReceipt: async ({ hash }: { hash: `0x${string}` }) => {
+        const receipt = mocks.onChain.get(hash);
+        if (!receipt) throw new TransactionReceiptNotFoundError({ hash });
+        return receipt;
+      }
+    })
+  };
+});
 vi.mock('viem/actions', async importOriginal => ({
   ...(await importOriginal<typeof import('viem/actions')>()),
   waitForTransactionReceipt: (
@@ -450,6 +463,7 @@ describe('useDestinationActionLaunch with the real replay engine', () => {
     mocks.isModalOpen = true;
     mocks.prompts = [];
     mocks.waits = new Map();
+    mocks.onChain = new Map();
   });
 
   it('sends the replay of the card it was launched for, and reports its receipt to that session', async () => {
@@ -572,6 +586,26 @@ describe('useDestinationActionLaunch with the real replay engine', () => {
           applyProgress(bridge, { kind: 'action-dropped', txHash: hash }, Date.now())
         )
       );
+
+    it('leaves a revert the card read first to the engine, which reports it as a revert', async () => {
+      const log: string[] = [];
+      seedReadyReplay('base');
+      const page = mount();
+      await launchAndConfirm(page, 'base', sessionFor('A', log));
+      await sign(mocks.prompts[0], '0xreverts');
+      mocks.onChain.set('0xreverts', { status: 'reverted' });
+
+      readDropped(DEPOSITS.base.txHash, '0xreverts');
+      await flush();
+      await flush();
+      expect(log).toEqual(['A.onMutate', 'A.onStart(0xreverts)']);
+
+      act(() => mocks.waits.get('0xreverts')!.resolve({ status: 'reverted', blockNumber: 5n, logs: [] }));
+      await waitFor(() => expect(log).toHaveLength(3));
+      expect(log[2]).toMatch(/^A\.onError\(/);
+      expect(log[2]).not.toBe('A.onError(TransactionRefusedError)');
+      expect(page.result.current.canLaunch(stored(DEPOSITS.base.txHash))).toBe(true);
+    });
 
     it('ends its run, and the Retry sends the replay again', async () => {
       const log: string[] = [];
