@@ -16,10 +16,7 @@ const mocks = vi.hoisted(() => ({
   connection: { isConnected: false, address: undefined as string | undefined, connector: undefined },
   connectedContext: {
     isConnectedAndAcceptedTerms: false,
-    isAuthorized: true,
-    authData: undefined as { authIsLoading?: boolean } | undefined,
-    vpnData: undefined as { vpnIsLoading?: boolean } | undefined,
-    isCheckingTerms: false
+    isAuthorized: true
   },
   ensName: undefined as string | undefined,
   isSafeWallet: false,
@@ -58,12 +55,6 @@ vi.mock('@/modules/ui/components/TermsModal', () => ({
   TermsModal: () => <div data-testid="terms-modal-stub" />
 }));
 
-vi.mock('@/modules/auth/components/UnauthorizedPage', () => ({
-  UnauthorizedPage: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="unauthorized-page-stub">{children}</div>
-  )
-}));
-
 vi.mock('@/modules/ui/components/Avatar', () => ({
   CustomAvatar: () => <div data-testid="avatar-stub" />
 }));
@@ -78,10 +69,7 @@ beforeEach(() => {
   mocks.connection = { isConnected: false, address: undefined, connector: undefined };
   mocks.connectedContext = {
     isConnectedAndAcceptedTerms: false,
-    isAuthorized: true,
-    authData: undefined,
-    vpnData: undefined,
-    isCheckingTerms: false
+    isAuthorized: true
   };
   mocks.ensName = undefined;
   mocks.isSafeWallet = false;
@@ -164,99 +152,11 @@ describe('WalletChip render ladder', () => {
     expect(screen.getByTestId('wallet-drawer-stub').getAttribute('data-open')).toBe('true');
   });
 
-  it('defers to the UnauthorizedPage gate when not authorized', async () => {
+  it('shows only the connect button when not authorized', async () => {
     mocks.connectedContext.isAuthorized = false;
     renderWalletChip();
 
-    const gate = await screen.findByTestId('unauthorized-page-stub');
-    expect(gate.querySelector('button')?.textContent).toMatch(/Connect Wallet/);
-  });
-});
-
-// The two connect-time checks run back to back and used to raise a "Please
-// wait" card each. One cover spans both, and it lives here because this is the
-// only component that owns both gates — UnauthorizedPage also mounts inside
-// AuthWrapper, so a cover in it would put two scrims on screen at once.
-describe('WalletChip connect-checks cover', () => {
-  it('covers the screen while address screening is in flight', async () => {
-    mocks.connectedContext.isAuthorized = false;
-    mocks.connectedContext.authData = { authIsLoading: true };
-    renderWalletChip();
-
-    await screen.findByTestId('connect-checks-cover');
-  });
-
-  it('stays up for the terms check that follows, without a gap', async () => {
-    mocks.connectedContext.isAuthorized = true;
-    mocks.connectedContext.isCheckingTerms = true;
-    renderWalletChip();
-
-    await screen.findByTestId('connect-checks-cover');
-  });
-
-  it('is a modal dialog, so the page behind the blur is inert', async () => {
-    mocks.connectedContext.isCheckingTerms = true;
-    renderWalletChip();
-
-    const cover = await screen.findByTestId('connect-checks-cover');
-    expect(cover.getAttribute('role')).toBe('dialog');
-    // Radix's modal lock, which a bare fixed layer does not get: the page
-    // behind the blur stops taking pointer events. The check can run for
-    // seconds — checkTermsWithRetry retries twice.
-    expect(document.body.style.pointerEvents).toBe('none');
-    // Announced on open the way the old waiting card's title was.
-    expect(cover.textContent).toContain('Checking whether you can use Sky.money');
-  });
-
-  // Pointer-events only stops the mouse. The keyboard is held by FocusScope,
-  // and it arms itself from whatever it focused on mount — so a cover with no
-  // focusable children that also suppressed auto-focus would leave the trap
-  // dormant and Tab would walk the nav under the frost.
-  it('holds keyboard focus, so the page behind the blur cannot be tabbed into', async () => {
-    mocks.connectedContext.isCheckingTerms = true;
-    renderWalletChip();
-
-    const cover = await screen.findByTestId('connect-checks-cover');
-    expect(cover.contains(document.activeElement)).toBe(true);
-
-    // Whatever Tab would have reached: focusing it must bounce straight back.
-    const outside = document.createElement('button');
-    document.body.appendChild(outside);
-    outside.focus();
-
-    expect(cover.contains(document.activeElement)).toBe(true);
-    outside.remove();
-  });
-
-  // The two checks disagree on when they are done: the terms check fires on
-  // address screening alone, while a region block comes from the VPN query. A
-  // clean address in a restricted region hits both at once, and the cover must
-  // not land on top of the Access-blocked dialog.
-  it('stays down for a blocked user whose terms check is still running', async () => {
-    mocks.connectedContext.isAuthorized = false;
-    mocks.connectedContext.isCheckingTerms = true;
-    mocks.connectedContext.authData = { authIsLoading: false };
-    mocks.connectedContext.vpnData = { vpnIsLoading: false };
-    renderWalletChip();
-
-    await screen.findByTestId('unauthorized-page-stub');
-    expect(screen.queryByTestId('connect-checks-cover')).toBeNull();
-  });
-
-  it('does not cover the app for a background re-check once terms are accepted', async () => {
-    mocks.connectedContext.isConnectedAndAcceptedTerms = true;
-    mocks.connectedContext.isCheckingTerms = true;
-    mocks.connection = { isConnected: true, address: ADDRESS, connector: undefined };
-    renderWalletChip();
-
-    await screen.findByTestId('wallet-chip');
-    expect(screen.queryByTestId('connect-checks-cover')).toBeNull();
-  });
-
-  it('leaves the app alone when no check is running', async () => {
-    renderWalletChip();
-
-    await screen.findByTestId('wallet-chip');
-    expect(screen.queryByTestId('connect-checks-cover')).toBeNull();
+    expect(await screen.findByRole('button', { name: /Connect Wallet/ })).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

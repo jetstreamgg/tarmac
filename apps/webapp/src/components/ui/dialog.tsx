@@ -3,8 +3,12 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 import { cn } from '@/lib/cn';
 import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
+import { useClosedWhileAccessGateUp } from './accessGateHold';
 
-const Dialog = DialogPrimitive.Root;
+const Dialog = ({ open, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) => {
+  // Nothing may open over the Wallet blocked gate: see accessGateHold.ts.
+  return <DialogPrimitive.Root open={useClosedWhileAccessGateUp(open)} {...props} />;
+};
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
