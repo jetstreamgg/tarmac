@@ -1,4 +1,5 @@
-import { type Page } from '@playwright/test';
+import { randomBytes } from 'node:crypto';
+import { type Page, type Route } from '@playwright/test';
 import { getAddress, parseUnits, type Address } from 'viem';
 import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts';
 import { ARBITRUM_CONFIRM_MS } from '@/modules/bridge/adapters/nativeWithdrawal/contracts';
@@ -26,18 +27,33 @@ import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNe
 // pinned against mainnet transactions in the adapter tests.
 const AMOUNT = parseUnits('5', 18);
 
+/** Answers every wallet send with a hash that never reaches the chain, as MetaMask Mobile can. */
+async function dropWalletSends(page: Page) {
+  await page.route(TENDERLY_RPC, async route => {
+    const body = route.request().postData();
+    const request = body ? JSON.parse(body) : undefined;
+    if (request && !Array.isArray(request) && request.method === 'eth_sendTransaction')
+      return route.fulfill({
+        json: { jsonrpc: '2.0', id: request.id, result: `0x${randomBytes(32).toString('hex')}` }
+      });
+    return route.fallback();
+  });
+}
+const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
+
 const cases = [
   { network: NetworkName.base, id: 'base', footnote: 'You will need to come back to Ethereum twice' },
   { network: NetworkName.arbitrum, id: 'arbitrum', footnote: 'finalize it on Ethereum to receive your USDS' }
 ] as const;
 
-/** Sends 5 USDS from `network` to Ethereum through SkyLink, picked in Review, to `recipient` if given; returns the L2 tx hash. */
+/** Sends `amount` USDS (5 by default) from `network` to Ethereum through SkyLink, picked in Review, to `recipient` if given; returns the L2 tx hash. */
 async function withdrawThroughSkyLink(
   page: Page,
   bridge: BridgePage,
   { network, id, footnote }: (typeof cases)[number],
   account: Address,
-  recipient?: Address
+  recipient?: Address,
+  amount = '5'
 ) {
   await bridge.gotoConnected();
   await switchWalletNetwork(page, tenderlyChainLabel(network));
@@ -48,7 +64,7 @@ async function withdrawThroughSkyLink(
     await bridge.recipientSave().click();
   }
 
-  await bridge.openReview('5');
+  await bridge.openReview(amount);
   await page.getByTestId('bridge-modal-route-toggle').click();
   await expect(page.getByTestId('bridge-route-picker')).toContainText('Select bridge type');
   const skyLink = page.getByTestId('bridge-route-option-native');
@@ -61,7 +77,7 @@ async function withdrawThroughSkyLink(
   await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
   await expect
     .poll(async () => before - (await l2UsdsBalance(id, account)), { timeout: 30_000 })
-    .toBe(AMOUNT);
+    .toBe(parseUnits(amount, 18));
   return awaitDepositTxHash(page, 'ethereum');
 }
 
@@ -255,6 +271,188 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
         .toBe(AMOUNT);
       await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 90_000 });
       expect((await l1AccountState(account)).usds).toBe(senderBefore);
+    });
+
+    // MetaMask Mobile can hand back a hash that never mines while the finalize lands under another.
+    test('base: after a finalize ended by the chain read, the next finalize sends its own call', async ({
+      isolatedPage,
+      testAccount
+    }) => {
+      test.setTimeout(900_000);
+      await keepPendingBridgesOnLoad(isolatedPage.context());
+      const account = getAddress(testAccount);
+      const bridge = new BridgePage(isolatedPage);
+      const txA = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account, undefined, '5');
+      const txB = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account, undefined, '3');
+      await proveOpStackWithdrawalOnFork('base', txA, account);
+      await proveOpStackWithdrawalOnFork('base', txB, account);
+      const { usds: before } = await l1AccountState(account);
+      await bridge.gotoConnected();
+
+      const toEthereum = bridge.cards().filter({ hasText: 'Ethereum' });
+      const cardA = toEthereum.filter({ hasText: /(^|[^\d.])5\.00/ });
+      const cardB = toEthereum.filter({ hasText: /(^|[^\d.])3\.00/ });
+      for (const card of [cardA, cardB])
+        await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
+          timeout: 90_000
+        });
+
+      // A: the wallet's hash never confirms while the finalize lands under another.
+      await dropWalletSends(isolatedPage);
+      await cardA.getByTestId('pending-bridge-action').click();
+      const close = isolatedPage.getByTestId('transaction-modal-close');
+      await expect(close).toHaveAttribute('aria-label', 'Minimize', { timeout: 90_000 });
+      await close.click();
+      const toast = isolatedPage.getByTestId('minimized-transaction-toast');
+      await expect(toast).toContainText('Finalizing the withdrawal', { timeout: 30_000 });
+      await finalizeOpStackWithdrawalOnFork('base', txA, account);
+      await expect(cardA.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 180_000 });
+      await expect(isolatedPage.getByText('Funds received!')).toBeVisible({ timeout: 10_000 });
+      await expect(toast).toHaveCount(0, { timeout: 15_000 });
+      expect((await l1AccountState(account)).usds - before).toBe(AMOUNT);
+      await isolatedPage.unroute(TENDERLY_RPC);
+
+      // B, on the same page and engine: its own finalize goes out and lands.
+      await expect(cardB.getByTestId('pending-bridge-action')).toBeEnabled({ timeout: 30_000 });
+      await cardB.getByTestId('pending-bridge-action').click();
+      await expect(cardB.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 240_000 });
+      await expect(isolatedPage.getByText(/Finalize failed/i)).toHaveCount(0);
+      expect((await l1AccountState(account)).usds - before).toBe(parseUnits('8', 18));
+    });
+
+    test('base: a finalize the wallet fails to send is offered again, and its Retry releases the USDS', async ({
+      isolatedPage,
+      testAccount
+    }) => {
+      test.setTimeout(600_000);
+      await keepPendingBridgesOnLoad(isolatedPage.context());
+      const account = getAddress(testAccount);
+      const bridge = new BridgePage(isolatedPage);
+      const txHash = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account);
+      await proveOpStackWithdrawalOnFork('base', txHash, account);
+      const { usds: before } = await l1AccountState(account);
+      await bridge.gotoConnected();
+
+      const card = bridge.card('Ethereum');
+      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
+        timeout: 90_000
+      });
+      // The wallet's first send fails; the next one goes through.
+      let failed = 0;
+      await isolatedPage.route(TENDERLY_RPC, async route => {
+        if (failed === 0 && route.request().postData()?.includes('"eth_sendTransaction"')) {
+          failed += 1;
+          return route.abort();
+        }
+        return route.fallback();
+      });
+      await card.getByTestId('pending-bridge-action').click();
+      const retry = isolatedPage.getByRole('button', { name: /^(Retry|Try again)$/ });
+      await expect(retry).toBeVisible({ timeout: 90_000 });
+      expect(failed).toBe(1);
+      expect((await l1AccountState(account)).usds).toBe(before);
+
+      await retry.click();
+      await expect
+        .poll(async () => (await l1AccountState(account)).usds - before, { timeout: 90_000 })
+        .toBe(AMOUNT);
+      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 90_000 });
+    });
+
+    test('base: after a reload with the finalize hash still unconfirmed, the card waits and reads it finalized', async ({
+      isolatedPage,
+      testAccount
+    }) => {
+      test.setTimeout(600_000);
+      await keepPendingBridgesOnLoad(isolatedPage.context());
+      const account = getAddress(testAccount);
+      const bridge = new BridgePage(isolatedPage);
+      const txHash = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account);
+      await proveOpStackWithdrawalOnFork('base', txHash, account);
+      const { usds: before } = await l1AccountState(account);
+      await bridge.gotoConnected();
+
+      const card = bridge.card('Ethereum');
+      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
+        timeout: 90_000
+      });
+      await dropWalletSends(isolatedPage);
+      await card.getByTestId('pending-bridge-action').click();
+      const close = isolatedPage.getByTestId('transaction-modal-close');
+      await expect(close).toHaveAttribute('aria-label', 'Minimize', { timeout: 90_000 });
+
+      // A reload: the page loads again with the wallet connected and storage kept.
+      await bridge.gotoConnected();
+      let sendsAfterReload = 0;
+      isolatedPage.on('request', request => {
+        if (request.postData()?.includes('"eth_sendTransaction"')) sendsAfterReload += 1;
+      });
+      // The sent finalize is kept: the card says it waits for it and never offers it again while it is out.
+      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
+        timeout: 90_000
+      });
+      await expect(card.getByTestId('pending-bridge-action-hint')).toContainText(
+        'Waiting for the transaction to confirm',
+        { timeout: 30_000 }
+      );
+      const action = card.getByTestId('pending-bridge-action');
+      if (await action.count()) await expect(action).toBeDisabled();
+
+      await finalizeOpStackWithdrawalOnFork('base', txHash, account);
+      await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 180_000 });
+      expect((await l1AccountState(account)).usds - before).toBe(AMOUNT);
+      expect(sendsAfterReload).toBe(0);
+    });
+
+    test('base: while a finalize prompt is still open, another card refuses to send until that prompt ends', async ({
+      isolatedPage,
+      testAccount
+    }) => {
+      test.setTimeout(900_000);
+      await keepPendingBridgesOnLoad(isolatedPage.context());
+      const account = getAddress(testAccount);
+      const bridge = new BridgePage(isolatedPage);
+      const txA = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account, undefined, '5');
+      const txB = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account, undefined, '3');
+      await proveOpStackWithdrawalOnFork('base', txA, account);
+      await proveOpStackWithdrawalOnFork('base', txB, account);
+      const { usds: before } = await l1AccountState(account);
+      await bridge.gotoConnected();
+
+      const toEthereum = bridge.cards().filter({ hasText: 'Ethereum' });
+      const cardA = toEthereum.filter({ hasText: /(^|[^\d.])5\.00/ });
+      const cardB = toEthereum.filter({ hasText: /(^|[^\d.])3\.00/ });
+      for (const card of [cardA, cardB])
+        await expect(card.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize', {
+          timeout: 90_000
+        });
+
+      // A's prompt stays open in the wallet: its send is held unanswered.
+      let held: Route | undefined;
+      await isolatedPage.route(TENDERLY_RPC, async route => {
+        if (!held && route.request().postData()?.includes('"eth_sendTransaction"')) {
+          held = route;
+          return;
+        }
+        return route.fallback();
+      });
+      await cardA.getByTestId('pending-bridge-action').click();
+      await expect.poll(() => !!held, { timeout: 90_000 }).toBe(true);
+      await isolatedPage.getByTestId('transaction-modal-close').click();
+
+      await cardB.getByTestId('pending-bridge-action').click();
+      await expect(isolatedPage.getByText(/still open in your wallet or pending/)).toBeVisible({
+        timeout: 90_000
+      });
+      expect((await l1AccountState(account)).usds).toBe(before);
+
+      // The wallet answers A's prompt with an error: B's Retry then sends B's own finalize.
+      await held!.abort();
+      await isolatedPage.unroute(TENDERLY_RPC);
+      await isolatedPage.getByRole('button', { name: /^(Retry|Try again)$/ }).click();
+      await expect(cardB.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 180_000 });
+      expect((await l1AccountState(account)).usds - before).toBe(parseUnits('3', 18));
+      await expect(cardA.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize');
     });
   });
 });

@@ -116,6 +116,8 @@ export function useCctpClaimLegs({
     execute: legs.execute,
     reset: legs.reset,
     release: legs.release,
+    /** An earlier run's send is still out: the engine waits on it. */
+    detached: legs.busy,
     dropCheck: legs.dropCheck,
     /** Ethereum's reader, for what a claim whose sale failed left behind. */
     client
