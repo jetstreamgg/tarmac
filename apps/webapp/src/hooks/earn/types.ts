@@ -110,6 +110,11 @@ export type EarnProductRow = EarnProductDescriptor & {
    * balance.
    */
   claimable?: boolean;
+  /**
+   * stUSDS / Risk Capital only: the supplied liquidity is fully lent out
+   * (100% utilization), so withdrawals are currently unavailable.
+   */
+  withdrawalsUnavailable?: boolean;
   isLoading: boolean;
   error: Error | null;
 };

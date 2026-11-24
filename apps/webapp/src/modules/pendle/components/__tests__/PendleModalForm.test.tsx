@@ -7,6 +7,7 @@ import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
+import { chainId, forkChainId } from '@/utils/chainId';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -48,6 +49,8 @@ type BatchCallbacks = {
 };
 
 const hoisted = vi.hoisted(() => ({
+  chainId: 1,
+  balanceChainIds: [] as (number | undefined)[],
   quoteArgs: undefined as Record<string, unknown> | undefined,
   batchArgs: undefined as (Record<string, unknown> & BatchCallbacks) | undefined,
   executeSpy: vi.fn(),
@@ -85,7 +88,7 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1,
+    useChainId: () => hoisted.chainId,
     useChains: () => [{ id: 1, name: 'Ethereum' }],
     useConnection: () => ({
       address: '0x000000000000000000000000000000000000beef',
@@ -120,12 +123,15 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useTokenBalance: () => ({
-      data: { value: WALLET_BALANCE },
-      isLoading: false,
-      error: null,
-      refetch: () => undefined
-    }),
+    useTokenBalance: ({ chainId }: { chainId?: number }) => {
+      hoisted.balanceChainIds.push(chainId);
+      return {
+        data: { value: WALLET_BALANCE },
+        isLoading: false,
+        error: null,
+        refetch: () => undefined
+      };
+    },
     useTokenAllowance: () => ({
       data: hoisted.allowance,
       isLoading: false,
@@ -238,6 +244,8 @@ describe('PendleModalForm', () => {
     hoisted.onPush = undefined;
     hoisted.allowance = 0n;
     hoisted.debounceLagged = undefined;
+    hoisted.chainId = 1;
+    hoisted.balanceChainIds = [];
   });
 
   it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
@@ -266,6 +274,7 @@ describe('PendleModalForm', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
     vi.useRealTimers();
   });
 
@@ -307,6 +316,18 @@ describe('PendleModalForm', () => {
       expect(lastEntryUpdate()?.errorMessage).toContain('no longer accepts deposits');
     });
   });
+
+  it.each(Object.entries(forkChainId))(
+    'reads the wallet balance on the Ethereum fork from fork %s, never real mainnet',
+    (_, id) => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+      hoisted.chainId = id;
+      renderForm('supply');
+
+      expect(hoisted.balanceChainIds.length).toBeGreaterThan(0);
+      expect(hoisted.balanceChainIds.every(read => read === chainId.tenderly)).toBe(true);
+    }
+  );
 
   describe('supply flow', () => {
     it('quotes the selected input token against the market PT', () => {

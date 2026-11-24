@@ -1,5 +1,5 @@
 import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -105,6 +105,11 @@ function Harness({
   return null;
 }
 
+function FailureProbe() {
+  return <output data-testid="failure-may-still-mine">{String(useTransaction().failureMayStillMine)}</output>;
+}
+const failureMayStillMine = () => screen.getByTestId('failure-may-still-mine').textContent;
+
 // Opens the modal, advances to the transaction screen, and fails the first step.
 function renderFailedFlow(
   steps: TransactionStep[],
@@ -117,6 +122,7 @@ function renderFailedFlow(
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
           <Harness steps={steps} onConfirm={onConfirm} onReady={c => (cb = c)} />
+          <FailureProbe />
         </TransactionProvider>
       </I18nProvider>
     </StrictMode>
@@ -299,6 +305,21 @@ describe('TransactionModal failure & recovery', () => {
     invalidate.mockRestore();
   });
 
+  it('says a failure may still mine only when what it sent has an outcome it could not read', () => {
+    renderFailedFlow(supplySteps);
+    expect(failureMayStillMine()).toBe('false');
+    cleanup();
+
+    batch.enabled = true;
+    batch.supported = true;
+    renderFailedFlow(
+      supplySteps,
+      () => {},
+      new TransactionOutcomeUnknownError(new Error('Unknown bundle id'))
+    );
+    expect(failureMayStillMine()).toBe('true');
+  });
+
   it('groups on-chain reverts in Sentry by flow and action, and leaves other errors to the default grouping', () => {
     renderFailedFlow(supplySteps, () => {}, new TransactionRevertedError());
     expect(vi.mocked(reportError).mock.calls[0][1].fingerprint).toEqual([
@@ -323,6 +344,16 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByText(/The network rolled back your transaction/)).toBeNull();
     const ctx = vi.mocked(reportError).mock.calls[0][1];
     expect(ctx.tags).toEqual({ revert_reason: 'LockstakeEngine/urn-unsafe' });
+  });
+
+  it("says the wallet didn't allow a send it refused with 4100, not that the network rolled it back", () => {
+    renderFailedFlow(supplySteps, () => {}, Object.assign(new Error('Unauthorized'), { code: 4100 }));
+    expect(
+      screen.getByText(
+        "Your wallet didn't allow this request. Reconnect it and try again. The USDS hasn't been approved."
+      )
+    ).toBeDefined();
+    expect(screen.queryByText(/The network rolled back your transaction/)).toBeNull();
   });
 
   it('shows an unmapped revert reason verbatim', () => {

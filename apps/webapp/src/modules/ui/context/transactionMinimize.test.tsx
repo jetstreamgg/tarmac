@@ -1,4 +1,12 @@
-import { StrictMode, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  StrictMode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode
+} from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -249,6 +257,33 @@ describe('TransactionModal minimize', () => {
     expect(screen.queryByText('Supply')).toBeNull();
   });
 
+  it("restores through the toast's View as restore does, so leaving the page ends it again", () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness config={{ ...REVIEW_CONFIG, sessionId: 'session-a' }} onReady={c => (ctx = c)} />
+            <SessionProbe />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    const session = () => screen.getByTestId('active-session').textContent;
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => ctx.txCallbacks.onMutate());
+    act(() => ctx.txCallbacks.onStart('0xhash'));
+    act(() => ctx.minimize());
+    const toastBody = toastWithCloseMock.mock.calls.at(-1)![0] as () => ReactElement<{ onView: () => void }>;
+    act(() => toastBody().props.onView());
+    expect(ctx.isMinimized).toBe(false);
+
+    // No longer minimized: a navigation away ends the failed session, as after restore.
+    act(() => ctx.txCallbacks.onError(new Error('reverted'), '0xhash'));
+    act(() => ctx.closeOnNavigation('/elsewhere'));
+    expect(session()).toBe('none');
+  });
+
   it('does NOT emit a cancelled completion event when minimizing during the wallet prompt', () => {
     const ctx = renderFlow();
     const cb = cbOf(ctx);
@@ -394,6 +429,30 @@ describe('TransactionModal minimize', () => {
     expect(probe.unmounts).toBe(unmountsBefore);
     expect(screen.queryByText(/processing/i)).not.toBeNull();
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
+  });
+
+  it('restores fully when a new launch brings the in-flight modal back, so leaving the page ends it again', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness config={{ ...REVIEW_CONFIG, sessionId: 'session-a' }} onReady={c => (ctx = c)} />
+            <SessionProbe />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => ctx.txCallbacks.onMutate());
+    act(() => ctx.txCallbacks.onStart('0xhash'));
+    act(() => ctx.minimize());
+    act(() => ctx.launch({ ...REVIEW_CONFIG, sessionId: 'session-b' }));
+    expect(ctx.isMinimized).toBe(false);
+
+    act(() => ctx.txCallbacks.onError(new Error('reverted'), '0xhash'));
+    act(() => ctx.closeOnNavigation('/elsewhere'));
+    expect(screen.getByTestId('active-session').textContent).toBe('none');
   });
 
   it('keeps a PORTALING host body mounted across minimize (engine survives the portal switch)', () => {

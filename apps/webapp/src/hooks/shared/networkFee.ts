@@ -1,6 +1,7 @@
 import { encodeFunctionData, formatEther, parseAbi, type Call, type Hex } from 'viem';
 
 import { base, optimism, unichain } from 'wagmi/chains';
+import { realChainId } from '@/utils/chainId';
 
 /**
  * Canonical Multicall3 deployment — byte-identical runtime code at this address on
@@ -50,7 +51,7 @@ export function getBatchGasFloor(perCallGas: readonly bigint[]): bigint {
  */
 const OP_STACK_CHAIN_IDS: readonly number[] = [base.id, optimism.id, unichain.id];
 
-export const isOpStackChain = (chainId: number): boolean => OP_STACK_CHAIN_IDS.includes(chainId);
+export const isOpStackChain = (chainId: number): boolean => OP_STACK_CHAIN_IDS.includes(realChainId(chainId));
 
 export const multicall3Abi = parseAbi([
   'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])',

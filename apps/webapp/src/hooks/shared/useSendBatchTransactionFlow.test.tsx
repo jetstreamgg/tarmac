@@ -60,7 +60,11 @@ vi.mock('wagmi', () => ({
   useWaitForCallsStatus: () => callsStatus
 }));
 
-import { TransactionOutcomeUnknownError, useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
+import {
+  BatchFailedError,
+  TransactionOutcomeUnknownError,
+  useSendBatchTransactionFlow
+} from './useSendBatchTransactionFlow';
 
 const call: Call = {
   to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
@@ -192,7 +196,8 @@ describe('useSendBatchTransactionFlow — settling', () => {
   it('reports success when every leg landed', () => {
     const { onSuccess, onError } = settle('success', ['success', 'success']);
 
-    expect(onSuccess).toHaveBeenCalledWith('0x1', 2n);
+    // Every receipt: a wallet that runs the bundle as separate transactions lands each call apart.
+    expect(onSuccess).toHaveBeenCalledWith('0x1', 2n, ['0x1', '0x2']);
     expect(onError).not.toHaveBeenCalled();
   });
 
@@ -217,6 +222,11 @@ describe('useSendBatchTransactionFlow — settling', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][1]).toBe('0x2');
+    // With every receipt, so a caller can tell a leg that mined anyway.
+    const error = onError.mock.calls[0][0];
+    expect(error).toBeInstanceOf(BatchFailedError);
+    expect(error.message).toBe('ERROR: Batch transaction failed');
+    expect(error.receipts.map((r: { transactionHash: string }) => r.transactionHash)).toEqual(['0x1', '0x2']);
   });
 
   it('reports a lost bundle once, and still reports the answer the wallet gives later (APP-651)', () => {

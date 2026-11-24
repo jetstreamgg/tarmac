@@ -23,6 +23,7 @@ import { ROW_COLLAPSE_MS } from '@/modules/ui/animation/presets';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { CellNetworks } from '@/components/ui/table-cells';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
+import { WithdrawalsUnavailableBadge } from '@/components/product/WithdrawalsUnavailable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
 import {
   isMorphoVault,
@@ -99,11 +100,17 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
     // fixed-yield rows (1036:201260 — the Pendle mark was missing). The
     // bare marks here are the table's treatment; portfolio's `ProductGlyph`
     // is the smaller tiled variant, so only the predicates are shared.
-    nameSuffix: isMorphoVault(row) ? (
-      <Morpho className="h-4 w-4 rounded-sm" />
-    ) : isPendleFixed(row) ? (
-      <Pendle className="h-4 w-4" />
-    ) : undefined,
+    nameSuffix: (
+      <>
+        {isMorphoVault(row) ? (
+          <Morpho className="h-4 w-4 rounded-sm" />
+        ) : isPendleFixed(row) ? (
+          <Pendle className="h-4 w-4" />
+        ) : undefined}
+        {/* 100% utilization: Morpho's vault-list warning triangle (comms brief). */}
+        {row.withdrawalsUnavailable && <WithdrawalsUnavailableBadge assetSymbol={row.supplyTokens[0]} />}
+      </>
+    ),
     supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
     maturityLabel: row.maturity ? formatMaturity(row.maturity) : undefined,
     network: <CellNetworks>{row.networks.map(id => getChainIcon(id, 'h-full w-full'))}</CellNetworks>,

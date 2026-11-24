@@ -38,7 +38,10 @@ export enum QueryParams {
    * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
    * (opened + stripped) by useUpgradeDeepLink on any module route.
    */
-  Upgrade = 'upgrade'
+  Upgrade = 'upgrade',
+  /** A CCTP claim link's source network and burn hash, e.g. /convert?tab=bridge&claim_network=base&claim_tx=0x… */
+  ClaimNetwork = 'claim_network',
+  ClaimTx = 'claim_tx'
 }
 
 export enum Environment {
@@ -78,6 +81,8 @@ export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.P
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
+export { USE_TESTNET_CONFIG } from '@/data/wagmi/config/testnetConfig';
+
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
 
@@ -97,6 +102,10 @@ export const PRIVACY_POLICY_URL = 'https://docs.sky.money/legal/skybase-internat
 
 /** The "Learn more in the User Risk Documentation." target shared by every product About section. */
 export const USER_RISKS_URL = 'https://docs.sky.money/user-risks';
+/** Section 5.2 of the user risks doc: Vaults (built on Morpho). */
+export const USER_RISKS_VAULTS_URL = `${USER_RISKS_URL}#id-5.2-vaults-built-on-morpho`;
+/** Section 5.4 of the user risks doc: Staking and borrowing (including stUSDS). */
+export const USER_RISKS_STUSDS_URL = `${USER_RISKS_URL}#id-5.4-staking-and-borrowing-including-stusds`;
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // Deprecated Seal Engine (LockstakeEngine v1, MKR). The UI was removed; this address backs the

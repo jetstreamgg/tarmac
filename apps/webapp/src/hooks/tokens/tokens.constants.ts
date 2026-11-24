@@ -20,6 +20,7 @@ import {
 } from '../generated';
 import { TokenMapping, Token, TokenForChain } from './types';
 import { TENDERLY_CHAIN_ID } from '../constants';
+import { withForkAliases } from '@/utils/chainId';
 
 export function getTokenDecimals(
   token: Token | TokenForChain | undefined | null,
@@ -37,7 +38,7 @@ export function getTokenDecimals(
 
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as const;
 
-export const TOKENS: TokenMapping = {
+const TOKENS_BY_REAL_CHAIN: TokenMapping = {
   eth: {
     address: {
       [mainnet.id]: ETH_ADDRESS,
@@ -189,6 +190,18 @@ export const TOKENS: TokenMapping = {
     decimals: 18
   }
 };
+
+// The Tenderly fork L2s carry their real L2's tokens.
+export const TOKENS: TokenMapping = Object.fromEntries(
+  Object.entries(TOKENS_BY_REAL_CHAIN).map(([key, token]) => [
+    key,
+    {
+      ...token,
+      address: withForkAliases(token.address),
+      decimals: typeof token.decimals === 'number' ? token.decimals : withForkAliases(token.decimals)
+    }
+  ])
+);
 
 export function getTokensForChain(chainId: number): TokenForChain[] {
   const tokensForChain: TokenForChain[] = [];

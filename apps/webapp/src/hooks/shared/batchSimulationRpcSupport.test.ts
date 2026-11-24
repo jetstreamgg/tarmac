@@ -19,7 +19,14 @@
  * WAF rejects non-browser user agents, so the requests carry a browser UA.
  */
 import { describe, expect, it } from 'vitest';
-import { createPublicClient, decodeFunctionResult, encodeFunctionData, http, type Hex } from 'viem';
+import {
+  createPublicClient,
+  decodeFunctionResult,
+  encodeFunctionData,
+  http,
+  parseEther,
+  type Hex
+} from 'viem';
 import { getTenderlyChains } from '../../../test/hooks/tenderlyChain';
 import { TEST_WALLET_ADDRESS } from '../../../test/hooks';
 import { multicall3Abi } from './networkFee';
@@ -31,6 +38,8 @@ const RETURNS_ONE: Hex = '0x600160005260206000f3';
 const RETURNS_CALLER: Hex = '0x3360005260206000f3';
 const CODELESS = '0x2222222222222222222222222222222222222222' as const;
 const ONE = `0x${'0'.repeat(63)}1` as Hex;
+/** Tenderly's Unichain fork rejects a sender with no ETH, and these probes aren't about balance. */
+const SENDER_BALANCE = parseEther('1');
 
 const envUrls =
   process.env.PROBE_RPC_URLS?.split(',')
@@ -66,7 +75,7 @@ describe.each(targets)('batch simulation RPC support — $name', ({ url }) => {
       account: TEST_WALLET_ADDRESS,
       to: TEST_WALLET_ADDRESS,
       data: '0x',
-      stateOverride: [{ address: TEST_WALLET_ADDRESS, code: RETURNS_CALLER }]
+      stateOverride: [{ address: TEST_WALLET_ADDRESS, code: RETURNS_CALLER, balance: SENDER_BALANCE }]
     });
     expect(data?.toLowerCase()).toBe(`0x${'0'.repeat(24)}${TEST_WALLET_ADDRESS.slice(2)}`.toLowerCase());
   });
@@ -84,7 +93,7 @@ describe.each(targets)('batch simulation RPC support — $name', ({ url }) => {
         functionName: 'aggregate3',
         args: [[{ target: CODELESS, allowFailure: true, callData: '0x' }]]
       }),
-      stateOverride: [{ address: TEST_WALLET_ADDRESS, code: code! }]
+      stateOverride: [{ address: TEST_WALLET_ADDRESS, code: code!, balance: SENDER_BALANCE }]
     });
     const results = decodeFunctionResult({ abi: multicall3Abi, functionName: 'aggregate3', data: data! });
     expect(results).toEqual([{ success: true, returnData: '0x' }]);
@@ -93,7 +102,8 @@ describe.each(targets)('batch simulation RPC support — $name', ({ url }) => {
   it('supports eth_simulateV1 with validation off', async () => {
     const { results } = await client.simulateCalls({
       account: TEST_WALLET_ADDRESS,
-      calls: [{ to: CODELESS, data: '0x' }]
+      calls: [{ to: CODELESS, data: '0x' }],
+      stateOverrides: [{ address: TEST_WALLET_ADDRESS, balance: SENDER_BALANCE }]
     });
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');

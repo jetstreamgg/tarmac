@@ -1,10 +1,15 @@
+import type { TransactionReceipt } from 'viem';
 import { useConnection, useSimulateContract, useWriteContract } from 'wagmi';
 import { markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { reportPrepareRevert } from './prepareRevertReporter';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { useTransactionOutcome } from './useTransactionOutcome';
-import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
+import {
+  SequentialTransactionHook,
+  TxMutateVariables,
+  UseSequentialTransactionFlowParameters
+} from '../hooks';
 
 // A refetch runs even while the query is disabled, so a Retry that re-simulates
 // checks the caller's `enabled` gate itself, at the click and again when the
@@ -13,6 +18,7 @@ const notSendable = () => new Error('The transaction can no longer be sent');
 const resimulationFailure = (error: Error | null) =>
   error ? toError(error) : new Error('The simulation returned no request');
 const accountSwitched = () => new Error('The wallet switched accounts during the run');
+const chainSwitched = () => new Error('The wallet switched chains during the run');
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -23,8 +29,10 @@ export function useSequentialTransactionFlow(
     onMutate = () => null,
     onStart = () => null,
     onSuccess = () => null,
+    onReceipt,
     onError = () => null,
-    chainId
+    chainId,
+    failOnReplaced = false
   } = parameters;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -60,6 +68,7 @@ export function useSequentialTransactionFlow(
   // The run stays loading meanwhile, so no second write can overlap it: a
   // replaced write still fires the mutation's callbacks when it settles.
   const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+  const [detached, setDetached] = useState(false);
   const finishDetachedRef = useRef(() => {});
   const enabledRef = useRef(enabled);
   useEffect(() => {
@@ -68,7 +77,7 @@ export function useSequentialTransactionFlow(
   // The account that started the run. A later step is only sent from it: the
   // frozen calls can name the starting account (a deposit's receiver), so
   // another account signing them would pay into that account's position.
-  const { address } = useConnection();
+  const { address, chainId: walletChainId } = useConnection();
   const runAccountRef = useRef<string | undefined>(undefined);
   const addressRef = useRef(address);
   useEffect(() => {
@@ -76,6 +85,14 @@ export function useSequentialTransactionFlow(
   }, [address]);
   const isRunAccount = (account: string | undefined) =>
     account?.toLowerCase() === runAccountRef.current?.toLowerCase();
+  // The chain the run started on. A later step is only simulated and sent
+  // there: the same address on another chain is another contract, or none.
+  const [runChainId, setRunChainId] = useState<number | undefined>(undefined);
+  const walletChainRef = useRef(walletChainId);
+  useEffect(() => {
+    walletChainRef.current = walletChainId;
+  }, [walletChainId]);
+  const onRunChain = runChainId === undefined || walletChainId === runChainId;
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -97,6 +114,11 @@ export function useSequentialTransactionFlow(
       abi: currentTransaction?.abi,
       functionName: currentTransaction?.functionName,
       args: currentTransaction?.args,
+      // A payable call's ETH; dropped here, the wallet would send none.
+      value: currentTransaction?.value,
+      gas: currentTransaction?.gas,
+      // Unpinned, wagmi simulates on whatever chain the wallet is on now.
+      ...(isExecuting && currentIndex > 0 && runChainId !== undefined && { chainId: runChainId }),
       query: {
         // Only enable simulation for the first transaction initially, or for subsequent transactions after previous success
         enabled:
@@ -106,7 +128,15 @@ export function useSequentialTransactionFlow(
         gcTime: 30_000
       }
     }),
-    [currentTransaction, enabled, currentIndex, stableTransactions.length, transactionHashes.length]
+    [
+      currentTransaction,
+      enabled,
+      currentIndex,
+      stableTransactions.length,
+      transactionHashes.length,
+      isExecuting,
+      runChainId
+    ]
   );
 
   // Prepare current transaction
@@ -118,30 +148,48 @@ export function useSequentialTransactionFlow(
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
   useEffect(() => reportPrepareRevert(simulationError, chainId), [simulationError, chainId]);
 
+  // The request of the latest wallet prompt. Each dispatch gets its own object, so the
+  // variables wagmi passes back tell a prompt signed late from the one in flight.
+  const latestRequestRef = useRef<object | undefined>(undefined);
+  const isLatest = (variables?: object) => !variables || variables === latestRequestRef.current;
+  const emitStart = (hash: string, variables?: TxMutateVariables) =>
+    variables ? onStart(hash, variables) : onStart(hash);
   const {
-    writeContract,
+    writeContract: writeContractMutation,
     error: writeError,
     data: mutationHash,
+    variables: writeVariables,
     isPending: isWritePending,
     reset: resetWrite
   } = useWriteContract({
     mutation: {
       onMutate,
-      onSuccess: (hash: `0x${string}`) => {
-        setHasFailed(false);
-        onStart(hash);
+      onSuccess: (hash: `0x${string}`, variables) => {
+        if (isLatest(variables)) setHasFailed(false);
+        emitStart(hash, variables);
       },
-      onError: (err: Error) => {
-        setHasFailed(true);
-        // Nothing has mined after a first-call rejection, so there is nothing to
-        // resume — and a snapshot kept here would have the next confirm sign the
-        // pre-rejection call after the user went back and edited it (APP-448).
-        if (currentIndex === 0) setIsExecuting(false);
-        onError(err, mutationHash || '');
+      onError: (err: Error, variables) => {
+        // An earlier prompt settling late must not stop the run in flight.
+        if (isLatest(variables)) {
+          setHasFailed(true);
+          // Nothing has mined after a first-call rejection, so there is nothing to
+          // resume — and a snapshot kept here would have the next confirm sign the
+          // pre-rejection call after the user went back and edited it (APP-448).
+          if (currentIndex === 0) setIsExecuting(false);
+        }
+        onError(err, mutationHash || '', variables);
         if (detachedRef.current) finishDetachedRef.current();
       }
     }
   });
+  const writeContract = useCallback(
+    (request: Parameters<typeof writeContractMutation>[0]) => {
+      const fresh = { ...request };
+      latestRequestRef.current = fresh;
+      writeContractMutation(fresh);
+    },
+    [writeContractMutation]
+  );
 
   // Workaround to get `txHash` from Safe connector
   const { transactionHash: eventHash, isSafeApp: isSafeConnector } = useWaitForSafeTxHash({
@@ -154,13 +202,28 @@ export function useSequentialTransactionFlow(
     [eventHash, mutationHash, isSafeConnector]
   );
 
+  // With failOnReplaced, a repriced tx (same call, new fee) is reported under the hash that mines.
+  const repricedRef = useRef<{ from: string; to: string } | undefined>(undefined);
+  const minedHash = (hash: string) => (repricedRef.current?.from === hash ? repricedRef.current.to : hash);
+
   // Monitor current transaction
   const {
     isPending: isMining,
     isSuccess,
     failure: txFailure,
     receipt
-  } = useTransactionOutcome({ hash: txHash, chainId });
+  } = useTransactionOutcome({
+    hash: txHash,
+    chainId,
+    onRepriced: failOnReplaced
+      ? (from, to) => {
+          // A released write's wait can outlive it: its speed-up belongs to no run here.
+          if (from !== txHash) return;
+          repricedRef.current = { from, to };
+          emitStart(to, writeVariables);
+        }
+      : undefined
+  });
 
   // A write in the wallet, awaiting a Safe's co-signers, or mining.
   const writeOut = !!isWritePending || (!!mutationHash && !txHash) || (!!txHash && !isSuccess && !txFailure);
@@ -168,6 +231,11 @@ export function useSequentialTransactionFlow(
   useEffect(() => {
     writeOutRef.current = writeOut;
   }, [writeOut]);
+  // A prompt still in the wallet reports its answer whatever the run does meanwhile.
+  const promptOpenRef = useRef(!!isWritePending);
+  useEffect(() => {
+    promptOpenRef.current = !!isWritePending;
+  }, [isWritePending]);
 
   // Check if current transaction is prepared
   const prepared = useMemo(() => {
@@ -185,6 +253,7 @@ export function useSequentialTransactionFlow(
       dispatchedIndexRef.current !== currentIndex && // one dispatch per index — see the ref
       reportedSimulationIndexRef.current !== currentIndex &&
       isRunAccount(address) && // see the account-switch pause below
+      onRunChain &&
       !transactionHashes[currentIndex] // Only execute if not already executed
     ) {
       dispatchedIndexRef.current = currentIndex;
@@ -197,7 +266,8 @@ export function useSequentialTransactionFlow(
     stableTransactions.length,
     transactionHashes,
     writeContract,
-    address
+    address,
+    onRunChain
   ]);
 
   const lastProcessedTxHash = useRef<string | undefined>(undefined);
@@ -214,7 +284,10 @@ export function useSequentialTransactionFlow(
 
   // The consumer's callbacks are read through effect events: the completion
   // effect must not re-run because a caller passed a new inline function.
-  const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
+  const emitSuccess = useEffectEvent((hash: string, receipt?: TransactionReceipt) => {
+    if (receipt) onReceipt?.(receipt);
+    onSuccess(hash, receipt?.blockNumber);
+  });
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
 
   // A later step is only sent once its simulation succeeds, so a step that
@@ -236,22 +309,24 @@ export function useSequentialTransactionFlow(
     emitError(markStalledStep(simulationError), '');
   }, [isExecuting, currentIndex, simulationError]);
 
-  // The wallet moved to another account after a step mined. Pause like a
-  // stalled step, so Retry goes through the modal's dispatch checks, which
-  // refuse it unless the wallet is back on the starting account.
+  // The wallet moved to another account or chain after a step mined. Pause
+  // like a stalled step, so Retry goes through the modal's dispatch checks,
+  // which refuse it unless the wallet is back on the starting account, and
+  // through execute(), which refuses it off the starting chain.
   useEffect(() => {
+    const sameAccount = isRunAccount(address);
     if (
       !isExecuting ||
       currentIndex === 0 ||
-      isRunAccount(address) ||
+      (sameAccount && onRunChain) ||
       dispatchedIndexRef.current === currentIndex ||
       reportedSimulationIndexRef.current === currentIndex
     )
       return;
     reportedSimulationIndexRef.current = currentIndex;
     setHasFailed(true);
-    emitError(markStalledStep(accountSwitched()), '');
-  }, [isExecuting, currentIndex, address]);
+    emitError(markStalledStep(sameAccount ? chainSwitched() : accountSwitched()), '');
+  }, [isExecuting, currentIndex, address, onRunChain]);
 
   // Handle transaction completion
   useEffect(() => {
@@ -268,7 +343,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        emitSuccess(txHash, receipt?.blockNumber);
+        emitSuccess(minedHash(txHash), receipt);
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -288,7 +363,7 @@ export function useSequentialTransactionFlow(
       // Transaction failed: reverted, or cancelled/replaced in the wallet. Never
       // an RPC error while watching — the outcome hook keeps watching through
       // those, since the tx may still land.
-      emitError(txFailure, txHash);
+      emitError(txFailure, minedHash(txHash));
       // Like a wallet rejection (see the write's onError), a failure after a
       // mined step keeps the run paused so Retry resumes the frozen remainder:
       // the live `calls` has dropped the mined approve, so slicing it at
@@ -302,16 +377,19 @@ export function useSequentialTransactionFlow(
       setIsExecuting(paused);
       setHasFailed(paused);
     }
-  }, [isExecuting, isSuccess, txFailure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
+  }, [isExecuting, isSuccess, txFailure, txHash, receipt, currentIndex, transactionHashes]);
 
   const clearRun = useCallback(() => {
     detachedRef.current = null;
+    setDetached(false);
     setIsExecuting(false);
     setCurrentIndex(0);
     setTransactionHashes([]);
     setHasFailed(false);
+    setRunChainId(undefined);
     dispatchedIndexRef.current = -1;
     reportedSimulationIndexRef.current = -1;
+    latestRequestRef.current = undefined;
     revertedIndexRef.current = -1;
     resimulationRef.current = null;
     resetWrite();
@@ -331,6 +409,7 @@ export function useSequentialTransactionFlow(
     (onCleared?: () => void) => {
       if (writeOutRef.current) {
         detachedRef.current = { onCleared };
+        setDetached(true);
         return;
       }
       clearRun();
@@ -338,6 +417,12 @@ export function useSequentialTransactionFlow(
     },
     [clearRun]
   );
+
+  // The caller read the run's outcome on chain: the run clears with its receipt wait.
+  const release = useCallback(() => {
+    if (promptOpenRef.current) return reset();
+    finishDetachedRef.current();
+  }, [reset]);
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
@@ -376,13 +461,23 @@ export function useSequentialTransactionFlow(
         resimulationRef.current = null;
         const live = enabledRef.current;
         const sameAccount = isRunAccount(addressRef.current);
-        const request = live && sameAccount && !error ? data?.request : undefined;
+        const sameChain = runChainId === undefined || walletChainRef.current === runChainId;
+        const request = live && sameAccount && sameChain && !error ? data?.request : undefined;
         if (request) {
           onSent?.();
           writeContract(request as Parameters<typeof writeContract>[0]);
         } else {
           onFailed?.();
-          onError(!live ? notSendable() : !sameAccount ? accountSwitched() : resimulationFailure(error), '');
+          onError(
+            !live
+              ? notSendable()
+              : !sameAccount
+                ? accountSwitched()
+                : !sameChain
+                  ? chainSwitched()
+                  : resimulationFailure(error),
+            ''
+          );
         }
       });
     };
@@ -403,10 +498,16 @@ export function useSequentialTransactionFlow(
         onError(notSendable(), '');
         return;
       }
+      if (isResume && runChainId !== undefined && walletChainRef.current !== runChainId) {
+        onError(chainSwitched(), '');
+        return;
+      }
       if (!isResume) {
         setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check
         runAccountRef.current = addressRef.current;
+        // A request that names no chain goes on the wallet's.
+        setRunChainId((simulationData.request as { chainId?: number }).chainId ?? walletChainRef.current);
       }
       // This call is dispatched here, so claim its index before the auto-execute
       // effect can see it (a retry re-enters at a non-zero currentIndex).
@@ -447,7 +548,8 @@ export function useSequentialTransactionFlow(
     isSimulationLoading,
     simulationError,
     refetchSimulation,
-    onError
+    onError,
+    runChainId
   ]);
 
   return {
@@ -457,6 +559,8 @@ export function useSequentialTransactionFlow(
     error: writeError || txFailure || simulationError,
     currentCallIndex: currentIndex,
     reset,
+    release,
+    detached,
     nextCalls
   };
 }
