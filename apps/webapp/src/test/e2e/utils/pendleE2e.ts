@@ -1,5 +1,9 @@
-/** PT-sUSDS market slug — sole live Pendle market in PENDLE_MARKETS. */
-export const PT_SUSDS_SLUG = 'pt-susds';
+/**
+ * PT-sUSDS-26NOV2026 market slug. The fork parent predates its successor
+ * (PT-sUSDS-27MAY2027, slug `pt-susds`), so the suite stays on this market with
+ * the page clock pinned before its maturity.
+ */
+export const PT_SUSDS_SLUG = 'pt-susds-26nov2026';
 
 /** Legacy address route forwards to the slug above. */
 export const PT_SUSDS_MARKET_ADDRESS = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
