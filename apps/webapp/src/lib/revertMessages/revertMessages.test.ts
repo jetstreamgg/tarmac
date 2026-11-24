@@ -129,8 +129,8 @@ describe('reverts outside the Staking Engine', () => {
   // The Pendle router's ABI names neither error, so viem keeps only the
   // selector (the 0xbf881cef / 0x4b344b11 seen on a fork).
   it.each([
-    ['0xbf881cef', /limiting how much can be withdrawn/],
-    ['0x4b344b11', /reached Pendle's deposit limit/]
+    ['0xbf881cef', /withdrawal limit for this market is used up/],
+    ['0x4b344b11', /reached Pendle's deposit cap/]
   ])("maps the Pendle SY's limit revert %s by selector", (selector, copy) => {
     expect(revertMessage({ revert: { reason: selector, kind: 'unknown' } })).toMatch(copy);
   });

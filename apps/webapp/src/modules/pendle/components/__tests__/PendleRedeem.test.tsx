@@ -70,6 +70,7 @@ const baseQuote: PendleConvertQuote = {
 const baseProps = {
   market: MARKET,
   claimAmount: 1_500_000n, // 1.5 PT-USDG (6 decimals)
+  limitRate: undefined as string | undefined,
   ptBalance: 1_500_000n,
   outputTokenList: [USDG_TOKEN, USDS_TOKEN],
   selectedOutputToken: USDG_TOKEN,
@@ -237,11 +238,12 @@ describe('PendleRedeem under the SY rate limit', () => {
   });
 
   it('claims the limited amount and says the rest can follow', () => {
-    renderRedeem({ quote: baseQuote, claimAmount: 400_000n });
+    renderRedeem({ quote: baseQuote, claimAmount: 400_000n, limitRate: '50,000.00 USDG per hour' });
 
     expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('0.4');
     const notice = screen.getByTestId('pendle-redeem-partial-notice');
-    expect(notice.textContent).toContain('1.5');
-    expect(notice.textContent).toContain('claim the rest');
+    expect(notice.textContent).toBe(
+      'Pendle limits withdrawals to 50,000.00 USDG per hour. Claim the rest of your 1.50 PT-USDG later.'
+    );
   });
 });

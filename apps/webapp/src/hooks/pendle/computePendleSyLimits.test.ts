@@ -15,6 +15,8 @@ const OFF: PendleSyLimitsInput = {
   aggregateAvailableBurn: 25_000_000n * E18,
   syPrice: 0n,
   burnQuota: 0n,
+  burnCapacity: 0n,
+  burnWindowSeconds: 0,
   supplyCap: MAX_UINT256,
   totalSupply: 447_530n * E18,
   exchangeRate: (11n * E18) / 10n // 1 share = 1.1 USDS
@@ -27,11 +29,22 @@ describe('computePendleSyLimits', () => {
 
   it('states the burn limit in PT at one asset per PT', () => {
     const limits = computePendleSyLimits({ ...OFF, isRateLimited: true, availableBurn: 1_000n * E18 });
-    expect(limits.maxWithdrawPt).toBe(1_100n * E18);
+    expect(limits.withdraw?.maxPt).toBe(1_100n * E18);
+  });
+
+  it('states the configured rate in the asset per window', () => {
+    const limits = computePendleSyLimits({
+      ...OFF,
+      isRateLimited: true,
+      availableBurn: 1_000n * E18,
+      burnCapacity: 40_000n * E18,
+      burnWindowSeconds: 3600
+    });
+    expect(limits.withdraw).toMatchObject({ rateAssets: 44_000n * E18, windowSeconds: 3600 });
   });
 
   it('reports zero once the meter is used up', () => {
-    expect(computePendleSyLimits({ ...OFF, isRateLimited: true }).maxWithdrawPt).toBe(0n);
+    expect(computePendleSyLimits({ ...OFF, isRateLimited: true }).withdraw?.maxPt).toBe(0n);
   });
 
   it("adds the wallet's burn quota on top of the meter", () => {
@@ -41,7 +54,7 @@ describe('computePendleSyLimits', () => {
       availableBurn: 1_000n * E18,
       burnQuota: 500n * E18
     });
-    expect(limits.maxWithdrawPt).toBe(1_650n * E18);
+    expect(limits.withdraw?.maxPt).toBe(1_650n * E18);
   });
 
   it('applies the shared USD meter only to a priced SY', () => {
@@ -52,10 +65,10 @@ describe('computePendleSyLimits', () => {
         ...limited,
         aggregateAvailableBurn: 220n * E18,
         syPrice: (11n * E18) / 10n
-      }).maxWithdrawPt
+      }).withdraw?.maxPt
     ).toBe(220n * E18);
     expect(
-      computePendleSyLimits({ ...limited, aggregateAvailableBurn: 220n * E18, syPrice: 0n }).maxWithdrawPt
+      computePendleSyLimits({ ...limited, aggregateAvailableBurn: 220n * E18, syPrice: 0n }).withdraw?.maxPt
     ).toBe(1_100n * E18);
   });
 
@@ -68,26 +81,33 @@ describe('computePendleSyLimits', () => {
       syPrice: E18,
       burnQuota: 100n * E18
     });
-    expect(limits.maxWithdrawPt).toBe(110n * E18);
+    expect(limits.withdraw?.maxPt).toBe(110n * E18);
   });
 
   it('reports the room under a supply cap in shares and assets', () => {
     const limits = computePendleSyLimits({ ...OFF, supplyCap: 500_000n * E18 });
-    expect(limits.maxSupply).toEqual({ shares: 52_470n * E18, assets: 57_717n * E18 });
-    expect(limits.maxWithdrawPt).toBeUndefined();
+    expect(limits.maxSupply).toEqual({
+      shares: 52_470n * E18,
+      assets: 57_717n * E18,
+      capAssets: 550_000n * E18
+    });
+    expect(limits.withdraw).toBeUndefined();
   });
 
   it('reports no room at or over the cap', () => {
-    expect(computePendleSyLimits({ ...OFF, supplyCap: OFF.totalSupply }).maxSupply).toEqual({
+    expect(computePendleSyLimits({ ...OFF, supplyCap: OFF.totalSupply }).maxSupply).toMatchObject({
       shares: 0n,
       assets: 0n
     });
-    expect(computePendleSyLimits({ ...OFF, supplyCap: 1n }).maxSupply).toEqual({ shares: 0n, assets: 0n });
+    expect(computePendleSyLimits({ ...OFF, supplyCap: 1n }).maxSupply).toMatchObject({
+      shares: 0n,
+      assets: 0n
+    });
   });
 });
 
 describe('maxPendleSupplyInput', () => {
-  const limits = { maxSupply: { shares: 100n * E18, assets: 110n * E18 } };
+  const limits = { maxSupply: { shares: 100n * E18, assets: 110n * E18, capAssets: 550n * E18 } };
 
   it('is undefined without a cap', () => {
     expect(

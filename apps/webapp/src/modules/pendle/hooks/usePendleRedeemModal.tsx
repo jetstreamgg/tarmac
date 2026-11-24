@@ -37,6 +37,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendleClaimErrorMessage, pendleClaimPrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendleWithdrawRateLabel } from '../utils/limitCopy';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -65,10 +66,18 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     isLoading: limitsLoading,
     mutate: mutateSyLimits
   } = usePendleSyLimits(market, { enabled: isRedeemable && ownSessionLive, poll: false });
-  const claimLimit = syLimits?.maxWithdrawPt;
+  const claimLimit = syLimits?.withdraw?.maxPt;
   const claimAmount = claimLimit !== undefined && claimLimit < ptBalance ? claimLimit : ptBalance;
   const claimBlocked = isRedeemable && claimAmount === 0n;
   const claimable = isRedeemable && !limitsLoading && !claimBlocked;
+
+  const limitRate = syLimits?.withdraw
+    ? pendleWithdrawRateLabel(
+        syLimits.withdraw,
+        market.underlyingDecimals,
+        market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol
+      )
+    : undefined;
 
   const { ptToken, withdrawTokenList } = usePendleTokens(market);
   const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
@@ -138,10 +147,10 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // the claim has no amount to change.
   const errorMessage = useMemo<string | undefined>(
     () =>
-      claimBlocked
-        ? t`Claims are temporarily unavailable. Pendle limits how much can leave this market at a time, and that limit is used up for now. It refills continuously, so try again shortly.`
+      claimBlocked && limitRate
+        ? t`Pendle's withdrawal limit of ${limitRate} is used up. Try again shortly.`
         : ((quote ? undefined : pendleClaimErrorMessage(quoteError?.message)) ?? prepareErrorMessage),
-    [claimBlocked, quote, quoteError, prepareErrorMessage]
+    [claimBlocked, limitRate, quote, quoteError, prepareErrorMessage]
   );
 
   // The Network cell describes where the trade executes — the engine chain,
@@ -197,6 +206,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         market={market}
         claimAmount={claimAmount}
         ptBalance={ptBalance}
+        limitRate={limitRate}
         outputTokenList={withdrawTokenList}
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
@@ -214,6 +224,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       market,
       claimAmount,
       ptBalance,
+      limitRate,
       withdrawTokenList,
       selectedOutputToken,
       quote,

@@ -19,6 +19,10 @@ export type PendleSyLimitsInput = {
   syPrice: bigint;
   /** `burnQuota(sy, wallet)`: shares this wallet may burn outside both meters. */
   burnQuota: bigint;
+  /** `getRateLimitData(sy).capacity`: shares the per-token meter lets out per window. */
+  burnCapacity: bigint;
+  /** `getRateLimitData(sy).burnDecayWindow`: seconds a used-up meter takes to refill. */
+  burnWindowSeconds: number;
   /** The SY's `supplyCap()`; max uint256 means uncapped. */
   supplyCap: bigint;
   /** The SY's `totalSupply()`. */
@@ -29,16 +33,19 @@ export type PendleSyLimitsInput = {
 
 export type PendleSyLimits = {
   /**
-   * Most PT that can be sold or claimed right now, or `undefined` when burns
-   * aren't limited. Both flows end by burning SY, and one burn over the limit
-   * reverts whole.
+   * The burn rate limit, or `undefined` when burns aren't limited. `maxPt` is
+   * the most PT that can be sold or claimed right now: both flows end by
+   * burning SY, and one burn over the limit reverts whole. `rateAssets` per
+   * `windowSeconds` is the configured rate, in the vault's asset, for stating
+   * the limit.
    */
-  maxWithdrawPt?: bigint;
+  withdraw?: { maxPt: bigint; rateAssets: bigint; windowSeconds: number };
   /**
    * Room left under the SY's supply cap, as SY shares (the vault token) and as
-   * the vault's asset, or `undefined` when the SY is uncapped.
+   * the vault's asset, with the cap itself in the vault's asset, or `undefined`
+   * when the SY is uncapped.
    */
-  maxSupply?: { shares: bigint; assets: bigint };
+  maxSupply?: { shares: bigint; assets: bigint; capAssets: bigint };
 };
 
 /**
@@ -58,6 +65,8 @@ export function computePendleSyLimits({
   aggregateAvailableBurn,
   syPrice,
   burnQuota,
+  burnCapacity,
+  burnWindowSeconds,
   supplyCap,
   totalSupply,
   exchangeRate
@@ -67,12 +76,20 @@ export function computePendleSyLimits({
   if (isRateLimited) {
     const metered =
       syPrice > 0n ? min(availableBurn, (aggregateAvailableBurn * WAD) / syPrice) : availableBurn;
-    limits.maxWithdrawPt = ((burnQuota + metered) * exchangeRate) / WAD;
+    limits.withdraw = {
+      maxPt: ((burnQuota + metered) * exchangeRate) / WAD,
+      rateAssets: (burnCapacity * exchangeRate) / WAD,
+      windowSeconds: burnWindowSeconds
+    };
   }
 
   if (supplyCap !== MAX_UINT256) {
     const shares = supplyCap > totalSupply ? supplyCap - totalSupply : 0n;
-    limits.maxSupply = { shares, assets: (shares * exchangeRate) / WAD };
+    limits.maxSupply = {
+      shares,
+      assets: (shares * exchangeRate) / WAD,
+      capAssets: (supplyCap * exchangeRate) / WAD
+    };
   }
 
   return limits;

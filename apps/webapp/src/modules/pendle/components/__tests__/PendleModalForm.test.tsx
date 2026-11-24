@@ -51,7 +51,12 @@ type BatchCallbacks = {
 const hoisted = vi.hoisted(() => ({
   chainId: 1,
   // What the market's SY lets through; {} = no rate limit and no supply cap.
-  syLimits: {} as { maxWithdrawPt?: bigint; maxSupply?: { shares: bigint; assets: bigint } } | undefined,
+  syLimits: {} as
+    | {
+        withdraw?: { maxPt: bigint; rateAssets: bigint; windowSeconds: number };
+        maxSupply?: { shares: bigint; assets: bigint; capAssets: bigint };
+      }
+    | undefined,
   balanceChainIds: [] as (number | undefined)[],
   quoteArgs: undefined as Record<string, unknown> | undefined,
   batchArgs: undefined as (Record<string, unknown> & BatchCallbacks) | undefined,
@@ -290,9 +295,16 @@ describe('PendleModalForm', () => {
 
   describe("under the SY's limits", () => {
     const amountInput = () => screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement;
+    // 50,000 USDG an hour; a 500,000 USDG supply cap.
+    const withdrawLimit = (maxPt: bigint) => ({
+      maxPt,
+      rateAssets: parseUnits('50000', 6),
+      windowSeconds: 3600
+    });
+    const SUPPLY_CAP = parseUnits('500000', 6);
 
     it('leaves the form alone while the limit sits above the position', () => {
-      hoisted.syLimits = { maxWithdrawPt: parseUnits('600', 6) };
+      hoisted.syLimits = { withdraw: withdrawLimit(parseUnits('600', 6)) };
       const view = renderForm('withdraw');
 
       expect(view.container.textContent).toContain('Balance: 500');
@@ -300,11 +312,13 @@ describe('PendleModalForm', () => {
     });
 
     it('caps an early withdrawal at what the rate limit lets out', () => {
-      hoisted.syLimits = { maxWithdrawPt: parseUnits('200', 6) };
+      hoisted.syLimits = { withdraw: withdrawLimit(parseUnits('200', 6)) };
       const view = renderForm('withdraw');
 
       expect(view.container.textContent).toContain('Available: 200');
-      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).toContain('as the limit refills');
+      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).toBe(
+        'Pendle limits withdrawals from this market to 50,000.00 USDG per hour.'
+      );
 
       fireEvent.click(screen.getByTestId('pendle-modal-max'));
       expect(amountInput().value).toBe('200');
@@ -313,11 +327,13 @@ describe('PendleModalForm', () => {
     });
 
     it('refuses an early withdrawal over the limit and names the maximum', () => {
-      hoisted.syLimits = { maxWithdrawPt: parseUnits('200', 6) };
+      hoisted.syLimits = { withdraw: withdrawLimit(parseUnits('200', 6)) };
       renderForm('withdraw');
       typeAmount('300');
 
-      expect(screen.getByTestId('pendle-modal-over-limit').textContent).toContain('Maximum available is 200');
+      expect(screen.getByTestId('pendle-modal-over-limit').textContent).toContain(
+        'Maximum available now is 200'
+      );
       expect(screen.queryByTestId('pendle-modal-insufficient')).toBeNull();
       expect(hoisted.batchArgs?.enabled).toBe(false);
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
@@ -325,7 +341,7 @@ describe('PendleModalForm', () => {
     });
 
     it('still calls an amount over the position insufficient', () => {
-      hoisted.syLimits = { maxWithdrawPt: parseUnits('200', 6) };
+      hoisted.syLimits = { withdraw: withdrawLimit(parseUnits('200', 6)) };
       renderForm('withdraw');
       typeAmount('600');
 
@@ -334,12 +350,12 @@ describe('PendleModalForm', () => {
     });
 
     it('says withdrawals are unavailable once the limit is used up', () => {
-      hoisted.syLimits = { maxWithdrawPt: 0n };
+      hoisted.syLimits = { withdraw: withdrawLimit(0n) };
       renderForm('withdraw');
       typeAmount('100');
 
-      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).toContain(
-        'Withdrawals are temporarily unavailable'
+      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).toBe(
+        "Pendle's withdrawal limit of 50,000.00 USDG per hour is used up. Try again shortly."
       );
       // The notice carries it; the field doesn't repeat it.
       expect(screen.queryByTestId('pendle-modal-over-limit')).toBeNull();
@@ -347,7 +363,9 @@ describe('PendleModalForm', () => {
     });
 
     it('stops a supply at the room left under the supply cap', () => {
-      hoisted.syLimits = { maxSupply: { shares: parseUnits('300', 6), assets: parseUnits('330', 6) } };
+      hoisted.syLimits = {
+        maxSupply: { shares: parseUnits('300', 6), assets: parseUnits('330', 6), capAssets: SUPPLY_CAP }
+      };
       const view = renderForm('supply');
 
       // The wallet balance stays on show; Max stops at the cap (in shares: the
@@ -363,22 +381,25 @@ describe('PendleModalForm', () => {
     });
 
     it('says the market is full once the supply cap is reached', () => {
-      hoisted.syLimits = { maxSupply: { shares: 0n, assets: 0n } };
+      hoisted.syLimits = { maxSupply: { shares: 0n, assets: 0n, capAssets: SUPPLY_CAP } };
       renderForm('supply');
 
-      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).toContain(
-        "reached Pendle's deposit limit"
+      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).toBe(
+        "This market has reached Pendle's cap of 500,000.00 USDG."
       );
     });
 
     it('ignores the supply cap on a withdrawal and the rate limit on a supply', () => {
-      hoisted.syLimits = { maxWithdrawPt: 0n, maxSupply: { shares: 0n, assets: 0n } };
+      hoisted.syLimits = {
+        withdraw: withdrawLimit(0n),
+        maxSupply: { shares: 0n, assets: 0n, capAssets: SUPPLY_CAP }
+      };
       const supply = renderForm('supply');
-      expect(supply.container.textContent).not.toContain('Withdrawals are temporarily unavailable');
+      expect(supply.container.textContent).not.toContain('withdrawal limit');
       cleanup();
 
       renderForm('withdraw');
-      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).not.toContain('deposit limit');
+      expect(screen.getByTestId('pendle-modal-limit-notice').textContent).not.toContain('cap of');
     });
   });
 

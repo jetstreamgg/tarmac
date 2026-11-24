@@ -11,6 +11,8 @@ const rateLimiterAbi = parseAbi([
   'function isRateLimited(address token) view returns (bool)',
   'function availableBurn(address token) view returns (uint256)',
   'function burnQuota(address token, address account) view returns (uint256)',
+  'struct RateLimitData { int224 netBurn; uint32 lastUpdated; uint192 capacity; uint32 burnDecayWindow; uint32 mintDecayWindow; }',
+  'function getRateLimitData(address token) view returns (RateLimitData)',
   'function PRICE_REGISTRY() view returns (address)'
 ]);
 
@@ -63,7 +65,8 @@ export function usePendleSyLimits(
       { ...limiterContract, functionName: 'PRICE_REGISTRY' },
       { ...syContract, functionName: 'supplyCap' },
       { ...syContract, functionName: 'totalSupply' },
-      { ...syContract, functionName: 'exchangeRate' }
+      { ...syContract, functionName: 'exchangeRate' },
+      { ...limiterContract, functionName: 'getRateLimitData', args: [market.syToken] }
     ],
     query: { enabled: active, refetchInterval }
   });
@@ -97,7 +100,8 @@ export function usePendleSyLimits(
       ,
       supplyCap,
       totalSupply,
-      exchangeRate
+      exchangeRate,
+      meter
     ] = reads;
     return computePendleSyLimits({
       isRateLimited: limited,
@@ -105,6 +109,8 @@ export function usePendleSyLimits(
       aggregateAvailableBurn,
       syPrice: syPrice ?? 0n,
       burnQuota,
+      burnCapacity: meter.capacity,
+      burnWindowSeconds: meter.burnDecayWindow,
       supplyCap,
       totalSupply,
       exchangeRate

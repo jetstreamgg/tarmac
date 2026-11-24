@@ -14,10 +14,10 @@ import type { RevertMessageMap } from './types';
 export const pendleSyRevertMessages: RevertMessageMap = {
   ...customErrorMessage(
     'BurnLimitExceeded(address,address,uint256,uint256,bool)',
-    msg`Pendle is limiting how much can be withdrawn from this market right now. Try again in a few minutes, or with a smaller amount.`
+    msg`Pendle's withdrawal limit for this market is used up. Try a smaller amount or try again shortly.`
   ),
   ...customErrorMessage(
     'SupplyCapExceeded(uint256,uint256)',
-    msg`This market has reached Pendle's deposit limit. Try a smaller amount or try again later.`
+    msg`This market has reached Pendle's deposit cap. Try a smaller amount.`
   )
 };

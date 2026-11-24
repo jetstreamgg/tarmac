@@ -69,7 +69,7 @@ const hoisted = vi.hoisted(() => ({
   quoteEnabled: undefined as boolean | undefined,
   quoteAmountIn: undefined as bigint | undefined,
   // What the market's SY lets through; {} = no rate limit.
-  syLimits: {} as { maxWithdrawPt?: bigint } | undefined,
+  syLimits: {} as { withdraw?: { maxPt: bigint; rateAssets: bigint; windowSeconds: number } } | undefined,
   syLimitsLoading: false,
   // Swappable write-hook simulation state; defaults to prepared.
   writeError: undefined as Error | undefined,
@@ -589,23 +589,27 @@ describe('usePendleRedeemModal claim quote failure', () => {
   });
 
   it("claims the whole position when the SY's rate limit leaves room for it", async () => {
-    hoisted.syLimits = { maxWithdrawPt: PT_BALANCE * 2n };
+    hoisted.syLimits = {
+      withdraw: { maxPt: PT_BALANCE * 2n, rateAssets: 50_000_000_000n, windowSeconds: 3600 }
+    };
     const config = await openWith(undefined);
     expect(hoisted.quoteAmountIn).toBe(PT_BALANCE);
     expect(config.errorMessage).toBeUndefined();
   });
 
   it('claims only what the rate limit lets out when the position is larger', async () => {
-    hoisted.syLimits = { maxWithdrawPt: 400_000n };
+    hoisted.syLimits = { withdraw: { maxPt: 400_000n, rateAssets: 50_000_000_000n, windowSeconds: 3600 } };
     const config = await openWith(undefined);
     expect(hoisted.quoteAmountIn).toBe(400_000n);
     expect(config.errorMessage).toBeUndefined();
   });
 
   it('says claims are unavailable once the rate limit is used up, without asking for a quote', async () => {
-    hoisted.syLimits = { maxWithdrawPt: 0n };
+    hoisted.syLimits = { withdraw: { maxPt: 0n, rateAssets: 50_000_000_000n, windowSeconds: 3600 } };
     const config = (await openWith(undefined)) as { errorMessage?: string; reviewViewedPending?: boolean };
-    expect(config.errorMessage).toContain('Claims are temporarily unavailable');
+    expect(config.errorMessage).toBe(
+      "Pendle's withdrawal limit of 50,000.00 USDG per hour is used up. Try again shortly."
+    );
     expect(hoisted.quoteAmountIn).toBeUndefined();
     expect(hoisted.quoteEnabled).toBe(false);
     expect(config.reviewViewedPending).toBe(false);

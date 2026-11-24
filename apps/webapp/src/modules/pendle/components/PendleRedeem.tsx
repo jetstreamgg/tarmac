@@ -28,6 +28,8 @@ type PendleRedeemProps = {
   claimAmount: bigint;
   /** The whole matured position. */
   ptBalance: bigint;
+  /** The SY's withdrawal rate limit as copy ("50,000.00 USDS per hour"), when one is on. */
+  limitRate?: string;
   /** Token list for the Claim-token selector (underlying / USDS / USDC). */
   outputTokenList: Token[];
   selectedOutputToken: Token;
@@ -58,6 +60,7 @@ export const PendleRedeem = ({
   market,
   claimAmount,
   ptBalance,
+  limitRate,
   outputTokenList,
   selectedOutputToken,
   onOutputTokenChange,
@@ -140,8 +143,8 @@ export const PendleRedeem = ({
       {partial && (
         <Text variant="small" className="text-text" data-testid="pendle-redeem-partial-notice">
           <Trans>
-            Pendle limits how much can leave this market at a time, so this claim covers part of your{' '}
-            {positionDisplay} {ptSymbol}. You can claim the rest as the limit refills.
+            Pendle limits withdrawals to {limitRate}. Claim the rest of your {positionDisplay} {ptSymbol}{' '}
+            later.
           </Trans>
         </Text>
       )}

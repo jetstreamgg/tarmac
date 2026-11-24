@@ -54,6 +54,7 @@ import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { formatPriceImpact } from '../utils/priceImpact';
+import { pendleWithdrawRateLabel } from '../utils/limitCopy';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import {
   buildPendleReviewRows,
@@ -145,7 +146,7 @@ export function PendleModalForm({
         decimals: selectedDecimals,
         assetDecimals: market.underlyingDecimals
       })
-    : syLimits?.maxWithdrawPt;
+    : syLimits?.withdraw?.maxPt;
 
   // Never validate against the unresolved balance's 0n fallback.
   const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
@@ -648,39 +649,26 @@ export function PendleModalForm({
     !isSupply && limited ? limitDisplay : formatBigInt(balance, { unit: inputDecimals, maxDecimals: 2 });
   const limitReached = limited && available === 0n;
 
+  // The limit itself, for the line under the field: the configured withdrawal
+  // rate, or the supply cap, in the asset the position is displayed in.
+  const withdrawRate = syLimits?.withdraw
+    ? pendleWithdrawRateLabel(syLimits.withdraw, market.underlyingDecimals, displaySymbol)
+    : undefined;
+  const supplyCap = syLimits?.maxSupply
+    ? formatBigInt(syLimits.maxSupply.capAssets, { unit: market.underlyingDecimals, maxDecimals: 2 })
+    : undefined;
+
   // One line under the field while the SY's limit holds the amount below the
   // balance. Error red only when nothing can go through at all.
   const limitNotice = !limited
     ? undefined
     : isSupply
-      ? overLimit && !limitReached
-        ? // The field's error already names the maximum.
-          undefined
-        : limitReached
-          ? {
-              tone: 'text-error',
-              text: (
-                <Trans>
-                  This market has reached Pendle&apos;s deposit limit. Supplying reopens when space frees up.
-                </Trans>
-              )
-            }
-          : {
-              tone: 'text-text',
-              text: (
-                <Trans>
-                  This market is close to Pendle&apos;s deposit limit. You can supply up to {limitDisplay}{' '}
-                  {inputSymbol} right now.
-                </Trans>
-              )
-            }
-      : limitReached
+      ? limitReached
         ? {
             tone: 'text-error',
             text: (
               <Trans>
-                Withdrawals are temporarily unavailable. Pendle limits how much can leave this market at a
-                time, and that limit is used up for now. It refills continuously, so try again shortly.
+                This market has reached Pendle&apos;s cap of {supplyCap} {displaySymbol}.
               </Trans>
             )
           }
@@ -688,10 +676,20 @@ export function PendleModalForm({
             tone: 'text-text',
             text: (
               <Trans>
-                Pendle limits how much can leave this market at a time. You can withdraw the rest as the limit
-                refills.
+                Pendle caps this market at {supplyCap} {displaySymbol}.
               </Trans>
             )
+          }
+      : limitReached
+        ? {
+            tone: 'text-error',
+            text: (
+              <Trans>Pendle&apos;s withdrawal limit of {withdrawRate} is used up. Try again shortly.</Trans>
+            )
+          }
+        : {
+            tone: 'text-text',
+            text: <Trans>Pendle limits withdrawals from this market to {withdrawRate}.</Trans>
           };
 
   const body = (
@@ -736,11 +734,11 @@ export function PendleModalForm({
               <Text className="text-statusError text-sm" data-testid="pendle-modal-over-limit">
                 {isSupply ? (
                   <Trans>
-                    Over the market&apos;s deposit limit. Maximum available is {limitDisplay} {inputSymbol}.
+                    Maximum available is {limitDisplay} {inputSymbol}.
                   </Trans>
                 ) : (
                   <Trans>
-                    Over the current withdrawal limit. Maximum available is {limitDisplay} {inputSymbol}.
+                    Maximum available now is {limitDisplay} {inputSymbol}.
                   </Trans>
                 )}
               </Text>
