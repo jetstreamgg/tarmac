@@ -7,6 +7,8 @@ import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { watchDeposit } from '../utils/bridgeFunds';
 import { awaitDepositTxHash, relayOpStackDeposit } from '../utils/bridgeRelay';
 import { installArbitrumShim } from '../utils/arbitrumShim';
+import { connectAndVerify } from '../utils/connectAndVerify';
+import { hangBridgeSend, restoreLostSignature } from '../utils/lostSignature';
 import { keepPendingBridgesOnLoad, PENDING_BRIDGE_KEY_PREFIX } from '../utils/pendingBridgeStore';
 
 // APP-643 pending list, persistence and accounts, on the native deposit route. Writes go to
@@ -14,6 +16,7 @@ import { keepPendingBridgesOnLoad, PENDING_BRIDGE_KEY_PREFIX } from '../utils/pe
 
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
 const AMOUNT = parseUnits('1', 18);
+const APPROVE = '0x095ea7b3';
 
 /** Another tab in the same browser, with the fixture's mocks; check its `leaks` before the test ends. */
 async function secondTab(page: Page) {
@@ -263,5 +266,40 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     }).toPass({ timeout: 90_000 });
     await funds.expectEscrowed(txHash, AMOUNT);
     await funds.expectArrived(AMOUNT);
+  });
+
+  test('A deposit the page lost to a reload mid-signature comes back from its early read', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    test.setTimeout(240_000);
+    const account = getAddress(testAccount);
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected({ batch: false });
+    await bridge.selectDestination('optimism');
+    const funds = await watchDeposit({ to: 'optimism', sender: account });
+    await bridge.openReview('1');
+
+    // The deposit is mined; the page is still waiting on the wallet and never records the card.
+    const hung = await hangBridgeSend(
+      isolatedPage,
+      body => !JSON.parse(body).params[0].data?.startsWith(APPROVE)
+    );
+    await bridge.confirmButton().click();
+    await expect.poll(() => hung.hash(), { timeout: 90_000 }).toBeTruthy();
+    const intents = await isolatedPage.evaluate(() =>
+      Object.entries(localStorage).filter(([key]) => key.startsWith('bridgeSendIntent:'))
+    );
+    expect(intents).toHaveLength(1);
+
+    await isolatedPage.goto('/convert?tab=bridge');
+    await restoreLostSignature(isolatedPage, intents, 'deposit');
+    await connectAndVerify(isolatedPage, { batch: false });
+    await expect(bridge.cards()).toHaveCount(1, { timeout: 60_000 });
+    await expect(bridge.card('OP Mainnet')).toContainText('1.00');
+    const txHash = await awaitDepositTxHash(isolatedPage, 'optimism');
+    expect(txHash).toBe(hung.hash());
+    await funds.expectEscrowed(txHash, AMOUNT);
+    await hung.stop();
   });
 });

@@ -1,5 +1,14 @@
 import { type Page, type Route } from '@playwright/test';
-import { getAddress, numberToHex, parseUnits, toFunctionSelector, type Address } from 'viem';
+import {
+  createPublicClient,
+  getAddress,
+  http,
+  numberToHex,
+  parseAbi,
+  parseUnits,
+  toFunctionSelector,
+  type Address
+} from 'viem';
 import { expect, expectNoFixtureLeaks, installFixtureRoutes, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
 import {
@@ -14,6 +23,8 @@ import { NetworkName } from '../utils/constants';
 import { getRpcUrlFromFile } from '../utils/getRpcUrlFromFile';
 import { accountPool } from '../utils/accountPoolManager';
 import { connectAndVerify } from '../utils/connectAndVerify';
+import { keepPendingBridgesOnLoad } from '../utils/pendingBridgeStore';
+import { setErc20Balance } from '../utils/setBalance';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { awaitDepositTxHash, l1AccountState } from '../utils/bridgeRelay';
 import { receiveCctpMessage, stubIris } from '../utils/cctpAttester';
@@ -102,6 +113,18 @@ async function runEthereumAhead(page: Page, seconds: number) {
 
 const expectUsdsDelivered = (account: Address, before: bigint, amount = DELIVERED) =>
   expect.poll(async () => (await l1AccountState(account)).usds - before, { timeout: 30_000 }).toBe(amount);
+
+const erc20BalanceAbi = parseAbi(['function balanceOf(address) view returns (uint256)']);
+
+async function l1UsdcBalance(account: Address) {
+  const l1 = createPublicClient({ transport: http(await getRpcUrlFromFile(NetworkName.mainnet)) });
+  return l1.readContract({
+    address: L1_USDC,
+    abi: erc20BalanceAbi,
+    functionName: 'balanceOf',
+    args: [account]
+  });
+}
 
 test.describe('Bridge: CCTP recovery', () => {
   test('A burn declined after the swap leaves a Continue card that burns only the swapped USDC', async ({
@@ -446,5 +469,165 @@ test.describe('Bridge: CCTP recovery', () => {
 
     await expect(status(bridge)).toHaveText('Claimed', { timeout: 90_000 });
     expect((await l1AccountState(testAccount)).nonce).toBe(senderNonce);
+  });
+
+  test('A sale the page lost to a reload is not offered as Convert again, and the card follows it', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    test.setTimeout(300_000);
+    const account = getAddress(testAccount);
+    const iris = await stubIris(isolatedPage);
+    await keepPendingBridgesOnLoad(isolatedPage.context());
+    const bridge = await openOnBase(isolatedPage, { batch: false });
+    const { usds: before } = await l1AccountState(account);
+    await iris.attest(NetworkName.base, await confirmBurn(bridge, isolatedPage));
+    await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
+    // USDC the wallet already holds, which a second Convert could sell.
+    await setErc20Balance(L1_USDC, '7', 6, NetworkName.mainnet, account);
+
+    const wrapper = getAddress(USDS_PSM_WRAPPER);
+    let saleHash: `0x${string}` | undefined;
+    let hung = false;
+    await isolatedPage.route(TENDERLY_RPC, async route => {
+      const send = sendOf(route.request().postData());
+      if (!send || getAddress(send.to) !== wrapper) return route.fallback();
+      if (hung)
+        return route.fulfill({ json: { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'dropped' } } });
+      hung = true;
+      const response = await route.fetch();
+      saleHash = (await response.json()).result;
+    });
+    await bridge.card('Ethereum').getByTestId('pending-bridge-action').click();
+    await expect.poll(() => saleHash, { timeout: 90_000 }).toBeTruthy();
+    const extra = parseUnits('7', 6);
+    await expect.poll(() => l1UsdcBalance(account), { timeout: 30_000 }).toBe(extra);
+    await expectUsdsDelivered(account, before);
+    const saleIntent = await isolatedPage.evaluate(() => localStorage.getItem('bridgeSaleIntent:v1'));
+    expect(saleIntent).toBeTruthy();
+
+    // A real reload keeps the card and the sale prompt; a mock build clears storage, so both are put back.
+    await isolatedPage.goto('/convert?tab=bridge');
+    await isolatedPage.evaluate(value => localStorage.setItem('bridgeSaleIntent:v1', value!), saleIntent);
+    await connectAndVerify(isolatedPage, { batch: false });
+    const card = bridge.card('Ethereum');
+    await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 90_000 });
+    await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0);
+    await expect(card.getByTestId('pending-bridge-sale-waiting-note')).toHaveCount(0);
+    expect(await l1UsdcBalance(account)).toBe(extra);
+    await expect(bridge.cards()).toHaveCount(1);
+  });
+
+  test('A claim stays Claiming while its approve is unmined, and a declined sale ends as Arrived as USDC', async ({
+    isolatedPage
+  }) => {
+    test.setTimeout(300_000);
+    const iris = await stubIris(isolatedPage);
+    const bridge = await openOnBase(isolatedPage, { batch: false });
+    await iris.attest(NetworkName.base, await confirmBurn(bridge, isolatedPage));
+    await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
+
+    const approveTo = getAddress(L1_USDC);
+    const saleTo = getAddress(USDS_PSM_WRAPPER);
+    const approveHashes = new Set<string>();
+    let releaseReceipts = false;
+    let rejectSale = false;
+    await isolatedPage.route(TENDERLY_RPC, async route => {
+      const body = route.request().postData() ?? '';
+      const send = sendOf(body);
+      if (send) {
+        const to = getAddress(send.to);
+        if (to === saleTo && rejectSale) return route.fulfill({ json: REJECTED });
+        if (to === approveTo) {
+          const response = await route.fetch();
+          const json = await response.json();
+          if (json.result) approveHashes.add(String(json.result).toLowerCase());
+          return route.fulfill({ json });
+        }
+        return route.fallback();
+      }
+      if (!releaseReceipts && body.includes('"eth_getTransactionReceipt"')) {
+        const request = JSON.parse(body);
+        const calls = (Array.isArray(request) ? request : [request]) as {
+          id: number;
+          method?: string;
+          params?: string[];
+        }[];
+        const holdsApprove = calls.every(
+          call =>
+            call.method === 'eth_getTransactionReceipt' &&
+            approveHashes.has(String(call.params?.[0] ?? '').toLowerCase())
+        );
+        if (holdsApprove && calls.length > 0) {
+          const result = calls.map(call => ({ jsonrpc: '2.0', id: call.id, result: null }));
+          return route.fulfill({ json: Array.isArray(request) ? result : result[0] });
+        }
+      }
+      return route.fallback();
+    });
+
+    await bridge.card('Ethereum').getByTestId('pending-bridge-action').click();
+    await expect.poll(() => approveHashes.size, { timeout: 90_000 }).toBeGreaterThan(0);
+    const card = bridge.card('Ethereum');
+    await expect(status(bridge)).toHaveText('Claiming');
+    await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0);
+    // Past the three reads that used to give up while this approve was still pending.
+    await isolatedPage.waitForTimeout(15_000);
+    await expect(status(bridge)).toHaveText('Claiming');
+    await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0);
+
+    rejectSale = true;
+    releaseReceipts = true;
+    await expect(isolatedPage.getByRole('dialog')).toContainText('declined', { timeout: 90_000 });
+    await isolatedPage.getByTestId('transaction-modal-close').click();
+    await expect(card.getByTestId('pending-bridge-convert-note')).toHaveText(
+      "Your bridge arrived as USDC because the conversion to USDS didn't complete. Convert it now at a 1:1 rate.",
+      { timeout: 90_000 }
+    );
+    await expect(status(bridge)).toHaveText('Arrived as USDC');
+    await expect(card.getByTestId('pending-bridge-convert')).toBeEnabled();
+    await expect(card.getByTestId('pending-bridge-keep-usdc')).toBeEnabled();
+  });
+
+  test('Switching to Convert while a claim is minimized still sells the USDC', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    test.setTimeout(300_000);
+    const account = getAddress(testAccount);
+    const iris = await stubIris(isolatedPage);
+    const bridge = await openOnBase(isolatedPage, { batch: false });
+    const { usds: before } = await l1AccountState(account);
+    await iris.attest(NetworkName.base, await confirmBurn(bridge, isolatedPage));
+    await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
+
+    let holding = true;
+    await isolatedPage.route(TENDERLY_RPC, route => {
+      const body = route.request().postData();
+      if (!holding || !body?.includes('"eth_getTransactionReceipt"')) return route.fallback();
+      const request = JSON.parse(body);
+      if (Array.isArray(request)) return route.fallback();
+      return route.fulfill({ json: { jsonrpc: '2.0', id: request.id, result: null } });
+    });
+    await bridge.card('Ethereum').getByTestId('pending-bridge-action').click();
+    const close = isolatedPage.getByTestId('transaction-modal-close');
+    await expect(close).toHaveAttribute('aria-label', 'Minimize', { timeout: 90_000 });
+    await expect(status(bridge)).toHaveText('Claiming');
+    await expect(bridge.card('Ethereum').getByTestId('pending-bridge-convert')).toHaveCount(0);
+    await close.click();
+
+    await expect(isolatedPage.getByTestId('pending-bridges-locked')).toContainText(
+      'A transaction is in progress. Open it to continue.'
+    );
+    await expect(isolatedPage.getByTestId('pending-bridges-open-transaction')).toHaveText('Open transaction');
+    const bridgeAmount = isolatedPage.getByTestId('bridge-from-amount');
+    await expect(bridgeAmount).toBeAttached();
+    await isolatedPage.getByTestId('convert-tab-swap').click();
+    // The Bridge tab stays mounted while the claim it opened is still running, so the sale is still sent.
+    await expect(bridgeAmount).toBeAttached();
+
+    holding = false;
+    await expectTransactionSuccess(isolatedPage, { title: 'Funds claimed successfully!', timeout: 120_000 });
+    await expectUsdsDelivered(account, before);
   });
 });

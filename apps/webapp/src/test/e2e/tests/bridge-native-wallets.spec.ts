@@ -16,6 +16,12 @@ import { NetworkName } from '../utils/constants';
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
 const AMOUNT = parseUnits('1', 18);
 const REJECTED = { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'User rejected the request.' } };
+// EIP-1193 4100: a stale permission, a locked wallet, or an expired session. Nothing was broadcast.
+const UNAUTHORIZED = {
+  jsonrpc: '2.0',
+  id: 1,
+  error: { code: 4100, message: 'The requested method and/or account has not been authorized by the user.' }
+};
 
 const sendTo = (body: string | null) =>
   body?.includes('"eth_sendTransaction"') ? getAddress(JSON.parse(body).params[0].to) : undefined;
@@ -121,6 +127,36 @@ test.describe('Bridge: wallets', () => {
     await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
     await funds.expectEscrowed(await awaitDepositTxHash(isolatedPage, 'optimism'), AMOUNT);
     expect((await l1AccountState(account)).usds).toBe(before.usds - AMOUNT);
+  });
+
+  test('A wallet that refuses the send with 4100 asks to reconnect, and Try again sends it once', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const account = getAddress(testAccount);
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected({ batch: false });
+    await bridge.selectDestination('optimism');
+    const before = await l1AccountState(account);
+    await bridge.openReview('1');
+
+    const stop = await onSends(isolatedPage, (to, route) =>
+      to === L1_USDS ? route.fulfill({ json: UNAUTHORIZED }) : route.fallback()
+    );
+    await bridge.confirmButton().click();
+    const dialog = isolatedPage.getByRole('dialog');
+    await expect(dialog).toContainText("Your wallet didn't allow this request. Reconnect it and try again.", {
+      timeout: 60_000
+    });
+    await expect(dialog).not.toContainText('rolled back');
+
+    await expectNoBridge(bridge, isolatedPage, account, before);
+    await stop();
+    const funds = await watchDeposit({ to: 'optimism', sender: account });
+    await dialog.getByRole('button', { name: 'Try again' }).click();
+    await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+    await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
+    await funds.expectEscrowed(await awaitDepositTxHash(isolatedPage, 'optimism'), AMOUNT);
   });
 
   test('Disconnecting while the bridge waits in the wallet leaves no half-recorded bridge', async ({
