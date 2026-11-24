@@ -10,6 +10,7 @@ import {
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
+  usePendleSyLimits,
   usePendleUserPtBalances,
   useQuotePendleConvert,
   useTokenAllowance,
@@ -54,6 +55,21 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const matured = isMarketMatured(market.expiry);
   const isRedeemable = matured && ptBalance > 0n;
 
+  // A claim burns SY, which the SY's rate limiter can hold below the position:
+  // the claim then takes what the limiter lets out now and leaves the rest for
+  // a later claim. Read as this card's modal opens, like the quote, and not
+  // polled: the amount feeds the quote and the calldata, and a refilling limit
+  // would restart both every poll.
+  const {
+    data: syLimits,
+    isLoading: limitsLoading,
+    mutate: mutateSyLimits
+  } = usePendleSyLimits(market, { enabled: isRedeemable && ownSessionLive, poll: false });
+  const claimLimit = syLimits?.maxWithdrawPt;
+  const claimAmount = claimLimit !== undefined && claimLimit < ptBalance ? claimLimit : ptBalance;
+  const claimBlocked = isRedeemable && claimAmount === 0n;
+  const claimable = isRedeemable && !limitsLoading && !claimBlocked;
+
   const { ptToken, withdrawTokenList } = usePendleTokens(market);
   const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
@@ -75,12 +91,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     outputToken: outputTokenAddress,
     underlyingToken: market.underlyingToken,
     syAcceptedTokens: market.syAcceptedTokens,
-    amountIn: isRedeemable ? ptBalance : undefined,
+    amountIn: claimable ? claimAmount : undefined,
     slippage,
     // Fetched while this card's modal is live, like the buy/sell modal's quote:
     // a fresh quote on every open, and no Pendle traffic from cards nobody
     // claims. The hook mounts on the card, so the session gates it.
-    enabled: isRedeemable && ownSessionLive,
+    enabled: claimable && ownSessionLive,
     poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
@@ -94,16 +110,17 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     outputToken: outputTokenAddress,
     underlyingToken: market.underlyingToken,
     syAcceptedTokens: market.syAcceptedTokens,
-    amountIn: isRedeemable ? ptBalance : undefined,
+    amountIn: claimable ? claimAmount : undefined,
     quote,
     slippage,
-    enabled: isRedeemable,
+    enabled: claimable,
     shouldUseBatch,
     // Forward wagmi's write variables so the approve leg reports action 'approve'.
     onMutate: variables => txCallbacks.onMutate(variables),
     onStart: hash => txCallbacks.onStart(hash),
     onSuccess: (hash, blockNumber) => {
       mutatePtBalances();
+      mutateSyLimits();
       txCallbacks.onSuccess(hash, blockNumber);
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
@@ -118,10 +135,13 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   );
   // As in the buy/sell modal: a quote failure wins once no usable quote
   // remains, and a prepare failure shows otherwise. Claim-specific copy, since
-  // the claim always takes the whole balance.
+  // the claim has no amount to change.
   const errorMessage = useMemo<string | undefined>(
-    () => (quote ? undefined : pendleClaimErrorMessage(quoteError?.message)) ?? prepareErrorMessage,
-    [quote, quoteError, prepareErrorMessage]
+    () =>
+      claimBlocked
+        ? t`Claims are temporarily unavailable. Pendle limits how much can leave this market at a time, and that limit is used up for now. It refills continuously, so try again shortly.`
+        : ((quote ? undefined : pendleClaimErrorMessage(quoteError?.message)) ?? prepareErrorMessage),
+    [claimBlocked, quote, quoteError, prepareErrorMessage]
   );
 
   // The Network cell describes where the trade executes — the engine chain,
@@ -145,7 +165,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const needsAllowance =
-    ptBalance > 0n && (allowance !== undefined ? allowance < ptBalance : !!allowanceError);
+    claimAmount > 0n && (allowance !== undefined ? allowance < claimAmount : !!allowanceError);
   useResetUnfinishedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
     const claimStep = {
@@ -168,13 +188,14 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     calls: writeHook.calls ?? [],
     chainId: engineChainId,
     shouldUseBatch: !!writeHook.isBatch,
-    enabled: isModalOpen && isRedeemable && !!quote
+    enabled: isModalOpen && claimable && !!quote
   });
 
   const transactionContent = useMemo(
     () => (
       <PendleRedeem
         market={market}
+        claimAmount={claimAmount}
         ptBalance={ptBalance}
         outputTokenList={withdrawTokenList}
         selectedOutputToken={selectedOutputToken}
@@ -191,6 +212,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     ),
     [
       market,
+      claimAmount,
       ptBalance,
       withdrawTokenList,
       selectedOutputToken,
@@ -208,7 +230,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
   // The quote only fetches once the modal is open, so review_viewed waits for
   // it to land or fail rather than report a zero payout.
-  const reviewViewedPending = isRedeemable && !quote && !quoteError;
+  const reviewViewedPending = isRedeemable && !claimBlocked && !quote && !quoteError;
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
@@ -232,14 +254,14 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     const leg = pendleNonPtLeg('redeem', {
       originSymbol: ptToken.symbol,
       targetSymbol: selectedOutputToken.symbol,
-      amountInBigint: ptBalance,
+      amountInBigint: claimAmount,
       amountOutBigint: quote?.amountOut ?? 0n,
       fromDecimals: market.underlyingDecimals,
       toDecimals: getTokenDecimals(selectedOutputToken, mainnet.id)
     });
-    if (leg.amount === 0) return ptBalance > 0n ? undefined : 0;
+    if (leg.amount === 0) return claimAmount > 0n ? undefined : 0;
     return valueUsd(leg.symbol, leg.amount);
-  }, [ptToken, selectedOutputToken, ptBalance, quote, market, valueUsd]);
+  }, [ptToken, selectedOutputToken, claimAmount, quote, market, valueUsd]);
 
   // `amount` = USD value of the redeemed output leg, negative so dashboard
   // tiles filtering `properties.amount < 0` count redeem as a withdrawal
@@ -254,7 +276,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       side: 'redeem',
       originToken: ptToken,
       targetToken: selectedOutputToken,
-      amountFromBigint: ptBalance,
+      amountFromBigint: claimAmount,
       amountToBigint: quote?.amountOut ?? 0n,
       fromDecimals: market.underlyingDecimals,
       toDecimals,
@@ -265,7 +287,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     const leg = pendleNonPtLeg('redeem', {
       originSymbol: ptToken.symbol,
       targetSymbol: selectedOutputToken.symbol,
-      amountInBigint: ptBalance,
+      amountInBigint: claimAmount,
       amountOutBigint: quote?.amountOut ?? 0n,
       fromDecimals: market.underlyingDecimals,
       toDecimals
@@ -280,7 +302,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         ...(usd !== undefined ? { amount: -Math.abs(usd) } : {})
       }
     };
-  }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
+  }, [market, ptToken, claimAmount, selectedOutputToken, quote, slippage, valueUsd]);
 
   // Toast headlines — without them the toast falls back to the modal title,
   // which is not an outcome. Success

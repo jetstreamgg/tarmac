@@ -67,6 +67,10 @@ const hoisted = vi.hoisted(() => ({
   // The provider's live session, and the args the quote hook last saw.
   activeSessionId: null as string | null,
   quoteEnabled: undefined as boolean | undefined,
+  quoteAmountIn: undefined as bigint | undefined,
+  // What the market's SY lets through; {} = no rate limit.
+  syLimits: {} as { maxWithdrawPt?: bigint } | undefined,
+  syLimitsLoading: false,
   // Swappable write-hook simulation state; defaults to prepared.
   writeError: undefined as Error | undefined,
   // Swappable quote state; undefined keeps the healthy QUOTE.
@@ -128,8 +132,16 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useQuotePendleConvert: (args: { enabled?: boolean }) => {
+    usePendleSyLimits: () => ({
+      data: hoisted.syLimits,
+      isLoading: hoisted.syLimitsLoading,
+      error: null,
+      mutate: () => undefined,
+      dataSources: []
+    }),
+    useQuotePendleConvert: (args: { enabled?: boolean; amountIn?: bigint }) => {
       hoisted.quoteEnabled = args.enabled;
+      hoisted.quoteAmountIn = args.amountIn;
       return {
         ...(hoisted.quoteState ?? { data: QUOTE, isLoading: false, error: undefined }),
         mutate: () => undefined,
@@ -480,6 +492,8 @@ describe('usePendleRedeemModal claim quote failure', () => {
   afterEach(() => {
     hoisted.quoteState = undefined;
     hoisted.writeError = undefined;
+    hoisted.syLimits = {};
+    hoisted.syLimitsLoading = false;
     vi.clearAllMocks();
   });
 
@@ -572,6 +586,37 @@ describe('usePendleRedeemModal claim quote failure', () => {
       error: new Error('Pendle /convert 503: {}')
     })) as { reviewViewedPending?: boolean };
     expect(failed.reviewViewedPending).toBe(false);
+  });
+
+  it("claims the whole position when the SY's rate limit leaves room for it", async () => {
+    hoisted.syLimits = { maxWithdrawPt: PT_BALANCE * 2n };
+    const config = await openWith(undefined);
+    expect(hoisted.quoteAmountIn).toBe(PT_BALANCE);
+    expect(config.errorMessage).toBeUndefined();
+  });
+
+  it('claims only what the rate limit lets out when the position is larger', async () => {
+    hoisted.syLimits = { maxWithdrawPt: 400_000n };
+    const config = await openWith(undefined);
+    expect(hoisted.quoteAmountIn).toBe(400_000n);
+    expect(config.errorMessage).toBeUndefined();
+  });
+
+  it('says claims are unavailable once the rate limit is used up, without asking for a quote', async () => {
+    hoisted.syLimits = { maxWithdrawPt: 0n };
+    const config = (await openWith(undefined)) as { errorMessage?: string; reviewViewedPending?: boolean };
+    expect(config.errorMessage).toContain('Claims are temporarily unavailable');
+    expect(hoisted.quoteAmountIn).toBeUndefined();
+    expect(hoisted.quoteEnabled).toBe(false);
+    expect(config.reviewViewedPending).toBe(false);
+  });
+
+  it('holds the quote until the limit is known', async () => {
+    hoisted.syLimits = undefined;
+    hoisted.syLimitsLoading = true;
+    await openWith(undefined);
+    expect(hoisted.quoteAmountIn).toBeUndefined();
+    expect(hoisted.quoteEnabled).toBe(false);
   });
 
   it("fetches the quote only while this card's modal session is live, like the buy/sell modal", async () => {

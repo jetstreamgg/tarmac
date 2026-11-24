@@ -401,6 +401,7 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     ptSymbol: 'PT-sUSDS-27MAY2027',
     ytToken: '0xc2de924d686ff2d69a14c85aecb81a33240b7e23',
     syToken: '0x5e4cecc6676ef448f20822d2449bc1bde1432eb4',
+    syRateLimiter: '0x94604284c47e0308526687798185346f8Ea0440C',
     underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
     underlyingSymbol: 'sUSDS',
     underlyingDecimals: 18,

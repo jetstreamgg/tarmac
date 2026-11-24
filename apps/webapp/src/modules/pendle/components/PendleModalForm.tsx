@@ -8,12 +8,14 @@ import { useLingui } from '@lingui/react';
 import {
   getTokenDecimals,
   isMarketMatured,
+  maxPendleSupplyInput,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
   useIsBatchSupported,
   useNow,
   usePendleMarketsApiData,
+  usePendleSyLimits,
   usePendleUserPtBalances,
   useQuotePendleConvert,
   useTokenAllowance,
@@ -131,12 +133,29 @@ export function PendleModalForm({
   });
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
-  const available = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
+  const balance = isSupply ? (walletBalance?.value ?? 0n) : ptBalance;
+
+  // What the market's SY lets through right now: a supply mints SY (supply
+  // cap), an early withdrawal burns it (rate limit). Undefined on a market
+  // without either, or while Pendle has them switched off.
+  const { data: syLimits, mutate: mutateSyLimits } = usePendleSyLimits(market);
+  const syLimit = isSupply
+    ? maxPendleSupplyInput(syLimits, {
+        isVaultToken: selectedAddress.toLowerCase() === market.underlyingToken.toLowerCase(),
+        decimals: selectedDecimals,
+        assetDecimals: market.underlyingDecimals
+      })
+    : syLimits?.maxWithdrawPt;
 
   // Never validate against the unresolved balance's 0n fallback.
   const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
-  const insufficient = balanceKnown && amount > available;
-  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient && !debouncePending;
+  // The SY's limit only shows once it bites: when it sits below the balance.
+  const limited = balanceKnown && syLimit !== undefined && syLimit < balance;
+  const available = limited ? syLimit : balance;
+  const insufficient = balanceKnown && amount > balance;
+  const overLimit = limited && !insufficient && amount > available;
+  const amountReady =
+    isConnected && amount > 0n && balanceKnown && !insufficient && !overLimit && !debouncePending;
 
   const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
@@ -299,6 +318,7 @@ export function PendleModalForm({
     onSuccess: (hash, blockNumber) => {
       mutatePtBalances();
       refetchWalletBalance();
+      mutateSyLimits();
       txCallbacks.onSuccess(hash, blockNumber);
       fireAnalytics({
         event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
@@ -347,7 +367,11 @@ export function PendleModalForm({
     ? isSupply
       ? t`This market has matured and no longer accepts deposits. If you hold a position, close this window to claim it.`
       : t`This market has matured, so early withdrawal is closed. Close this window and claim your position instead.`
-    : (quoteErrorMessage ?? prepareErrorMessage);
+    : // Over the SY's limit the field says why; a quote Pendle refuses for the
+      // same reason would only add an outage banner on top.
+      overLimit
+      ? undefined
+      : (quoteErrorMessage ?? prepareErrorMessage);
 
   // Simulate on the engine chain — the calls are built for it (mainnet, or the
   // fork in dev), not necessarily the connected chain.
@@ -612,49 +636,126 @@ export function PendleModalForm({
     usdValue: leg.amount === 0 ? 0 : formattedAmount
   });
 
-  const balanceDisplay = formatBigInt(available, { unit: inputDecimals, maxDecimals: 2 });
+  // Floored: a rounded-up limit would name a maximum that itself fails the gate.
+  const limitDisplay = formatBigInt(available, {
+    unit: inputDecimals,
+    maxDecimals: 2,
+    roundingMode: 'floor'
+  });
+  // A supply keeps showing the wallet balance (the cap only stops Max short);
+  // a limited withdrawal shows what can leave now, as the vault form does.
+  const balanceDisplay =
+    !isSupply && limited ? limitDisplay : formatBigInt(balance, { unit: inputDecimals, maxDecimals: 2 });
+  const limitReached = limited && available === 0n;
+
+  // One line under the field while the SY's limit holds the amount below the
+  // balance. Error red only when nothing can go through at all.
+  const limitNotice = !limited
+    ? undefined
+    : isSupply
+      ? overLimit && !limitReached
+        ? // The field's error already names the maximum.
+          undefined
+        : limitReached
+          ? {
+              tone: 'text-error',
+              text: (
+                <Trans>
+                  This market has reached Pendle&apos;s deposit limit. Supplying reopens when space frees up.
+                </Trans>
+              )
+            }
+          : {
+              tone: 'text-text',
+              text: (
+                <Trans>
+                  This market is close to Pendle&apos;s deposit limit. You can supply up to {limitDisplay}{' '}
+                  {inputSymbol} right now.
+                </Trans>
+              )
+            }
+      : limitReached
+        ? {
+            tone: 'text-error',
+            text: (
+              <Trans>
+                Withdrawals are temporarily unavailable. Pendle limits how much can leave this market at a
+                time, and that limit is used up for now. It refills continuously, so try again shortly.
+              </Trans>
+            )
+          }
+        : {
+            tone: 'text-text',
+            text: (
+              <Trans>
+                Pendle limits how much can leave this market at a time. You can withdraw the rest as the limit
+                refills.
+              </Trans>
+            )
+          };
 
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`pendle-modal-${flow}-form`}>
-      <ModalAmountField
-        label={isSupply ? <Trans>Amount</Trans> : <Trans>{ptSymbol} amount</Trans>}
-        tokenSymbol={inputSymbol}
-        value={value}
-        decimals={inputDecimals}
-        onInput={setValue}
-        disabled={!isConnected}
-        balance={
-          <>
-            <Trans>Balance</Trans>: {isConnected && balanceKnown ? balanceDisplay : NO_VALUE}
-          </>
-        }
-        onPercent={setPercentAmount}
-        selector={
-          isSupply ? (
-            <TokenSelectorPill
-              tokens={tokenOptions}
-              selected={selectedToken}
-              onSelect={setSelectedToken}
-              testId="pendle-modal-token-select"
-            />
-          ) : (
-            // The withdraw input is the PT itself (Figma 2193:73598 draws a
-            // static PT-sUSDS chip); the output choice lives in the grid's
-            // Withdrawal-token cell.
-            <TokenSelectorPill tokens={[ptToken]} selected={ptToken} testId="pendle-modal-pt-token" />
-          )
-        }
-        error={
-          insufficient ? (
-            <Text className="text-statusError text-sm" data-testid="pendle-modal-insufficient">
-              <Trans>Insufficient funds</Trans>
-            </Text>
-          ) : undefined
-        }
-        inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
-        inputTestId="pendle-modal-amount-input"
-        maxTestId="pendle-modal-max"
-      />
+      <div className="flex flex-col gap-2">
+        <ModalAmountField
+          label={isSupply ? <Trans>Amount</Trans> : <Trans>{ptSymbol} amount</Trans>}
+          tokenSymbol={inputSymbol}
+          value={value}
+          decimals={inputDecimals}
+          onInput={setValue}
+          disabled={!isConnected}
+          balance={
+            <>
+              {!isSupply && limited ? <Trans>Available</Trans> : <Trans>Balance</Trans>}:{' '}
+              {isConnected && balanceKnown ? balanceDisplay : NO_VALUE}
+            </>
+          }
+          onPercent={setPercentAmount}
+          selector={
+            isSupply ? (
+              <TokenSelectorPill
+                tokens={tokenOptions}
+                selected={selectedToken}
+                onSelect={setSelectedToken}
+                testId="pendle-modal-token-select"
+              />
+            ) : (
+              // The withdraw input is the PT itself (Figma 2193:73598 draws a
+              // static PT-sUSDS chip); the output choice lives in the grid's
+              // Withdrawal-token cell.
+              <TokenSelectorPill tokens={[ptToken]} selected={ptToken} testId="pendle-modal-pt-token" />
+            )
+          }
+          error={
+            insufficient ? (
+              <Text className="text-statusError text-sm" data-testid="pendle-modal-insufficient">
+                <Trans>Insufficient funds</Trans>
+              </Text>
+            ) : overLimit && !limitReached ? (
+              // At zero the notice alone carries the message.
+              <Text className="text-statusError text-sm" data-testid="pendle-modal-over-limit">
+                {isSupply ? (
+                  <Trans>
+                    Over the market&apos;s deposit limit. Maximum available is {limitDisplay} {inputSymbol}.
+                  </Trans>
+                ) : (
+                  <Trans>
+                    Over the current withdrawal limit. Maximum available is {limitDisplay} {inputSymbol}.
+                  </Trans>
+                )}
+              </Text>
+            ) : undefined
+          }
+          inputAriaLabel={isSupply ? t`Supply amount` : t`Withdraw amount`}
+          inputTestId="pendle-modal-amount-input"
+          maxTestId="pendle-modal-max"
+        />
+        {limitNotice && (
+          <Text variant="small" className={limitNotice.tone} data-testid="pendle-modal-limit-notice">
+            {limitNotice.text}
+          </Text>
+        )}
+      </div>
 
       <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
     </div>
