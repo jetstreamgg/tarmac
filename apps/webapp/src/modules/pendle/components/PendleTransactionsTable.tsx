@@ -19,6 +19,7 @@ type PendleTxRow = {
   amount: string;
   usd: string;
   marketName: string;
+  date: string;
   time: string;
   txHashLabel: string;
   txHref: string;
@@ -45,12 +46,25 @@ const actionCell = (row: PendleTxRow, sublabel?: string) => (
   />
 );
 
+// The dated PT ticker is long, so it sits in its own nowrap span after the
+// amount: in a tight column it drops to a second line instead of squeezing the
+// Time column.
 const amountCell = (row: PendleTxRow) => (
   <CellAmount
-    icon={
-      <TokenIcon token={{ symbol: row.marketName }} width={12} showChainIcon={false} className="h-3 w-3" />
+    amount={
+      <span className="flex flex-wrap items-center gap-x-1 whitespace-normal">
+        <span className="flex items-center gap-1 whitespace-nowrap">
+          <TokenIcon
+            token={{ symbol: row.marketName }}
+            width={12}
+            showChainIcon={false}
+            className="h-3 w-3"
+          />
+          {row.amount}
+        </span>
+        <span className="whitespace-nowrap">{row.marketName}</span>
+      </span>
     }
-    amount={`${row.amount} ${row.marketName}`}
     usd={row.usd}
   />
 );
@@ -78,7 +92,12 @@ const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
     id: 'time',
     header: <Trans>Time</Trans>,
     width: '1.2fr',
-    cell: row => <span className="text-textSecondary text-sm">{row.time}</span>
+    cell: row => (
+      <span className="text-textSecondary flex flex-wrap gap-x-1 text-sm">
+        <span className="whitespace-nowrap">{row.date},</span>
+        <span className="whitespace-nowrap">{row.time}</span>
+      </span>
+    )
   }
 ];
 
@@ -86,7 +105,7 @@ const COLUMNS: ProductTransactionColumn<PendleTxRow>[] = [
 // header subline, the hash becomes the View transaction button.
 const renderCard = (row: PendleTxRow) => (
   <TransactionCard
-    header={actionCell(row, row.time)}
+    header={actionCell(row, `${row.date}, ${row.time}`)}
     fields={[{ label: <Trans>Amount</Trans>, value: amountCell(row) }]}
     link={{ label: <Trans>View transaction</Trans>, href: row.txHref }}
   />
@@ -109,13 +128,14 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       amount: formatNumber(tx.ptAmount, { maxDecimals: 2 }),
       usd: formatUsd(Math.abs(tx.valueUsd)),
       // Amounts are PT-denominated; `market.name` is the product display name
-      // ("Fixed Yield"), so derive the ticker from the underlying.
-      marketName: `PT-${market.underlyingSymbol}`,
-      time: format(new Date(tx.timestamp), 'MMM d, yyyy, h:mm a'),
+      // ("Fixed Yield"), not a ticker.
+      marketName: market.ptSymbol,
+      date: format(new Date(tx.timestamp), 'MMM d, yyyy'),
+      time: format(new Date(tx.timestamp), 'h:mm a'),
       txHashLabel: formatAddress(tx.txHash, 6, 4),
       txHref: getEtherscanLink(mainnet.id, tx.txHash, 'tx')
     }));
-  }, [history, market.underlyingSymbol]);
+  }, [history, market]);
 
   return (
     <ProductTransactionsTable

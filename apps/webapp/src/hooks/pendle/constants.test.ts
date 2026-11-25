@@ -11,8 +11,15 @@ describe('pendle market slugs', () => {
   });
 
   describe('getPendleMarketBySlug', () => {
-    it('resolves a known slug to its market', () => {
+    it('resolves the bare slug to the live market', () => {
       const market = getPendleMarketBySlug('pt-susds');
+      expect(market?.ptSymbol).toBe('PT-sUSDS-27MAY2027');
+      expect(market?.marketAddress).toBe('0x50d24456ed009a1461a159a2b4dcd12adfe6a60b');
+    });
+
+    it('resolves the dated slug to the previous market', () => {
+      const market = getPendleMarketBySlug('pt-susds-26nov2026');
+      expect(market?.ptSymbol).toBe('PT-sUSDS-26NOV2026');
       expect(market?.marketAddress).toBe('0x9c560ebaf78e596cbcc27411d633a74d628dd7dc');
     });
 
