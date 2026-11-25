@@ -55,6 +55,7 @@ export function pendleAnalyticsData(input: PendleAnalyticsDataInput): Record<str
     amountTo: Number(formatUnits(amountToBigint, toDecimals)),
     slippage,
     ptAddress: market.ptToken,
+    ptSymbol: market.ptSymbol,
     expiry: market.expiry,
     daysToMaturity,
     ...(quote?.aggregatorType !== undefined && { aggregatorType: quote.aggregatorType }),

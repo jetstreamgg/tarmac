@@ -3,8 +3,8 @@ import { normalizePendlePnlRows } from './usePendleAllPnlTransactions';
 import { PendleHistoryAction } from './constants';
 import type { PendlePnlTransactionRaw } from './pendle';
 
-// PT-sUSDS is the only market wired into PENDLE_MARKETS — resolveMarket() picks
-// it up from its address. Anything else would be filtered as "unsupported."
+// A market wired into PENDLE_MARKETS — resolveMarket() picks it up from its
+// address. Anything else would be filtered as "unsupported."
 const PT_SUSDS_MARKET_ADDRESS = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
 
 function row(overrides: Partial<PendlePnlTransactionRaw> = {}): PendlePnlTransactionRaw {
