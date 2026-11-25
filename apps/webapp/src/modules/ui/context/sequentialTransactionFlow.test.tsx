@@ -123,6 +123,8 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import { isStalledStep } from '@/hooks/helpers';
+import { isUnreadWalletSend } from '@/modules/utils/isUnreadWalletSend';
+import { walletSendError } from '@/test/walletSendError';
 
 function makeCall(functionName: string): Call {
   return {
@@ -1351,5 +1353,24 @@ describe('useSequentialTransactionFlow — release once the caller read the outc
 
     expect(result.current.detached).toBe(true);
     expect(wagmi.resetWrite).not.toHaveBeenCalled();
+  });
+});
+
+describe('useSequentialTransactionFlow — wallet send errors', () => {
+  beforeEach(resetWagmi);
+  afterEach(() => vi.clearAllMocks());
+
+  it("hands the wallet's own error on unchanged, so the modal can read what it is", async () => {
+    const onError = vi.fn();
+    const { result } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [SUPPLY], onSuccess: vi.fn(), onError })
+    );
+    act(() => result.current.execute());
+
+    const timedOut = await walletSendError(new Error('Transport request timed out'));
+    act(() => wagmi.onWriteError?.(timedOut));
+
+    expect(onError.mock.calls[0][0]).toBe(timedOut);
+    expect(isUnreadWalletSend(onError.mock.calls[0][0])).toBe(true);
   });
 });

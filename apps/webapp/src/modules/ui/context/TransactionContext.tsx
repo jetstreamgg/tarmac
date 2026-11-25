@@ -19,7 +19,7 @@ import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSuccessToast';
-import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
+import { useIsSafeApp, useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
 import { refreshHistoryAfterTx } from '@/lib/historyRefresh';
@@ -38,6 +38,7 @@ import {
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUnauthorizedRequestError } from '@/modules/utils/isUnauthorizedRequestError';
+import { isUnreadWalletSend } from '@/modules/utils/isUnreadWalletSend';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
@@ -491,6 +492,7 @@ export function TransactionProvider({
     pendingSwitch
   } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
   // the live USD value crosses the threshold WHILE the flow's own gating
@@ -1401,6 +1403,12 @@ export function TransactionProvider({
         gatePhaseRef.current === 'signed' &&
         (error instanceof TransactionRefusedError || !isUserRejectedRequestError(error));
       const unknown = error instanceof TransactionOutcomeUnknownError;
+      const refreshAfterPossibleSend = () => {
+        void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current });
+        void queryClient.invalidateQueries({
+          predicate: query => query.queryKey[0] !== 'callsStatus' && query.meta?.history === undefined
+        });
+      };
       // A lost bundle was sent, even when its modal closed back to IDLE first.
       const preWriteRefusal =
         !unknown &&
@@ -1414,10 +1422,7 @@ export function TransactionProvider({
         // session guard, like onSuccess: the modal may have closed mid-send.
         // Not the batch status query itself, whose failure brought us here, nor
         // history, whose refresh lets a first load or a load more finish.
-        void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current });
-        void queryClient.invalidateQueries({
-          predicate: query => query.queryKey[0] !== 'callsStatus' && query.meta?.history === undefined
-        });
+        refreshAfterPossibleSend();
       }
       if (
         preWriteRefusal
@@ -1429,13 +1434,20 @@ export function TransactionProvider({
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       const rejected = isUserRejectedRequestError(error);
+      const unauthorized = isUnauthorizedRequestError(error);
+      // The wallet's answer to a send couldn't be read, so it may have gone out anyway.
+      // The Safe App always answers: an error there is its final word.
+      const unread =
+        !isSafeApp && !rejected && !unauthorized && !preWriteRefusal && isUnreadWalletSend(error);
+      const inDoubt = unknown || unread;
+      if (unread) refreshAfterPossibleSend();
       setUserRejected(rejected);
-      setOutcomeUnknown(unknown);
+      setOutcomeUnknown(inDoubt);
       // A Reject has its own copy; a send the wallet didn't allow, or one that reverted, says why.
       setFailureReason(
-        rejected || unknown
+        rejected || inDoubt
           ? undefined
-          : isUnauthorizedRequestError(error)
+          : unauthorized
             ? t`Your wallet didn't allow this request. Reconnect it and try again.`
             : revertMessage(error)
       );
@@ -1537,6 +1549,7 @@ export function TransactionProvider({
     [
       sessionGen,
       isSafeWallet,
+      isSafeApp,
       trackTransactionCompleted,
       startNewFlow,
       isStaleWrite,
