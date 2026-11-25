@@ -76,12 +76,7 @@ export const setEthBalance = async (amount: string, network = NetworkName.mainne
 };
 
 const waitForVnetsReadyRequest = async () => {
-  // Use alternate VNet config when USE_ALTERNATE_VNET env var is set
-  const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
-  const configFile = useAlternateVnet
-    ? '../../tenderlyTestnetData-alternate.json'
-    : '../../tenderlyTestnetData.json';
-  const file = await readFile(configFile, 'utf-8');
+  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
   const testnetsData = JSON.parse(file);
 
   // We send an `eth_blockNumber` request to the RPC endpoints to "ping" them

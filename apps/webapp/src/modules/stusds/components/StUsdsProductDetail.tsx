@@ -105,11 +105,7 @@ export function StUsdsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: withdrawalsUnavailable ? (
-        <HighRateInfo assetSymbol="USDS" />
-      ) : (
-        <RateInfo type="stusds" size={12} />
-      ),
+      info: withdrawalsUnavailable ? <HighRateInfo assetSymbol="USDS" /> : <RateInfo type="stusds" />,
       value: currentRate
     },
     {

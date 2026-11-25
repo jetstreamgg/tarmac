@@ -1,0 +1,554 @@
+import type { BridgeNetworkId } from './networks';
+import {
+  destinationActions,
+  followUpActions,
+  isFollowUpAction,
+  isRecoveryAction,
+  recoveryActions
+} from './resolveRoute';
+import type { BridgeRoute, PendingBridge, PendingBridgeAction, PendingBridgeNextAction } from './types';
+
+const MINUTE = 60_000;
+const SETTLED_VISIBLE_MS = 24 * 60 * MINUTE;
+const FAST_POLL_MS = 15_000;
+const READY_POLL_MS = MINUTE;
+const OVERDUE_POLL_MS = MINUTE;
+const SLOW_POLL_MS = 5 * MINUTE;
+const FAST_POLL_WINDOW_MS = 60 * MINUTE;
+// A hash its chain doesn't know rarely comes back: it is asked about for a day, then on page loads.
+const SOURCE_UNSEEN_POLL_WINDOW_MS = 24 * 60 * MINUTE;
+// A trip this long has an ETA good to hours, not seconds: its last hour polls each minute.
+const LONG_TRIP_MS = 24 * 60 * MINUTE;
+const LONG_TRIP_NEAR_ETA_POLL_MS = MINUTE;
+
+/** What a route adapter observed about a bridge on one poll. */
+export type BridgeProgress =
+  /** The queued Safe transaction executed on-chain, at `executedAt` when the service says. */
+  | { kind: 'source-executed'; txHash: string; executedAt?: number }
+  | {
+      kind: 'waiting';
+      etaAt?: number;
+      nextAction?: PendingBridgeNextAction;
+      routeData?: Record<string, string>;
+    }
+  | { kind: 'ready'; nextAction: PendingBridgeNextAction; routeData?: Record<string, string> }
+  /** Funds landed, automatically or through an action someone else sent. */
+  | { kind: 'arrived' }
+  /** The Arbitrum ticket is gone without a successful redeem (expired or canceled): nothing was delivered. */
+  | { kind: 'expired' }
+  /** The source send moved no funds (reverted, or a Safe tx replaced); Activity leaves it out. */
+  | { kind: 'failed'; reason: string }
+  /** The source chain has no record of the source transaction long after it was sent (dropped or replaced). */
+  | { kind: 'source-not-found' }
+  /** The source chain knows the source transaction again. */
+  | { kind: 'source-found' }
+  /** A sent destination action mined, read from chain (a Safe reports its on-chain hash). */
+  | {
+      kind: 'action-confirmed';
+      action: PendingBridgeNextAction;
+      txHash: string;
+      at?: number;
+      /** The other transactions of a bundle the wallet ran apart. */
+      bundleTxHashes?: string[];
+    }
+  /** A sent destination action that will never land (reverted, replaced, rejected), by the hash it was sent with. */
+  | { kind: 'action-dropped'; txHash: string }
+  /** A confirmed action the chain no longer counts, so it must be sent again (an OP re-prove). */
+  | { kind: 'action-invalidated'; action: PendingBridgeNextAction };
+
+export const isSettled = (bridge: PendingBridge): boolean =>
+  bridge.status === 'arrived' ||
+  bridge.status === 'claimed' ||
+  bridge.status === 'failed' ||
+  bridge.status === 'expired';
+
+/**
+ * The source chain has no record of the bridge's transaction: the wallet
+ * dropped or replaced it. Not a failure, as the hash can still show up.
+ */
+export const isSourceUnseen = (bridge: PendingBridge): boolean =>
+  bridge.status === 'pending' && bridge.sourceUnseenAt !== undefined;
+
+const withSourceSeen = (bridge: PendingBridge): PendingBridge => {
+  if (bridge.sourceUnseenAt === undefined) return bridge;
+  const next = { ...bridge };
+  delete next.sourceUnseenAt;
+  return next;
+};
+
+/** Every action a bridge can record: its ordered destination steps, its recovery actions, then its follow-ups. */
+const bridgeActions = (bridge: PendingBridge): PendingBridgeNextAction[] => [
+  ...destinationActions(bridge.routeKind, bridge.from),
+  ...recoveryActions(bridge.routeKind, bridge.from, bridge.to),
+  ...followUpActions(bridge.routeKind, bridge.from, bridge.to)
+];
+
+export function createPendingBridge({
+  account,
+  amount,
+  from,
+  to,
+  recipient,
+  route,
+  txHash,
+  safeTxHash,
+  bundleId,
+  callsId,
+  now
+}: {
+  account: string;
+  amount: bigint;
+  from: BridgeNetworkId;
+  to: BridgeNetworkId;
+  recipient?: string;
+  route: BridgeRoute;
+  txHash?: string;
+  safeTxHash?: string;
+  bundleId?: string;
+  callsId?: string;
+  now: number;
+}): PendingBridge {
+  const id = txHash ?? safeTxHash ?? bundleId;
+  if (!id) throw new Error('A pending bridge needs a tx hash, a Safe tx hash or a bundle id');
+  return {
+    id,
+    account: account.toLowerCase(),
+    amount,
+    token: 'USDS',
+    from,
+    to,
+    ...(recipient && { recipient }),
+    status: 'pending',
+    routeKind: route.kind,
+    requiresClaim: route.requiresClaim,
+    nextAction: destinationActions(route.kind, from)[0],
+    startedAt: now,
+    etaAt: now + route.etaMinutes * MINUTE,
+    ...(txHash && { txHash }),
+    ...(safeTxHash && { safeTxHash }),
+    ...(bundleId && { bundleId }),
+    ...(callsId && { callsId }),
+    actions: []
+  };
+}
+
+// A recovery action can be needed again after it mined (its L2 execution failed once more), so only the chain settles it.
+const isConfirmed = (bridge: PendingBridge, action: PendingBridgeNextAction | undefined) =>
+  !!action &&
+  !isRecoveryAction(action) &&
+  bridge.actions.some(done => done.action === action && done.status === undefined);
+
+const mergeRouteData = (bridge: PendingBridge, routeData: Record<string, string> | undefined) =>
+  routeData ? { ...bridge.routeData, ...routeData } : bridge.routeData;
+
+export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, now: number): PendingBridge {
+  // Actions are read after arrival too, so Activity keeps the claim.
+  if (progress.kind === 'action-confirmed') {
+    return recordAction(bridge, {
+      action: progress.action,
+      txHash: progress.txHash,
+      at: progress.at ?? now,
+      ...(progress.bundleTxHashes?.length && { bundleTxHashes: progress.bundleTxHashes })
+    });
+  }
+  if (progress.kind === 'action-dropped') return dropSentAction(bridge, progress.txHash);
+  if (isSettled(bridge)) return bridge;
+  if (progress.kind === 'action-invalidated') return invalidateAction(bridge, progress.action);
+  // A lagging read can still report an action this bridge already confirmed.
+  if (
+    (progress.kind === 'waiting' || progress.kind === 'ready') &&
+    isConfirmed(bridge, progress.nextAction)
+  ) {
+    return bridge;
+  }
+  switch (progress.kind) {
+    case 'source-not-found':
+      // Only a send no tracker ever read mined can be unknown to its chain.
+      return bridge.status !== 'pending' || bridge.sourceMinedAt !== undefined
+        ? bridge
+        : { ...bridge, sourceUnseenAt: bridge.sourceUnseenAt ?? now };
+    case 'source-found':
+      return withSourceSeen(bridge);
+    case 'source-executed': {
+      // The launch and the tracker can both report it; the first one set the clock.
+      if (bridge.txHash) return bridge;
+      // The bridge starts when the Safe executes, which can be days after it was queued.
+      const startedAt = progress.executedAt ?? now;
+      const found = { ...bridge };
+      delete found.bundleUnseenAt;
+      delete found.bundleReadTo;
+      return {
+        ...found,
+        txHash: progress.txHash,
+        startedAt,
+        etaAt: startedAt + bridge.etaAt - bridge.startedAt
+      };
+    }
+    case 'waiting':
+      return {
+        ...withSourceSeen(bridge),
+        status: 'pending',
+        sourceMinedAt: bridge.sourceMinedAt ?? now,
+        etaAt: progress.etaAt ?? bridge.etaAt,
+        nextAction: progress.nextAction ?? bridge.nextAction,
+        routeData: mergeRouteData(bridge, progress.routeData)
+      };
+    case 'ready':
+      return {
+        ...withSourceSeen(bridge),
+        status: 'ready',
+        nextAction: progress.nextAction,
+        readyAt: bridge.status === 'ready' ? bridge.readyAt : now,
+        routeData: mergeRouteData(bridge, progress.routeData)
+      };
+    case 'arrived':
+      return {
+        ...withSourceSeen(bridge),
+        status: bridge.requiresClaim ? 'claimed' : 'arrived',
+        nextAction: undefined,
+        settledAt: now
+      };
+    case 'expired':
+      return { ...withSourceSeen(bridge), status: 'expired', nextAction: undefined, settledAt: now };
+    case 'failed':
+      return {
+        ...withSourceSeen(bridge),
+        status: 'failed',
+        failureReason: progress.reason,
+        settledAt: now
+      };
+  }
+}
+
+const isSent = (action: PendingBridgeAction) => action.status === 'sent';
+
+/** A destination action broadcast but not yet confirmed: it blocks a second launch, not the bridge's progress. */
+export function recordActionSent(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
+  if (!bridgeActions(bridge).includes(action.action)) return bridge;
+  if (bridge.actions.some(sent => sent.txHash === action.txHash)) return bridge;
+  return { ...bridge, actions: [...bridge.actions, { ...action, status: 'sent' }] };
+}
+
+/** Removes a sent action whose transaction reverted; confirmed actions stay. */
+export function dropSentAction(bridge: PendingBridge, txHash: string): PendingBridge {
+  const actions = bridge.actions.filter(sent => !(isSent(sent) && sent.txHash === txHash));
+  return actions.length === bridge.actions.length ? bridge : { ...bridge, actions };
+}
+
+/** The chain no longer counts the action: it is offered again, and the mined one stays in the history. */
+function invalidateAction(bridge: PendingBridge, action: PendingBridgeNextAction): PendingBridge {
+  if (!isConfirmed(bridge, action)) return bridge;
+  return {
+    ...bridge,
+    status: 'pending',
+    nextAction: action,
+    actions: bridge.actions.map(done =>
+      done.action === action && done.status === undefined ? { ...done, status: 'invalidated' } : done
+    )
+  };
+}
+
+/** The next action can be launched: it is ready and not already sent. */
+export const canLaunchAction = (bridge: PendingBridge): boolean =>
+  bridge.status === 'ready' &&
+  !!bridge.nextAction &&
+  !bridge.actions.some(sent => isSent(sent) && sent.action === bridge.nextAction);
+
+/** The landed USDC of a CCTP transfer to Ethereum can be sold for USDS, once: none sent nor confirmed. */
+export const canLaunchConvert = (bridge: PendingBridge): boolean =>
+  followUpActions(bridge.routeKind, bridge.from, bridge.to).includes('convert') &&
+  (bridge.status === 'claimed' || bridge.status === 'arrived') &&
+  !bridge.actions.some(action => action.action === 'convert');
+
+/** `account` can sell the claim's USDC: the transfer's recipient, once a convert can launch. */
+export const canConvert = (bridge: PendingBridge, account: string | undefined): boolean =>
+  canLaunchConvert(bridge) &&
+  !!account &&
+  account.toLowerCase() === (bridge.recipient ?? bridge.account).toLowerCase();
+
+/** Under this an Arbitrum redeem is urgent and its ticket can be kept alive: a Safe's signers need time too. */
+export const REDEEM_URGENT_MINUTES = 48 * 60;
+
+const ticketTimeoutMs = (timeout: string | undefined) =>
+  timeout && /^\d{1,15}$/.test(timeout) ? Number(timeout) * 1000 : undefined;
+
+/** Whole minutes until a ready Arbitrum redeem's ticket times out, floored, 0 once it passed; undefined when unknown. */
+export function ticketMinutesLeft(bridge: PendingBridge, now: number): number | undefined {
+  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum' || bridge.to !== 'arbitrum')
+    return undefined;
+  if (bridge.status !== 'ready' || bridge.nextAction !== 'redeem') return undefined;
+  const timeoutMs = ticketTimeoutMs(bridge.routeData?.timeout);
+  return timeoutMs === undefined ? undefined : Math.max(0, Math.floor((timeoutMs - now) / 60_000));
+}
+
+/** The ticket can be kept alive: urgent, not yet timed out, and no redeem or keepalive in flight. */
+export function canLaunchKeepalive(bridge: PendingBridge, now: number): boolean {
+  const minutesLeft = ticketMinutesLeft(bridge, now);
+  return (
+    minutesLeft !== undefined &&
+    minutesLeft > 0 &&
+    minutesLeft < REDEEM_URGENT_MINUTES &&
+    !bridge.actions.some(sent => isSent(sent) && (sent.action === 'keepalive' || sent.action === 'redeem'))
+  );
+}
+
+/**
+ * The card read from the chain that `action` landed: a prove moved it on to its finalize, a
+ * finalize or a relay retry settled it or left a Replay, a recovery or a claim-only claim settled
+ * it. A claim with a sale to follow and a keepalive never count: the chain can't tell their run ended.
+ */
+export function actionLandedOnChain(
+  bridge: PendingBridge,
+  action: PendingBridgeNextAction,
+  claimOnly: boolean
+): boolean {
+  const settled = bridge.status === 'arrived' || bridge.status === 'claimed';
+  switch (action) {
+    case 'prove':
+      return settled || bridge.nextAction === 'finalize';
+    case 'finalize':
+      return settled || (bridge.status === 'ready' && bridge.nextAction === 'replay');
+    case 'redeem':
+    case 'replay':
+      return settled;
+    case 'claim':
+      return claimOnly && settled;
+    default:
+      return false;
+  }
+}
+
+/** The card shows the next action's button: always for a claim route, only once ready for a recovery. */
+export const showsActionButton = (bridge: PendingBridge): boolean =>
+  !isSettled(bridge) &&
+  !!bridge.nextAction &&
+  (isRecoveryAction(bridge.nextAction) ? bridge.status === 'ready' : bridge.requiresClaim);
+
+/** After this a wallet bundle with no deposit found on chain may be dismissed. */
+export const BUNDLE_UNSEEN_MS = 30 * MINUTE;
+
+/** A wallet bundle whose deposit hasn't been found on chain for `BUNDLE_UNSEEN_MS`. */
+export const isBundleUnseen = (bridge: PendingBridge, now: number): boolean =>
+  bridge.status === 'pending' &&
+  !!bridge.bundleId &&
+  !bridge.txHash &&
+  now - bridge.startedAt >= BUNDLE_UNSEEN_MS;
+
+/** A CCTP wallet bundle: its burn can be looked for on its L2 by account. */
+export const isCctpBundle = (bridge: PendingBridge): boolean =>
+  !!bridge.bundleId && bridge.routeKind === 'cctp' && bridge.to === 'ethereum';
+
+/** A CCTP wallet bundle whose burn no one has found yet. */
+export const awaitsBurnScan = (bridge: PendingBridge): boolean =>
+  isCctpBundle(bridge) && !bridge.txHash && !isSettled(bridge);
+
+/** A read of the L2 that found no burn lets its bundle go for this long; then the next read must agree. */
+export const BUNDLE_SCAN_FRESH_MS = 45 * MINUTE;
+
+/** Stamps a CCTP wallet bundle whose L2, read at `at` up to block `readTo`, has no burn of it `BUNDLE_UNSEEN_MS` after it was sent. */
+export const markBundleUnseen = (bridge: PendingBridge, at: number, readTo?: bigint): PendingBridge =>
+  awaitsBurnScan(bridge) && bridge.status === 'pending' && at - bridge.startedAt >= BUNDLE_UNSEEN_MS
+    ? { ...bridge, bundleUnseenAt: at, ...(readTo !== undefined && { bundleReadTo: readTo.toString() }) }
+    : bridge;
+
+/** Takes the stamp back: a burn that may be the bundle's showed up. */
+export const clearBundleUnseen = (bridge: PendingBridge): PendingBridge => {
+  if (bridge.bundleUnseenAt === undefined) return bridge;
+  const next = { ...bridge };
+  delete next.bundleUnseenAt;
+  return next;
+};
+
+const scanFoundNoBurn = (bridge: PendingBridge, now: number) =>
+  bridge.bundleUnseenAt !== undefined &&
+  bridge.bundleUnseenAt - bridge.startedAt >= BUNDLE_UNSEEN_MS &&
+  now - bridge.bundleUnseenAt < BUNDLE_SCAN_FRESH_MS;
+
+/** Whether `account` neither sent the bridge nor receives it: it was brought into its list by hash or claim link. */
+export const isThirdWallet = (
+  bridge: Pick<PendingBridge, 'account' | 'recipient'>,
+  account: string | undefined
+): boolean => {
+  const lower = account?.toLowerCase();
+  return (
+    !!lower &&
+    !!bridge.recipient &&
+    bridge.account.toLowerCase() !== lower &&
+    bridge.recipient.toLowerCase() !== lower
+  );
+};
+
+/** Past this, the last leg of an action has mined or been dropped (see `L1_SENT_ACTION_DROPPED_MS`); no tracker reads it. */
+const LAST_LEG_IN_FLIGHT_MS = 3 * 60 * 60_000;
+
+/** An action sent from the card that its tracker has not settled, or the last leg of one that may still be mining. */
+const hasActionInFlight = (bridge: PendingBridge, now?: number) =>
+  bridge.actions.some(
+    action =>
+      action.status === 'sent' ||
+      (!!action.nextLegTxHash &&
+        (now === undefined || now - (action.nextLegAt ?? action.at) < LAST_LEG_IN_FLIGHT_MS))
+  );
+
+/**
+ * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
+ * to execute, a send its chain has no record of, or (given `now`) a wallet
+ * bundle unseen for 30 minutes. A CCTP bundle also needs a recent read of its
+ * L2 that found no burn of it. Given the `viewer` whose list holds it, also a
+ * bridge that wallet neither sent nor receives, with no action in flight.
+ */
+export const canDismiss = (bridge: PendingBridge, now?: number, viewer?: string): boolean =>
+  (bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash) ||
+  isSourceUnseen(bridge) ||
+  (now !== undefined &&
+    isBundleUnseen(bridge, now) &&
+    (!isCctpBundle(bridge) || scanFoundNoBurn(bridge, now))) ||
+  (isThirdWallet(bridge, viewer) && !hasActionInFlight(bridge, now));
+
+/** A wallet bundle that moved no funds; once its deposit was found on chain, only the tracker settles it. */
+export const failBundle = (bridge: PendingBridge, reason: string, now: number): PendingBridge =>
+  isSettled(bridge) || !bridge.bundleId || bridge.txHash
+    ? bridge
+    : { ...bridge, status: 'failed', failureReason: reason, settledAt: now };
+
+/** A destination action the user sent and the transaction flow confirmed. */
+export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
+  if (!bridgeActions(bridge).includes(action.action)) return bridge;
+  const known = bridge.actions.find(sent => !isSent(sent) && sent.txHash === action.txHash);
+  if (known) {
+    // A later leg of the same run (a step-by-step claim's sale) joins the action it confirmed.
+    const extra = (action.bundleTxHashes ?? []).filter(hash => !known.bundleTxHashes?.includes(hash));
+    if (extra.length === 0) return bridge;
+    const merged = { ...known, bundleTxHashes: [...(known.bundleTxHashes ?? []), ...extra] };
+    delete merged.nextLegTxHash;
+    delete merged.nextLegAt;
+    return { ...bridge, actions: bridge.actions.map(sent => (sent === known ? merged : sent)) };
+  }
+  // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
+  const actions = [
+    ...bridge.actions.filter(sent => !(isSent(sent) && sent.action === action.action)),
+    {
+      action: action.action,
+      txHash: action.txHash,
+      at: action.at,
+      ...(action.bundleTxHashes?.length && { bundleTxHashes: action.bundleTxHashes })
+    }
+  ];
+  const done = action.action;
+  if (isSettled(bridge) || isFollowUpAction(done)) return { ...bridge, actions };
+  // The tx mining doesn't mean its L2 execution succeeded: wait for the adapter to read it.
+  // The redeem stays offered; the new deadline is read from the chain, and the stale one offers no second keepalive.
+  if (done === 'keepalive') {
+    const routeData = { ...bridge.routeData };
+    delete routeData.timeout;
+    return { ...bridge, actions, routeData, readyAt: action.at };
+  }
+  // The L2 execution runs inside the recovery tx, so the next read settles it.
+  // An OP Stack finalize can mine with its L1 relay failed, so it settles on the adapter's read too.
+  const relaysOnFinalize =
+    bridge.routeKind === 'native' && bridge.to === 'ethereum' && bridge.from !== 'arbitrum';
+  if (isRecoveryAction(done) || (done === 'finalize' && relaysOnFinalize))
+    return { ...bridge, actions, status: 'pending', nextAction: undefined, etaAt: action.at + MINUTE };
+  const remaining = destinationActions(bridge.routeKind, bridge.from);
+  const next = remaining[remaining.indexOf(done) + 1];
+  return next
+    ? { ...bridge, actions, status: 'pending', nextAction: next }
+    : { ...bridge, actions, status: 'claimed', nextAction: undefined, settledAt: action.at };
+}
+
+/** Keeps on the last confirmed `action` the leg its run sent after it mined (a claim's sale), until the run confirms it. */
+export function recordNextLeg(
+  bridge: PendingBridge,
+  action: PendingBridgeNextAction,
+  legTxHash: string,
+  now: number
+): PendingBridge {
+  const known = [...bridge.actions]
+    .reverse()
+    .find(done => done.action === action && done.status === undefined);
+  if (!known || known.nextLegTxHash === legTxHash) return bridge;
+  const next = { ...known, nextLegTxHash: legTxHash, nextLegAt: now };
+  return { ...bridge, actions: bridge.actions.map(done => (done === known ? next : done)) };
+}
+
+/** Forgets a leg `recordNextLeg` kept once it reverted or was replaced: it sold nothing. */
+export function forgetNextLeg(bridge: PendingBridge, legTxHash: string): PendingBridge {
+  if (!bridge.actions.some(done => done.nextLegTxHash === legTxHash)) return bridge;
+  const actions = bridge.actions.map(done => {
+    if (done.nextLegTxHash !== legTxHash) return done;
+    const next = { ...done };
+    delete next.nextLegTxHash;
+    delete next.nextLegAt;
+    return next;
+  });
+  return { ...bridge, actions };
+}
+
+// A claim can mine before the wallet, the Safe service or the receipt read reports it, so the chain can settle the bridge first.
+const unresolvedAfterSettling = (bridge: PendingBridge) => bridge.actions.filter(isSent);
+
+/** The tracker reads it: until it settles, then while an action it sent is unconfirmed. */
+export const isTracked = (bridge: PendingBridge): boolean =>
+  !isSettled(bridge) || unresolvedAfterSettling(bridge).length > 0;
+
+/** Cards seen before this moment are gone: a card leaves on the reload after the user saw it. */
+export const PAGE_LOADED_AT = Date.now();
+
+/** Tracked bridges always show; settled ones stay for a day, unless the user closed them or saw them on an earlier page load. */
+export const isPendingBridgeVisible = (
+  bridge: PendingBridge,
+  now: number,
+  pageLoadedAt = -Infinity
+): boolean =>
+  isTracked(bridge) ||
+  (bridge.closedAt === undefined &&
+    !(bridge.seenAt !== undefined && bridge.seenAt < pageLoadedAt) &&
+    now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS);
+
+/** A card that landed and has nothing more for the tracker to read can count as seen, once. */
+export const canMarkSeen = (bridge: PendingBridge): boolean =>
+  (bridge.status === 'arrived' || bridge.status === 'claimed') &&
+  !isTracked(bridge) &&
+  bridge.seenAt === undefined &&
+  bridge.closedAt === undefined;
+
+export const markSeen = (bridge: PendingBridge, now: number): PendingBridge =>
+  canMarkSeen(bridge) ? { ...bridge, seenAt: now } : bridge;
+
+/** Hides a settled card the tracker no longer reads; the bridge stays for Activity. */
+export const closeCard = (bridge: PendingBridge, now: number): PendingBridge =>
+  isTracked(bridge) || bridge.closedAt !== undefined ? bridge : { ...bridge, closedAt: now };
+
+// Proving or keeping a ticket alive settles nothing; any other action can, and its own flow told the user.
+const couldSettle = (action: PendingBridgeAction) =>
+  action.status !== 'invalidated' && action.action !== 'prove' && action.action !== 'keepalive';
+
+/** The bridge just landed with nothing the user sent behind it, so nothing has told them yet. */
+export const justArrived = (before: PendingBridge | undefined, after: PendingBridge): boolean =>
+  !!before &&
+  !isSettled(before) &&
+  (after.status === 'arrived' || after.status === 'claimed') &&
+  !before.actions.some(couldSettle);
+
+/** How often the tracker checks a bridge; undefined once settled with nothing sent. */
+export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {
+  if (isSettled(bridge)) {
+    const unresolved = unresolvedAfterSettling(bridge);
+    if (unresolved.length === 0) return undefined;
+    // A wallet or Safe signers that never answer leave it sent: it backs off after an hour.
+    const waitingOnSigner = unresolved.every(action => now - action.at > FAST_POLL_WINDOW_MS);
+    return waitingOnSigner ? SLOW_POLL_MS : FAST_POLL_MS;
+  }
+  // A queued Safe transaction: signers usually act soon, but can take days. A bundle's hash comes from recovery.
+  if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
+  if (isSourceUnseen(bridge))
+    return now - bridge.startedAt <= SOURCE_UNSEEN_POLL_WINDOW_MS ? SLOW_POLL_MS : undefined;
+  // Anyone can send the next action, so a ready bridge can still settle without us; one left for hours backs off.
+  if (bridge.status === 'ready') {
+    return now - (bridge.readyAt ?? bridge.startedAt) <= FAST_POLL_WINDOW_MS ? READY_POLL_MS : SLOW_POLL_MS;
+  }
+  // Past the ETA: check each minute for an hour, then back off.
+  if (now > bridge.etaAt) return now - bridge.etaAt <= FAST_POLL_WINDOW_MS ? OVERDUE_POLL_MS : SLOW_POLL_MS;
+  if (bridge.etaAt - now > FAST_POLL_WINDOW_MS) return SLOW_POLL_MS;
+  return bridge.etaAt - bridge.startedAt > LONG_TRIP_MS ? LONG_TRIP_NEAR_ETA_POLL_MS : FAST_POLL_MS;
+}

@@ -132,8 +132,8 @@ export function useSavingsLaunch({
   // READ ONLY — used solely to label the modal's approve steps. The approve/deposit/swap
   // calls (and the USDT/allowance derivation, landmine #1) are built entirely inside
   // the engine hooks; TanStack dedupes these reads with the engines' own.
-  const { data: usdsAllowance } = useSavingsAllowance();
-  const { data: daiAllowance } = useTokenAllowance({
+  const { data: usdsAllowance, error: usdsAllowanceError } = useSavingsAllowance();
+  const { data: daiAllowance, error: daiAllowanceError } = useTokenAllowance({
     chainId,
     contractAddress: mcdDaiAddress[chainId as keyof typeof mcdDaiAddress],
     owner: address,
@@ -141,14 +141,14 @@ export function useSavingsLaunch({
   });
   // L2 PSM supply assetIn (the origin token) → psm3L2 allowance (disabled on
   // mainnet: spender undefined).
-  const { data: psmAllowance } = useTokenAllowance({
+  const { data: psmAllowance, error: psmAllowanceError } = useTokenAllowance({
     chainId,
     contractAddress: originToken.address[chainId],
     owner: address,
     spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
   });
   // L2 PSM withdraw flips the assetIn to sUSDS → psm3L2 — a separate allowance.
-  const { data: psmWithdrawAllowance } = useTokenAllowance({
+  const { data: psmWithdrawAllowance, error: psmWithdrawAllowanceError } = useTokenAllowance({
     chainId,
     contractAddress: TOKENS.susds.address[chainId],
     owner: address,
@@ -156,7 +156,7 @@ export function useSavingsLaunch({
   });
   // Mainnet USDC supply: the USDC → PSM-wrapper allowance (disabled off mainnet:
   // the wrapper has no address there, so the spender is undefined).
-  const { data: usdcWrapperAllowance } = useTokenAllowance({
+  const { data: usdcWrapperAllowance, error: usdcWrapperAllowanceError } = useTokenAllowance({
     chainId,
     contractAddress: TOKENS.usdc.address[chainId],
     owner: address,
@@ -164,15 +164,29 @@ export function useSavingsLaunch({
   });
 
   // The USDS approve on the USDC path covers the widened wad, not the 6-dec input.
-  const needsUsdsApproval = isSupply && usdsAllowance !== undefined && usdsAllowance < usdcSupplyUsdsAmount;
-  const needsDaiApproval = isDai && daiAllowance !== undefined && daiAllowance < amount;
+  const needsUsdsApproval =
+    isSupply &&
+    (usdsAllowance !== undefined
+      ? usdsAllowance < usdcSupplyUsdsAmount
+      : !!usdsAllowanceError && usdcSupplyUsdsAmount > 0n);
+  const needsDaiApproval =
+    isDai && (daiAllowance !== undefined ? daiAllowance < amount : !!daiAllowanceError && amount > 0n);
   const needsUsdcWrapperApproval =
-    isMainnetUsdc && usdcWrapperAllowance !== undefined && usdcWrapperAllowance < amount;
-  const needsPsmApproval = isSupply && isL2 && psmAllowance !== undefined && psmAllowance < amount;
+    isMainnetUsdc &&
+    (usdcWrapperAllowance !== undefined
+      ? usdcWrapperAllowance < amount
+      : !!usdcWrapperAllowanceError && amount > 0n);
+  const needsPsmApproval =
+    isSupply &&
+    isL2 &&
+    (psmAllowance !== undefined ? psmAllowance < amount : !!psmAllowanceError && amount > 0n);
   // The sUSDS spent on a withdraw: the whole balance (max) or the exact-out ceiling.
   const withdrawApproveAmount = max ? (sUsdsBalance ?? 0n) : (maxAmountInForWithdraw ?? 0n);
   const needsPsmWithdrawApproval =
-    isL2Withdraw && psmWithdrawAllowance !== undefined && psmWithdrawAllowance < withdrawApproveAmount;
+    isL2Withdraw &&
+    (psmWithdrawAllowance !== undefined
+      ? psmWithdrawAllowance < withdrawApproveAmount
+      : !!psmWithdrawAllowanceError && withdrawApproveAmount > 0n);
 
   // L2 PSM referral is a bigint (mainnet deposit's is a number — do not unify).
   const psmReferralCode = referralCode ? BigInt(referralCode) : undefined;

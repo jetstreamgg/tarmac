@@ -17,7 +17,7 @@ import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 import { formatAddress } from '@/utils';
 
 const iconButtonClasses =
-  'flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10';
+  'flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10 focus-visible:outline-focusRing focus-visible:outline-2 focus-visible:outline-offset-2';
 
 interface WalletPreviewHeaderProps {
   ensName?: string | null;
@@ -54,7 +54,9 @@ export function WalletPreviewHeader({
   return (
     <div
       className={cn(
-        'flex shrink-0 flex-col justify-between border-b border-[#bcb6ef]/10 bg-gradient-to-b from-[#2a197d] to-[#504dff]',
+        // The brand gradient stays dark in the light theme, where the indigo ring
+        // would vanish (1.2:1 on #504dff), so keep the dark theme's ring here.
+        'flex shrink-0 flex-col justify-between border-b border-[#bcb6ef]/10 bg-gradient-to-b from-[#2a197d] to-[#504dff] [--color-focusRing:#c2ccff]',
         // The comp's mobile header is content-sized: 72px between the identity
         // and total rows instead of the desktop's 280px justify-between spread.
         mobile ? 'gap-[72px] px-5 py-6' : 'min-h-[280px] p-7'

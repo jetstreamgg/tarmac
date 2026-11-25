@@ -125,9 +125,10 @@ test.describe('Batch simulation before send', () => {
     await savings.fillAmount('2');
 
     const review = isolatedPage.getByRole('dialog').getByRole('button', { name: 'Review', exact: true });
-    await expect(isolatedPage.getByText('Something went wrong preparing the transaction')).toBeVisible({
-      timeout: 60_000
-    });
+    // The decoded reason, verbatim: it isn't in the revert registry (APP-663).
+    await expect(
+      isolatedPage.getByText('The transaction would fail with "Test: simulated revert".')
+    ).toBeVisible({ timeout: 60_000 });
     await expect(review).toBeDisabled();
 
     expect(wallet).not.toContain('wallet_sendCalls');

@@ -53,6 +53,12 @@ pnpm audit --prod --audit-level high   # Audit runtime deps; fails on high/criti
 
 - Hand-authored type files use `.ts`, not `.d.ts`. `skipLibCheck` makes TypeScript skip type-checking `.d.ts` contents, so exported types defined there go unchecked. Reserve `.d.ts` for genuine ambient declarations like `vite-env.d.ts`.
 
+### Contract errors
+
+- Never show a raw viem error or a generic "something went wrong" for a contract revert. Revert reasons are decoded and mapped to user-facing copy in one place: `apps/webapp/src/lib/revertMessages/` (`revertMessage(error)` for UI copy, `decodeRevert(error)` for the bare reason).
+- Every contract in `apps/webapp/src/hooks/contracts.ts` needs an entry in `contractRevertMessages` (its reverts mapped, or `null`); `revertMessages.test.ts` fails otherwise.
+- Reverts users hit are tracked in PostHog, never Sentry from prepare time (it pages). List reasons caused by the user's typed input (insufficient balance, under a minimum) in `inputRevertReasons` so they stay out of analytics.
+
 ### Testing
 
 - Use Tenderly forks for consistent test environments
@@ -70,6 +76,9 @@ See the `adding-features` skill (`.claude/skills/adding-features/SKILL.md`) for 
   - `MAINNET_FORK_CONTAINER_ID` - Tenderly mainnet parent vnet for `pnpm vnet:fork` (default in `.env.example`)
   - `VITE_PROXY_ORIGIN` - Origin of the Sky RPC/indexer proxy (RPC URLs are built as `${VITE_PROXY_ORIGIN}/rpc/<chainId>`)
   - `VITE_RPC_PROVIDER_TENDERLY` - Tenderly virtual network RPC used as the dev-mode chain across all modules
+  - `VITE_TENDERLY_RPC_NAME` - Optional named public RPC of the Tenderly multichain dev environment (`<team>/<project>/<rpc name>`); adds its Base, Arbitrum, OP and Unichain forks to the dev build, for the Bridge only (`VITE_RPC_PROVIDER_TENDERLY` must then be that environment's Ethereum fork)
+  - `VITE_CCTP_FORK_IRIS_URL` - Optional Iris stand-in for CCTP claims on that environment's forks, outside the dev server (api-workers' `/cctp-fork-iris` on staging, for previews). The dev server answers it itself
+  - `VITE_TENDERLY_EXPLORER_{ETHEREUM,BASE,ARBITRUM,OPTIMISM,UNICHAIN}` - Optional Tenderly dashboard explorer of each fork, without `https://`, for transaction links
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection
   - `VITE_USE_MOCK_WALLET` - Testing mode
 

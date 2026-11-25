@@ -5,17 +5,15 @@
  * an error by default — its body is parsed like any other, and the caller's
  * own try/catch decides the fallback. `requireOk` opts into throwing
  * `<label> error: <status>` instead (the Merkl clients' contract).
+ *
+ * No `Content-Type` header: these GETs carry no body, and the header would
+ * turn every cross-origin call into a preflighted CORS request.
  */
 export async function fetchJson<T>(
   url: string | URL,
   { label, requireOk = false }: { label: string; requireOk?: boolean }
 ): Promise<T> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
+  const response = await fetch(url);
   if (requireOk && !response.ok) {
     throw new Error(`${label} error: ${response.status}`);
   }

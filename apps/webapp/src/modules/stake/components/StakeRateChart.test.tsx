@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -14,6 +14,11 @@ const HISTORIC = [
 ];
 
 const ts = (date: string) => new Date(date).getTime() / 1000;
+
+// Onchain stability fee (WAD ratio) for the Borrow rate hero: 8.25%, distinct
+// from the historic 7.5% so the tests tell the two sources apart. Reset per test.
+const STABILITY_FEE_WAD = 825n * 10n ** 14n;
+let collateral: { data?: { stabilityFee: bigint }; isLoading: boolean; error: Error | null };
 
 // Two stake farms. Farm A's latest rate (5.69%) beats farm B's (3%), so the
 // Rate hero must read farm A — the same winner the promo card crowns.
@@ -31,6 +36,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null }),
+    useCollateralData: () => collateral,
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0xfarmA' }, { contractAddress: '0xfarmB' }],
       isLoading: false
@@ -49,6 +55,10 @@ const renderChart = () =>
   );
 
 describe('StakeRateChart', () => {
+  beforeEach(() => {
+    collateral = { data: { stabilityFee: STABILITY_FEE_WAD }, isLoading: false, error: null };
+  });
+
   afterEach(cleanup);
 
   it('renders the chart container with the series toggle', () => {
@@ -72,13 +82,23 @@ describe('StakeRateChart', () => {
     expect(screen.queryByText('7.5%')).toBeNull();
   });
 
-  it('switches the hero to the latest borrow rate when the Borrow rate toggle is clicked', () => {
+  it('switches the hero to the onchain borrow rate when the Borrow rate toggle is clicked', () => {
     renderChart();
 
     fireEvent.click(within(screen.getByTestId('chart-metric-toggle')).getByText('Borrow rate'));
 
-    // Newest historic borrowRate (0.075) plotted/shown as a percentage.
+    // The live stability fee (8.25%), not the lagging newest historic row (7.5%).
     expect(screen.getByText('Borrow Rate')).toBeTruthy();
+    expect(screen.getByText('8.25%')).toBeTruthy();
+    expect(screen.queryByText('7.5%')).toBeNull();
+  });
+
+  it('falls back to the newest historic borrow rate until the onchain read lands', () => {
+    collateral = { data: undefined, isLoading: true, error: null };
+    renderChart();
+
+    fireEvent.click(within(screen.getByTestId('chart-metric-toggle')).getByText('Borrow rate'));
+
     expect(screen.getByText('7.5%')).toBeTruthy();
   });
 

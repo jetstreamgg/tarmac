@@ -140,6 +140,33 @@ export const Cancel = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// The refresh glyph (lucide `RefreshCw`) in the status icons' gradient, for
+// notices that ask the user to review and confirm again.
+export const Refresh = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+    fill="none"
+    strokeWidth="2.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    stroke="url(#refresh_gradient)"
+    {...props}
+  >
+    <defs>
+      <linearGradient id="refresh_gradient" x1="12" y1="3" x2="12" y2="21" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#A278FF" />
+        <stop offset="1" stopColor="#A9EDF1" />
+      </linearGradient>
+    </defs>
+    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+    <path d="M8 16H3v5" />
+  </svg>
+);
+
 // Figma pins the copy glyph to Colors/Fg/fg-text-consistent-light (#f2f3f7) —
 // the same token as the address it sits beside — not pure white (Figma
 // 2376:225808, "Different icon color"). Inheriting `currentColor` also fixes

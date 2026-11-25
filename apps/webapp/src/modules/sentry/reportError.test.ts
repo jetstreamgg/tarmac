@@ -7,12 +7,14 @@ describe('reportError', () => {
   const setLevel = vi.fn();
   const setExtras = vi.fn();
   const setContext = vi.fn();
+  const setFingerprint = vi.fn();
   const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   type MockScope = {
     setTag: typeof setTag;
     setLevel: typeof setLevel;
     setExtras: typeof setExtras;
     setContext: typeof setContext;
+    setFingerprint: typeof setFingerprint;
   };
   type WithScopeMock = MockedFunction<(callback: (scope: MockScope) => void) => void>;
 
@@ -25,7 +27,8 @@ describe('reportError', () => {
         setTag,
         setLevel,
         setExtras,
-        setContext
+        setContext,
+        setFingerprint
       });
     });
   });
@@ -63,6 +66,7 @@ describe('reportError', () => {
     expect(setContext).toHaveBeenCalledWith('react', {
       componentStack: '\n in AppShell'
     });
+    expect(setFingerprint).not.toHaveBeenCalled();
     expect(Sentry.captureException).toHaveBeenCalledWith(error);
     expect(consoleError).toHaveBeenCalledWith(error, {
       module: 'ui',
@@ -78,5 +82,13 @@ describe('reportError', () => {
         }
       }
     });
+  });
+
+  it('sets the fingerprint when one is given', () => {
+    reportError(new Error('boom'), {
+      module: 'transactions',
+      fingerprint: ['transaction-reverted', 'supply', 'deposit']
+    });
+    expect(setFingerprint).toHaveBeenCalledWith(['transaction-reverted', 'supply', 'deposit']);
   });
 });

@@ -1,20 +1,12 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Info } from 'lucide-react';
-import { useIsTouchDevice } from '@/hooks';
+import { InfoGlyph } from '@/components/InfoTooltip';
 import { cn } from '@/lib/cn';
 import { formatUsd } from '@/utils';
 import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';
 import { RollingValue } from '@/components/ui/rolling-value';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipPortal,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
+import { ResponsiveTooltip } from '@/components/ui/tooltip';
 import {
   isAnnouncedGap,
   isMorphoVaultSourceId,
@@ -83,64 +75,6 @@ const COVERAGE_COPY: Record<EarningsCoverage, ReactNode> = {
   'rewards-not-included': <Trans>Rewards not included yet.</Trans>
 };
 
-function EarningsTooltip({
-  trigger,
-  children,
-  side = 'top',
-  contentClassName,
-  passThrough = false
-}: {
-  trigger: ReactNode;
-  children: ReactNode;
-  side?: 'top' | 'right';
-  /** Overrides the DS tooltip's 260px cap for wider content (the APP-589 breakdown). */
-  contentClassName?: string;
-  /**
-   * Close as soon as the pointer leaves the trigger and let it through the
-   * content: for purely informational content that covers neighbouring
-   * targets (the breakdown opens over the next footer stat).
-   */
-  passThrough?: boolean;
-}) {
-  // The app Tooltip force-closes on touch devices, so the explanations would
-  // be unreachable there — fall back to a tap popover styled like the DS
-  // tooltip, the InfoTooltip precedent (review finding #7).
-  const isTouchDevice = useIsTouchDevice();
-
-  if (isTouchDevice) {
-    return (
-      <Popover>
-        <PopoverTrigger asChild onClick={e => e.stopPropagation()}>
-          {trigger}
-        </PopoverTrigger>
-        <PopoverContent
-          align="center"
-          side={side}
-          className={cn(
-            'bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
-            contentClassName
-          )}
-        >
-          {children}
-        </PopoverContent>
-      </Popover>
-    );
-  }
-
-  return (
-    <TooltipProvider delayDuration={300} disableHoverableContent={passThrough}>
-      <Tooltip>
-        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent side={side} className={cn(passThrough && 'pointer-events-none', contentClassName)}>
-            {children}
-          </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 /** Resolves the combined stat's missing-source ids to their reasons. */
 export function missingSourceDetails(
   earnings: WalletEarnings,
@@ -202,15 +136,12 @@ function GapGlyph({
 }) {
   const hasErrorGap = missing.some(m => !isAnnouncedGap(m.reason));
   return (
-    <EarningsTooltip
+    <ResponsiveTooltip
       trigger={
-        <span
-          tabIndex={0}
+        <InfoGlyph
           data-testid={hasErrorGap ? 'earnings-partial' : 'earnings-info'}
-          className={cn('flex shrink-0', hasErrorGap ? 'text-error' : 'text-textSecondary')}
-        >
-          <Info className="h-3 w-3" />
-        </span>
+          className={hasErrorGap ? 'text-error' : undefined}
+        />
       }
     >
       <div className="flex flex-col gap-1">
@@ -221,7 +152,7 @@ function GapGlyph({
           <span key={c}>{COVERAGE_COPY[c]}</span>
         ))}
       </div>
-    </EarningsTooltip>
+    </ResponsiveTooltip>
   );
 }
 
@@ -230,17 +161,7 @@ function GapGlyph({
  * the gap glyph, minus the missing-source machinery and the error colouring.
  */
 export function StatInfoGlyph({ children, testId }: { children: ReactNode; testId?: string }) {
-  return (
-    <EarningsTooltip
-      trigger={
-        <span tabIndex={0} data-testid={testId} className="text-textSecondary flex shrink-0">
-          <Info className="h-3 w-3" />
-        </span>
-      }
-    >
-      {children}
-    </EarningsTooltip>
-  );
+  return <ResponsiveTooltip trigger={<InfoGlyph data-testid={testId} />}>{children}</ResponsiveTooltip>;
 }
 
 /** The breakdown popup is 316px in the comp (16px padding around 284px rows), capped to the viewport on phones. */
@@ -290,7 +211,7 @@ export function CombinedEarningsStat({
   if (missing.length === earnings.protocols.length && missing.length > 0) {
     return (
       <span data-testid={testId} className={STAT_ROW}>
-        <EarningsTooltip
+        <ResponsiveTooltip
           trigger={
             <span tabIndex={0} className={cn(className, 'text-textSecondary')}>
               —
@@ -298,7 +219,7 @@ export function CombinedEarningsStat({
           }
         >
           <MissingList missing={missing} untrackedNames={untrackedNames} />
-        </EarningsTooltip>
+        </ResponsiveTooltip>
       </span>
     );
   }
@@ -308,20 +229,20 @@ export function CombinedEarningsStat({
   return (
     <span data-testid={testId} className={STAT_ROW}>
       {breakdown ? (
-        <EarningsTooltip
+        <ResponsiveTooltip
           side="right"
           contentClassName={BREAKDOWN_CONTENT}
           passThrough
           trigger={
             // flex, not inline: an inline wrapper's line box takes the
             // inherited line height and pushes the figure down.
-            <span tabIndex={0} className="flex cursor-default" data-testid={`${testId}-breakdown-trigger`}>
+            <span tabIndex={0} className="flex" data-testid={`${testId}-breakdown-trigger`}>
               {value}
             </span>
           }
         >
           {breakdown}
-        </EarningsTooltip>
+        </ResponsiveTooltip>
       ) : (
         value
       )}
@@ -378,9 +299,9 @@ export function EarningsFigureValue({
     );
     return (
       <span data-testid={testId} className={STAT_ROW}>
-        <EarningsTooltip trigger={dash}>
+        <ResponsiveTooltip trigger={dash}>
           {figure ? REASON_COPY[figure.reason] : <Trans>Earnings not tracked yet.</Trans>}
-        </EarningsTooltip>
+        </ResponsiveTooltip>
       </span>
     );
   }
@@ -403,7 +324,7 @@ export function EarningsFigureValue({
   if (pendleSplit) {
     return (
       <span data-testid={testId} className={STAT_ROW}>
-        <EarningsTooltip
+        <ResponsiveTooltip
           trigger={
             // Also a flex row: as a block it would take the inherited strut's
             // taller line box and undo the wrapper's height normalization.
@@ -424,7 +345,7 @@ export function EarningsFigureValue({
               </Trans>
             </span>
           </div>
-        </EarningsTooltip>
+        </ResponsiveTooltip>
         {gapGlyph}
       </span>
     );

@@ -75,7 +75,7 @@ export function useUpgradeLaunch({
   const target = UPGRADE_TARGET[token];
 
   // READ ONLY — labels the approve step only. Same read as the engine's own.
-  const { data: allowance } = useTokenAllowance({
+  const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId,
     contractAddress: isDai
       ? mcdDaiAddress[chainId as keyof typeof mcdDaiAddress]
@@ -85,7 +85,7 @@ export function useUpgradeLaunch({
       ? daiUsdsAddress[chainId as keyof typeof daiUsdsAddress]
       : mkrSkyAddress[chainId as keyof typeof mkrSkyAddress]
   });
-  const needsAllowance = allowance === undefined || allowance < amount;
+  const needsAllowance = allowance !== undefined ? allowance < amount : !!allowanceError && amount > 0n;
 
   const upgrade = useBatchUpgrade({
     token,

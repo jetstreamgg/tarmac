@@ -163,7 +163,7 @@ export function CookieConsentBanner() {
                   </button>
                   <button
                     onClick={handleAcceptAll}
-                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover bg-text/10 text-text hover:bg-text/20 rounded-lg px-4 py-2 text-[13px] font-medium transition-colors"
+                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover bg-text/10 text-text hover:bg-text/20 focus-visible:outline-focusRing rounded-lg px-4 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     Accept All
                   </button>
@@ -228,7 +228,7 @@ export function CookieConsentBanner() {
                   </button>
                   <button
                     onClick={handleSave}
-                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover bg-text/10 text-text hover:bg-text/20 rounded-lg px-4 py-2 text-[13px] font-medium transition-colors"
+                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover bg-text/10 text-text hover:bg-text/20 focus-visible:outline-focusRing rounded-lg px-4 py-2 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     Save
                   </button>

@@ -33,8 +33,10 @@ describe('useEarnMarketplace', () => {
     expect(byId['stusds'].rate.value).toBeGreaterThan(0);
     expect(byId['stusds'].tvl?.totalUsd).toBeGreaterThan(0);
 
-    // Aggregate of all user positions (>= 0; the fork test account holds none).
-    expect(result.current.totalDepositedUsd).toBeGreaterThanOrEqual(0);
+    // Matured markets never reach the opportunities rows; they arrive flagged beside them.
+    expect(result.current.rows.some(row => row.status !== undefined)).toBe(false);
+    for (const row of result.current.maturedRows) expect(row.status).toBe('matured');
+    expect(result.current.positionRows).toEqual([...result.current.rows, ...result.current.maturedRows]);
 
     // Savings and stUSDS both have live BA Labs history behind them.
     expect(byId['savings'].rate30d.value).toBeGreaterThan(0);

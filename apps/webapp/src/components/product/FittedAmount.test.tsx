@@ -68,6 +68,12 @@ describe('FittedAmount', () => {
     expect(el.style.fontSize).toBe('44px');
   });
 
+  it('goes below the default floor for a caller that asks', () => {
+    stubWidths({ clientWidth: 100, scrollWidth: 1000 });
+    render(<FittedAmount amount="1,234.567890123456789012" maxPx={24} minPx={14} testId="hero-amount" />);
+    expect(screen.getByTestId('hero-amount').style.fontSize).toBe('14px');
+  });
+
   it('shrinks a long amount instead of eliding it', () => {
     stubWidths({ clientWidth: 224, scrollWidth: 285 });
     render(<FittedAmount amount="10,610,108.00" testId="hero-amount" />);

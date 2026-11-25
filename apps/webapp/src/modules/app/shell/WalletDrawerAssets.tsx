@@ -113,7 +113,8 @@ function AssetRow({ asset, onStartEarning }: { asset: WalletDrawerAsset; onStart
       </div>
       {asset.canEarn && (
         <div className="grid grid-rows-[0fr] opacity-0 transition-all duration-200 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100 group-hover:grid-rows-[1fr] group-hover:opacity-100">
-          <div className="overflow-hidden">
+          {/* The padding keeps the button's ring inside the reveal's clip. */}
+          <div className="-mx-1 -mb-1 overflow-hidden px-1 pb-1">
             <Button
               variant="primary"
               size="m"

@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures-parallel';
 import { VaultProductPage } from '../pages/VaultProductPage';
-import { USDC_RISK_CAPITAL_VAULT } from '../utils/vaultsE2e';
+import { mockVaultLiquidity, USDC_RISK_CAPITAL_VAULT } from '../utils/vaultsE2e';
 
 const VAULT_NAME = 'USDC Risk Capital';
 
@@ -41,6 +41,7 @@ test('Max fills the full wallet balance', async ({ isolatedPage }) => {
 });
 
 test('Supplies USDC and withdraws it back', async ({ isolatedPage }) => {
+  await mockVaultLiquidity(isolatedPage);
   const vault = new VaultProductPage(isolatedPage);
   await vault.gotoConnected(USDC_RISK_CAPITAL_VAULT);
 

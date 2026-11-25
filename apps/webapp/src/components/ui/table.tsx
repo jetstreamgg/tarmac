@@ -44,7 +44,9 @@ const Table = React.forwardRef<
   }
 >(({ className, wrapperClassName, animateRows = false, ...props }, ref) => (
   <TableAnimationContext.Provider value={animateRows}>
-    <div className={cn('relative w-full overflow-x-auto', wrapperClassName)}>
+    {/* overflow-x-auto clips the y axis too; the 4px of top padding (offset
+        by the margin) keeps a focused header's ring from being cut off. */}
+    <div className={cn('relative -mt-1 w-full overflow-x-auto pt-1', wrapperClassName)}>
       <table
         ref={ref}
         className={cn(

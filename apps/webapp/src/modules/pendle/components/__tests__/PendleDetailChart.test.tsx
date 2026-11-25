@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, cleanup } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
 
 i18n.load('en', {});
@@ -20,8 +20,9 @@ const MARKET: PendleMarketConfig = {
   expiry: 1795651200
 };
 
-const NOW_SEC = Math.floor(Date.now() / 1000);
 const DAY = 86_400;
+// Pinned before maturity: the live-market cases slice relative to now.
+const NOW_SEC = MARKET.expiry - 30 * DAY;
 
 const hoisted = vi.hoisted(() => ({
   chartProps: undefined as Record<string, unknown> | undefined,
@@ -63,7 +64,12 @@ vi.mock('@/modules/ui/components/Chart', async importOriginal => {
 import { PendleDetailChart } from '../PendleDetailChart';
 
 describe('PendleDetailChart', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW_SEC * 1000);
+  });
   afterEach(() => {
+    vi.useRealTimers();
     cleanup();
     hoisted.chartProps = undefined;
     hoisted.chartPoints = undefined;
@@ -128,5 +134,39 @@ describe('PendleDetailChart', () => {
 
     expect(hoisted.chartProps?.metrics).toBeUndefined();
     expect(hoisted.chartProps?.onMetricChange).toBeUndefined();
+  });
+
+  describe('once the market has matured', () => {
+    beforeEach(() => {
+      vi.setSystemTime((MARKET.expiry + 30 * DAY) * 1000);
+    });
+
+    it('plots up to expiry and drops the post-expiry bucket', () => {
+      hoisted.chartPoints = [
+        { timestampSec: MARKET.expiry - 2 * DAY, impliedApy: 0.04 },
+        { timestampSec: MARKET.expiry - DAY, impliedApy: 0.045 },
+        { timestampSec: MARKET.expiry + DAY, impliedApy: 0 }
+      ];
+
+      render(
+        <I18nProvider i18n={i18n}>
+          <PendleDetailChart market={MARKET} />
+        </I18nProvider>
+      );
+
+      const data = hoisted.chartProps?.data as Array<{ value: number }>;
+      expect(data.map(point => point.value)).toEqual([4, 4.5]);
+    });
+
+    it('opens on the whole lifetime with no headline figure', () => {
+      render(
+        <I18nProvider i18n={i18n}>
+          <PendleDetailChart market={MARKET} />
+        </I18nProvider>
+      );
+
+      expect(hoisted.chartProps?.hideValue).toBe(true);
+      expect(hoisted.chartProps?.initialTimeFrame).toBe('all');
+    });
   });
 });

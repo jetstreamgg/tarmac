@@ -4,6 +4,7 @@ import { metaMask, safe, walletConnect, coinbaseWallet, baseAccount } from 'wagm
 import { getWagmiConnectorV2 } from '@binance/w3w-wagmi-connector-v2';
 import { TENDERLY_CHAIN_ID, TENDERLY_RPC_URL } from './testTenderlyChain';
 import { createProxyTransport } from './proxyTransport';
+import { forkL2Chains } from './forkChains';
 
 const tenderly = {
   ...mainnet,
@@ -64,9 +65,10 @@ const connectors = [
 ];
 
 export const wagmiConfigDev = createConfig({
-  chains: [mainnet, tenderly, base, arbitrum, optimism, unichain],
+  chains: [mainnet, tenderly, base, arbitrum, optimism, unichain, ...forkL2Chains],
   connectors,
   transports: {
+    ...Object.fromEntries(forkL2Chains.map(chain => [chain.id, http(chain.rpcUrls.default.http[0])])),
     [mainnet.id]: createProxyTransport(mainnet.id),
     [tenderly.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY || ''),
     [base.id]: createProxyTransport(base.id),

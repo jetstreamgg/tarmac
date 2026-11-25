@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import type { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TxMutateVariables } from '@/hooks';
+import type { Call } from 'viem';
+import type { CallMatcher } from '@/modules/ui/lib/callIntent';
 
 /**
  * The frozen transaction-orchestration contract: a flow calls `launch(config)`,
@@ -80,6 +82,13 @@ export type TransactionAnalytics = {
   action?: string;
   /** Extra data merged into every analytics event (e.g. module, claimedRewards). */
   data?: Record<string, unknown>;
+  /** Reports each signature as its real step; without it only an approve differs from `action`. */
+  stepOf?: (
+    variables: TxMutateVariables | undefined,
+    flowId: string | undefined
+  ) => { action: string; data?: Record<string, unknown> } | undefined;
+  /** Read when an attempt ends, for what is only known by then. */
+  completedData?: () => Record<string, unknown> | undefined;
 };
 
 /** The config a consumer passes to `launch()` for a standard on-chain transaction. */
@@ -110,6 +119,8 @@ export type TransactionConfig = {
    * unchanged.
    */
   transactionScreenContent?: ReactNode;
+  /** A card beside the review on desktop (Figma 3964:74437); below desktop it isn't drawn. */
+  aside?: ReactNode;
   /**
    * Editable first screen. When present the modal opens on the entry screen
    * (instead of the read-only review built from `transactionContent`). Both lead
@@ -183,9 +194,47 @@ export type TransactionConfig = {
    */
   onSecondaryConfirm?: () => void;
   onRetry?: () => void;
+  /**
+   * Reads the calls the flow's engine would send if dispatched right now (the
+   * engine's `nextCalls`, kept live through a ref). The provider snapshots them
+   * when the user confirms and, before any DEFERRED dispatch (an async gate
+   * verdict, Retry), refuses to send calls that are no longer the tail of that
+   * snapshot: the review screen freezes once the transaction leaves IDLE, but
+   * the engine keeps rebuilding its calldata from live quotes, so without this
+   * a deferred dispatch could sign terms the user never saw. A tail, not
+   * equality, because calls legitimately drop off the front (an approve that
+   * landed, a sequence resuming after a mined step). Omitted by flows whose
+   * calldata cannot drift after review.
+   */
+  getNextCalls?: () => readonly Call[];
+  /**
+   * Relaxes the `getNextCalls` comparison per call, for calldata carrying a
+   * slippage bound that follows a live quote — build it with `tightensOnly`,
+   * which lets only that bound move, and only in the user's favour. Omitted, a
+   * deferred dispatch must match the confirmed calls byte for byte.
+   */
+  callMatches?: CallMatcher;
+  /**
+   * Reads the flow's live confirm gating (what `confirmDisabled` would be if
+   * pushed now). Pushes freeze once the transaction leaves IDLE, so the provider
+   * reads this instead to refuse a deferred dispatch the flow would no longer
+   * allow: a lapsed acknowledgement, a module that halted since the confirm.
+   * Not read on a retry after a mined step: the run itself has moved the
+   * balances the form checks, and what is left to send is still held to the
+   * confirmed calls.
+   */
+  getConfirmDisabled?: () => boolean;
+  /**
+   * Refuses a deferred dispatch on every trigger, including a retry after a
+   * mined step: for state the calldata doesn't carry and the run itself never
+   * moves, such as a PSM fee `sellGem` has no min-out against.
+   */
+  getDispatchBlocked?: () => boolean;
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
+  /** Whether the steps go out as one wallet bundle; unset, the modal reads the batch toggle and the wallet. */
+  bundled?: boolean;
   /**
    * User-readable engine/prepare failure rendered above the review screen's
    * confirm button (the entry screen reads `entry.errorMessage` instead — the
@@ -203,6 +252,12 @@ export type TransactionConfig = {
   steps?: TransactionStep[];
   /** Analytics metadata for tracking transaction lifecycle events. */
   analytics?: TransactionAnalytics;
+  /**
+   * A review-first flow whose amounts resolve after launch (a quote fetched
+   * on open) sets this so review_viewed waits for them: the event fires on the
+   * first `updateModalContent` that clears it, with that update's analytics.
+   */
+  reviewViewedPending?: boolean;
   /**
    * Estimated USD notional of the transaction (APP-517): what the compliance
    * surface compares against the enhanced-screening threshold. Editable flows
@@ -272,15 +327,22 @@ export type LiveModalUpdate = Partial<
     TransactionConfig,
     | 'transactionContent'
     | 'transactionScreenContent'
+    | 'aside'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
+    | 'bundled'
     | 'errorMessage'
     | 'onConfirm'
     | 'onSecondaryConfirm'
     | 'onRetry'
+    | 'getNextCalls'
+    | 'callMatches'
+    | 'getConfirmDisabled'
+    | 'getDispatchBlocked'
     | 'steps'
     | 'toast'
     | 'analytics'
+    | 'reviewViewedPending'
     | 'usdValue'
   >
 > & {
@@ -293,13 +355,15 @@ export type LiveModalUpdate = Partial<
  * WriteHookParams and BatchWriteHookParams. `hash` is the on-chain tx hash where
  * one exists; for EIP-5792 batches it is undefined until a receipt resolves (see
  * the EIP-5792 rule above). `blockNumber` on success is the block of the last
- * receipt, which the history refresh waits for the indexer to reach.
+ * receipt, which the history refresh waits for the indexer to reach, and
+ * `bundleTxHashes` every receipt's hash of a batch the wallet ran as several
+ * transactions, in order.
  */
 export type TxCallbacks = {
   /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
   onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
-  onSuccess: (hash?: string, blockNumber?: bigint) => void;
+  onSuccess: (hash?: string, blockNumber?: bigint, bundleTxHashes?: string[]) => void;
   onError: (error: Error, hash?: string) => void;
 };
 
@@ -337,4 +401,6 @@ export type TransactionContextValue = {
    * side effect use the config's `onSuccess`, or compose the engine's.
    */
   txStatus: TxStatus;
+  /** The failed session's send or bundle has an outcome the app can't read: it may still mine. */
+  failureMayStillMine: boolean;
 };

@@ -52,8 +52,15 @@ export function WithdrawalsUnavailableBadge({ assetSymbol }: { assetSymbol: stri
             funds.
           </Trans>
         }
-        triggerLabel="Withdrawals unavailable"
-        icon={<TriangleAlert className="text-statusWarning size-4" aria-hidden />}
+        trigger={
+          <button
+            type="button"
+            aria-label="Withdrawals unavailable"
+            className="text-statusWarning focus-visible:ring-focusRing inline-flex shrink-0 rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
+          >
+            <TriangleAlert className="size-4" aria-hidden />
+          </button>
+        }
       />
     </span>
   );
@@ -93,11 +100,16 @@ function AlertInfoTooltip({ content, testId }: { content: ReactNode; testId: str
   return (
     <InfoTooltip
       content={content}
-      icon={
-        <span className="text-fgSecondary relative inline-flex" data-testid={testId}>
+      trigger={
+        <button
+          type="button"
+          aria-label="Show additional information"
+          data-testid={testId}
+          className="text-fgSecondary focus-visible:ring-focusRing relative z-10 inline-flex shrink-0 rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
+        >
           <Info className="size-3" aria-hidden />
           <span className="bg-statusError absolute -top-0.5 -right-0.5 size-1.5 rounded-full" aria-hidden />
-        </span>
+        </button>
       }
     />
   );

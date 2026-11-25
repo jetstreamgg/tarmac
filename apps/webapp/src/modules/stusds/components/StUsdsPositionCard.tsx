@@ -109,7 +109,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
               {withdrawalsUnavailable ? (
                 <HighRateInfo assetSymbol="USDS" />
               ) : (
-                <PopoverRateInfo type="stusds" width={14} height={14} iconClassName="text-fgSecondary" />
+                <PopoverRateInfo type="stusds" />
               )}
             </ProductFigure>
           </ProductStat>
@@ -213,7 +213,7 @@ export function StUsdsPositionCard() {
             <AccruedToDateStat accrued={accrued} testId="stusds-accrued-to-date" />
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />
-              <RateInfo type="stusds" size={12} />
+              <RateInfo type="stusds" />
             </ProductStat>
           </ProductStatPair>
         </>

@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
-import { getIlkName, useCollateralData, useStakeHistoricData } from '@/hooks';
-import { formatNumber, formatDecimalPercentage, formatWholeUsd } from '@/utils';
+import { getIlkName, newestStakeHistoricPoint, useCollateralData, useStakeHistoricData } from '@/hooks';
+import { formatNumber, formatDecimalPercentage, formatPercent, formatWholeUsd } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';
@@ -63,9 +63,7 @@ function StatValue({
  */
 export function StakeDetailsStrip() {
   const { data: historicData, isLoading: historicLoading, error: historicError } = useStakeHistoricData();
-  const mostRecent = historicData
-    ?.slice()
-    .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())[0];
+  const mostRecent = newestStakeHistoricPoint(historicData);
   const {
     data: collateralData,
     isLoading: collateralLoading,
@@ -91,7 +89,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Staking Reward Rate</Trans>
-              <RateInfo type="srr" size={12} />
+              <RateInfo type="srr" />
             </>
           }
         >
@@ -105,12 +103,16 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Borrow Rate</Trans>
-              <RateInfo type="sbr" size={12} />
+              <RateInfo type="sbr" />
             </>
           }
         >
-          <StatValue isLoading={historicLoading} error={historicError}>
-            {mostRecent ? formatDecimalPercentage(mostRecent.borrowRate) : NO_VALUE}
+          {/* Onchain stability fee, as on the engine card and the position
+              flows — not the daily historic row, which lags a spell (APP-640). */}
+          <StatValue isLoading={collateralLoading} error={collateralError}>
+            {collateralData?.stabilityFee !== undefined
+              ? formatPercent(collateralData.stabilityFee)
+              : NO_VALUE}
           </StatValue>
         </DetailRow>
 
@@ -138,7 +140,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Capped OSM SKY price</Trans>
-              <RateInfo type="cappedOsmSkyPrice" size={12} />
+              <RateInfo type="cappedOsmSkyPrice" />
             </>
           }
         >

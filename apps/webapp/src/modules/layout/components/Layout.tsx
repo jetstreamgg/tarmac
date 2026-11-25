@@ -15,6 +15,7 @@ import { AppLink } from '@/lib/navigation';
 import { cn } from '@/lib/cn';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
+import { ChainEnvPill } from './ChainEnvPill';
 import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
@@ -63,7 +64,11 @@ export function Layout({
                   logo sits in a 1fr flank; without it the anchor stretches
                   across the whole track and empty header space becomes
                   clickable. */}
-                <AppLink to="/" title="Home page" className="min-w-[96px] lg:justify-self-start">
+                <AppLink
+                  to="/"
+                  title="Home page"
+                  className="focus-visible:outline-focusRing min-w-[96px] rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 lg:justify-self-start"
+                >
                   {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
                   <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
@@ -140,6 +145,7 @@ export function Layout({
         <div className={appLoaderRevealClasses(loaderPhase, 'chrome', revealAnimated)}>
           <Banner />
         </div>
+        <ChainEnvPill className={appLoaderRevealClasses(loaderPhase, 'chrome', revealAnimated)} />
         {/* Joins the chrome reveal like the Banner above: without it the
             commit SHA floats over the cover's bare-background frame on
             dev/staging builds. */}

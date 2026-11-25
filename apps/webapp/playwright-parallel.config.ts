@@ -70,32 +70,40 @@ export default defineConfig({
         '**/pendle.spec.ts',
         '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
+        '**/terms-check-failure.spec.ts',
         '**/address-screening.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
         '**/optimism-savings.spec.ts',
         '**/unichain-savings.spec.ts',
         '**/sequential-tx.spec.ts',
-        '**/batch-simulation.spec.ts'
+        '**/batch-simulation.spec.ts',
+        '**/safe-savings.spec.ts',
+        '**/bridge-native.spec.ts',
+        '**/bridge-native-activity.spec.ts',
+        '**/bridge-native-arbitrum.spec.ts',
+        '**/bridge-native-form.spec.ts',
+        '**/bridge-native-pending.spec.ts',
+        '**/bridge-native-safe.spec.ts',
+        '**/bridge-native-wallets.spec.ts',
+        '**/bridge-native-withdrawal.spec.ts',
+        '**/bridge-cctp.spec.ts',
+        '**/bridge-cctp-gate.spec.ts',
+        '**/bridge-cctp-recovery.spec.ts',
+        '**/bridge-cctp-safe.spec.ts'
+
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
     }
-    // {
-    //   name: 'chromium-alternate',
-    //   use: {
-    //     ...devices['Desktop Chrome'],
-    //     viewport: { width: 1920, height: 1080 }
-    //   }
-    //   // Alternate VNet tests - for tests requiring a different fork state
-    //   // Add test patterns here when you need tests to run on alternate VNet
-    //   // testMatch: ['**/expert-morpho.spec.ts', '**/vaults-morpho.spec.ts']
-    // }
   ],
 
   webServer: {
     // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-    command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+    // The terms endpoint matches CI too. An empty value makes checkTermsWithRetry
+    // return before fetch, so a forced /check (terms-check-failure) never fires.
+    command:
+      'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true VITE_TERMS_ENDPOINT=https://staging-api.sky.money/terms-acceptance pnpm dev:mock',
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,

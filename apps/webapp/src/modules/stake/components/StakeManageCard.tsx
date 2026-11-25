@@ -29,6 +29,7 @@ export function StakeManageCard<Mode extends string>({
   toggleDisabled,
   toggleDisabledHint,
   dataTestId,
+  notice,
   children
 }: {
   modes: { value: Mode; label: ReactNode }[];
@@ -41,6 +42,11 @@ export function StakeManageCard<Mode extends string>({
   toggleDisabled?: boolean;
   toggleDisabledHint?: ReactNode;
   dataTestId: string;
+  /**
+   * A message for the whole form (why Confirm is disabled), set apart under the
+   * body. Outside the body, so it stays visible when the card is toggled off.
+   */
+  notice?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -78,6 +84,7 @@ export function StakeManageCard<Mode extends string>({
         )}
       </div>
       <StakeCardBody open={enabled}>{children}</StakeCardBody>
+      {notice && <div className="mt-6">{notice}</div>}
     </section>
   );
 }

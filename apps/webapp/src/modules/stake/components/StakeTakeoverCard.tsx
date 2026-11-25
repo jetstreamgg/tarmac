@@ -19,6 +19,7 @@ export function StakeTakeoverCard({
   toggleDisabled,
   toggleDisabledHint,
   dataTestId,
+  notice,
   children
 }: {
   step: number;
@@ -30,6 +31,11 @@ export function StakeTakeoverCard({
   toggleDisabled?: boolean;
   toggleDisabledHint?: ReactNode;
   dataTestId: string;
+  /**
+   * A message for the whole form (why Confirm is disabled), set apart under the
+   * body. Outside the body, so it stays visible when the card is toggled off.
+   */
+  notice?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -63,6 +69,7 @@ export function StakeTakeoverCard({
         )}
       </div>
       <StakeCardBody open={enabled}>{children}</StakeCardBody>
+      {notice && <div className="mt-6">{notice}</div>}
     </section>
   );
 }

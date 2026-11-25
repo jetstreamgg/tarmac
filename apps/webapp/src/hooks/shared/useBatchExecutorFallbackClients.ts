@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useConfig } from 'wagmi';
-import { getPublicClient } from '@wagmi/core';
+import { getPublicClient } from 'wagmi/actions';
 import type { PublicClient } from 'viem';
 
 /**

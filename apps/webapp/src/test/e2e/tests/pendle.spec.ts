@@ -6,9 +6,14 @@ import {
   PT_SUSDS_SLUG,
   pendleLegacyMarketPath
 } from '../utils/pendleE2e';
+import { installPendleUiBeforeMaturity } from '../utils/pendleOnChain';
 
 // V2 rewrite: Pendle on /earn/fixed/:slug. Read smokes active; write paths
 // skipped pending Pendle quote API on vnet. See pendle/QA-CASES.md §3.
+
+test.beforeEach(async ({ isolatedPage }) => {
+  await installPendleUiBeforeMaturity(isolatedPage);
+});
 
 test('PT-sUSDS detail page renders chart and transactions', async ({ isolatedPage }) => {
   const pendle = new PendleProductPage(isolatedPage);

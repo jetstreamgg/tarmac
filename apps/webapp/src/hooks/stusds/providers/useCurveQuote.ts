@@ -89,7 +89,8 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
     chainId,
     query: {
       enabled: enabled && direction === StUsdsDirection.SUPPLY && amount > 0n && !!poolData,
-      refetchInterval: 15000 // Refetch every 15 seconds
+      refetchInterval: 15000, // Refetch every 15 seconds
+      gcTime: 0
     }
   });
 
@@ -105,7 +106,8 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
     chainId,
     query: {
       enabled: enabled && direction === StUsdsDirection.WITHDRAW && amount > 0n && !!poolData && !isMax,
-      refetchInterval: 15000 // Refetch every 15 seconds
+      refetchInterval: 15000, // Refetch every 15 seconds
+      gcTime: 0
     }
   });
 
@@ -125,7 +127,8 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
         isMax &&
         (userStUsdsBalance ?? 0n) > 0n &&
         !!poolData,
-      refetchInterval: 15000 // Refetch every 15 seconds
+      refetchInterval: 15000, // Refetch every 15 seconds
+      gcTime: 0
     }
   });
 
