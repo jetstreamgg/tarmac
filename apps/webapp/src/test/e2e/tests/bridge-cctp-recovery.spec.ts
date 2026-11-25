@@ -28,7 +28,6 @@ import { setErc20Balance } from '../utils/setBalance';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { awaitDepositTxHash, l1AccountState } from '../utils/bridgeRelay';
 import { receiveCctpMessage, stubIris } from '../utils/cctpAttester';
-import { setErc20Balance } from '../utils/setBalance';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 
 // APP-614 recovery: every way a CCTP bridge to Ethereum can stall still ends with the
