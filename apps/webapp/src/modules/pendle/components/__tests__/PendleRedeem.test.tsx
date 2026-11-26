@@ -69,7 +69,9 @@ const baseQuote: PendleConvertQuote = {
 
 const baseProps = {
   market: MARKET,
-  ptBalance: 1_500_000n, // 1.5 PT-USDG (6 decimals)
+  claimAmount: 1_500_000n, // 1.5 PT-USDG (6 decimals)
+  limitRate: undefined as string | undefined,
+  ptBalance: 1_500_000n,
   outputTokenList: [USDG_TOKEN, USDS_TOKEN],
   selectedOutputToken: USDG_TOKEN,
   onOutputTokenChange: () => undefined,
@@ -226,5 +228,22 @@ describe('PendleRedeem', () => {
     expect(hero).not.toContain(',');
     expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.45');
     expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
+  });
+});
+
+describe('PendleRedeem under the SY rate limit', () => {
+  it('shows no notice when the claim takes the whole position', () => {
+    renderRedeem({ quote: baseQuote });
+    expect(screen.queryByTestId('pendle-redeem-partial-notice')).toBeNull();
+  });
+
+  it('claims the limited amount and says the rest can follow', () => {
+    renderRedeem({ quote: baseQuote, claimAmount: 400_000n, limitRate: '50,000.00 USDG per hour' });
+
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('0.4');
+    const notice = screen.getByTestId('pendle-redeem-partial-notice');
+    expect(notice.textContent).toBe(
+      'Pendle limits withdrawals to 50,000.00 USDG per hour. Claim the rest of your 1.50 PT-USDG later.'
+    );
   });
 });

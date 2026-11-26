@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
 import { mainnet } from 'viem/chains';
 import { formatBigInt, formatUsd } from '@/utils';
 import {
@@ -13,14 +14,22 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
+import { Text } from '@/modules/layout/components/Typography';
 import { NO_VALUE } from '@/lib/constants';
 import { formatPriceImpact } from '../utils/priceImpact';
 import { buildPendleRedeemRows } from './pendleModalRows';
 
 type PendleRedeemProps = {
   market: PendleMarketConfig;
-  /** Read-only PT input — full balance, not editable. */
+  /**
+   * Read-only PT input, not editable: the full balance, or less while the
+   * SY's rate limiter holds the claim below it.
+   */
+  claimAmount: bigint;
+  /** The whole matured position. */
   ptBalance: bigint;
+  /** The SY's withdrawal rate limit as copy ("50,000.00 USDS per hour"), when one is on. */
+  limitRate?: string;
   /** Token list for the Claim-token selector (underlying / USDS / USDC). */
   outputTokenList: Token[];
   selectedOutputToken: Token;
@@ -49,7 +58,9 @@ type PendleRedeemProps = {
  */
 export const PendleRedeem = ({
   market,
+  claimAmount,
   ptBalance,
+  limitRate,
   outputTokenList,
   selectedOutputToken,
   onOutputTokenChange,
@@ -74,11 +85,17 @@ export const PendleRedeem = ({
     (!!market.syAcceptedTokens &&
       !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress));
   const quoteLoading = isFetchingQuote && !quote;
+  const partial = claimAmount > 0n && claimAmount < ptBalance;
+  const positionDisplay = formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 });
 
   const rows = buildPendleRedeemRows({
     product: `Pendle ${market.underlyingSymbol} (${ptSymbol})`,
     productSymbol: market.underlyingSymbol,
-    claimAmount: formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 }),
+    claimAmount: formatBigInt(claimAmount, {
+      unit: market.underlyingDecimals,
+      maxDecimals: 2,
+      roundingMode: partial ? 'floor' : undefined
+    }),
     ptSymbol,
     aggregator,
     quoteLoading,
@@ -122,6 +139,15 @@ export const PendleRedeem = ({
       />
 
       <ModalSummaryGrid rows={toGridCells(rows, 'pendle-redeem-row', feeCell)} dividerClassName="h-6" />
+
+      {partial && (
+        <Text variant="small" className="text-text" data-testid="pendle-redeem-partial-notice">
+          <Trans>
+            Pendle limits withdrawals to {limitRate}. Claim the rest of your {positionDisplay} {ptSymbol}{' '}
+            later.
+          </Trans>
+        </Text>
+      )}
     </div>
   );
 };

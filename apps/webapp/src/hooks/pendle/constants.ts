@@ -1,3 +1,4 @@
+import { parseAbi } from 'viem';
 import { mainnet } from 'wagmi/chains';
 import { TENDERLY_CHAIN_ID, ZERO_ADDRESS } from '../constants';
 import type { PendleMarketConfig } from './pendle';
@@ -362,6 +363,30 @@ export const PENDLE_ALLOWED_SELECTORS = {
 };
 
 // ---------------------------------------------------------------------------
+// SY limits — the views usePendleSyLimits reads from an SY, its rate limiter
+// (PendleRateLimiter) and the limiter's price registry.
+// ---------------------------------------------------------------------------
+
+export const PENDLE_RATE_LIMITER_ABI = parseAbi([
+  'function isRateLimited(address token) view returns (bool)',
+  'function availableBurn(address token) view returns (uint256)',
+  'function burnQuota(address token, address account) view returns (uint256)',
+  'struct RateLimitData { int224 netBurn; uint32 lastUpdated; uint192 capacity; uint32 burnDecayWindow; uint32 mintDecayWindow; }',
+  'function getRateLimitData(address token) view returns (RateLimitData)',
+  'function PRICE_REGISTRY() view returns (address)'
+]);
+
+export const PENDLE_PRICE_REGISTRY_ABI = parseAbi([
+  'function tokenPrice(address token) view returns (uint256)'
+]);
+
+export const PENDLE_SY_ABI = parseAbi([
+  'function supplyCap() view returns (uint256)',
+  'function totalSupply() view returns (uint256)',
+  'function exchangeRate() view returns (uint256)'
+]);
+
+// ---------------------------------------------------------------------------
 // Empty-struct constants matching Pendle's StructGen.sol reference.
 // These are what every "no aggregator, no limit orders" call must use.
 // ---------------------------------------------------------------------------
@@ -401,6 +426,7 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     ptSymbol: 'PT-sUSDS-27MAY2027',
     ytToken: '0xc2de924d686ff2d69a14c85aecb81a33240b7e23',
     syToken: '0x5e4cecc6676ef448f20822d2449bc1bde1432eb4',
+    syRateLimiter: '0x94604284c47e0308526687798185346f8Ea0440C',
     underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
     underlyingSymbol: 'sUSDS',
     underlyingDecimals: 18,

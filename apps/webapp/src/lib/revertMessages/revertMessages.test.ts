@@ -4,8 +4,9 @@ import { ContractFunctionRevertedError, encodeErrorResult, toFunctionSelector } 
 import { contracts, l2Contracts } from '@/hooks/contracts';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { panicRevertMessages } from './contracts/panic';
+import { pendleSyRevertMessages } from './contracts/pendleSy';
 import type { DecodedRevert } from './decodeRevert';
-import { contractRevertMessages, revertMessage, revertReport } from '.';
+import { contractRevertMessages, isPendleSyLimitRevert, revertMessage, revertReport } from '.';
 
 beforeAll(() => {
   i18n.load('en', {});
@@ -42,7 +43,11 @@ describe('contractRevertMessages coverage', () => {
     const seen = new Map<string, string>();
     // Contracts sharing a source share one map; it counts once.
     const seenMaps = new Set<unknown>();
-    const maps = { ...contractRevertMessages, panic: panicRevertMessages };
+    const maps = {
+      ...contractRevertMessages,
+      pendleSy: pendleSyRevertMessages,
+      panic: panicRevertMessages
+    };
     for (const [contract, map] of Object.entries(maps)) {
       if (!map || seenMaps.has(map)) continue;
       seenMaps.add(map);
@@ -119,6 +124,23 @@ describe('reverts outside the Staking Engine', () => {
   ])('maps the custom error %s by name and by bare selector', (name, copy) => {
     expect(revertMessage(namedRevert(name))).toMatch(copy);
     expect(revertMessage(bareRevert(name))).toMatch(copy);
+  });
+
+  // The Pendle router's ABI names neither error, so viem keeps only the
+  // selector (the 0xbf881cef / 0x4b344b11 seen on a fork).
+  it.each([
+    ['0xbf881cef', /withdrawal limit for this market is used up/],
+    ['0x4b344b11', /reached Pendle's deposit cap/]
+  ])("maps the Pendle SY's limit revert %s by selector", (selector, copy) => {
+    expect(revertMessage({ revert: { reason: selector, kind: 'unknown' } })).toMatch(copy);
+  });
+
+  it("tells the Pendle SY's limit reverts from any other revert", () => {
+    expect(isPendleSyLimitRevert({ revert: { reason: '0xbf881cef', kind: 'unknown' } })).toBe(true);
+    expect(isPendleSyLimitRevert({ revert: { reason: 'SupplyCapExceeded', kind: 'custom' } })).toBe(true);
+    expect(isPendleSyLimitRevert(rpcRevert('insufficient liquidity'))).toBe(false);
+    expect(isPendleSyLimitRevert(new Error('User rejected the request.'))).toBe(false);
+    expect(isPendleSyLimitRevert(null)).toBe(false);
   });
 
   it('maps a withdrawal Morpho Blue has no liquidity for', () => {

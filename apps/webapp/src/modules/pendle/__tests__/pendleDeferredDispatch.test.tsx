@@ -187,6 +187,7 @@ vi.mock('@/hooks/shared/useSimulateBatch', () => ({
 const stable = vi.hoisted(() => ({
   feeCell: { fee: undefined, state: {}, loading: false },
   read: { isLoading: false, error: undefined, mutate: () => undefined, dataSources: [] },
+  noLimits: {},
   switchChain: { switchChainAsync: () => Promise.resolve() },
   networkSwitch: {
     handleSwitchChain: () => {},
@@ -221,6 +222,7 @@ vi.mock('@/hooks', async io => {
     useIsSafeWallet: () => false,
     useIsTouchDevice: () => false,
     usePendleUserPtBalances: () => ({ ...stable.read, data: balances }),
+    usePendleSyLimits: () => ({ ...stable.read, data: stable.noLimits }),
     usePendleMarketsApiData: () => ({ ...stable.read, data: marketsApi }),
     useAllPendleMarketsHistory: () => ({ ...stable.read, data: undefined }),
     useTokenBalance: () => tokenBalance,

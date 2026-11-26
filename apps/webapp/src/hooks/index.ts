@@ -85,6 +85,8 @@ export {
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
+export { usePendleSyLimits } from './pendle/usePendleSyLimits';
+export { maxPendleSupplyInput, type PendleSyLimits } from './pendle/computePendleSyLimits';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useAllPendleMarketsHistory } from './pendle/useAllPendleMarketsHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';

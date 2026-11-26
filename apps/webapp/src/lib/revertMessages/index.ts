@@ -3,6 +3,7 @@ import { t } from '@lingui/core/macro';
 import { lockstakeEngineRevertMessages } from './contracts/lockstakeEngine';
 import { morphoVaultInputRevertReasons, morphoVaultRevertMessages } from './contracts/morphoVault';
 import { panicRevertMessages } from './contracts/panic';
+import { pendleSyRevertMessages } from './contracts/pendleSy';
 import { merklDistributorRevertMessages, stakingRewardsRevertMessages } from './contracts/rewards';
 import { stUsdsRevertMessages } from './contracts/stUsds';
 import {
@@ -16,6 +17,7 @@ import { vatInputRevertReasons, vatRevertMessages } from './contracts/vat';
 import { decodeRevert, type DecodedRevert } from './decodeRevert';
 
 export { decodeRevert, type DecodedRevert } from './decodeRevert';
+export { isPendleSyLimitRevert } from './contracts/pendleSy';
 
 /**
  * Every contract in `hooks/contracts.ts` (mainnet and L2), with the copy for
@@ -104,7 +106,8 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
 };
 
 /**
- * Every mapped reason, flattened, plus Solidity's own `Panic` codes (any
+ * Every mapped reason, flattened, plus the Pendle SY's (its markets live in
+ * PENDLE_MARKETS, not hooks/contracts.ts) and Solidity's own `Panic` codes (any
  * contract can raise those). A revert doesn't say which contract raised it, so
  * the lookup is by reason alone. Most reasons carry their contract's prefix,
  * but a few don't: Morpho's "insufficient liquidity" and `TransferReverted`,
@@ -114,6 +117,7 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
 const revertMessageByReason: RevertMessageMap = Object.assign(
   {},
   ...Object.values(contractRevertMessages).filter((map): map is RevertMessageMap => map !== null),
+  pendleSyRevertMessages,
   panicRevertMessages
 );
 

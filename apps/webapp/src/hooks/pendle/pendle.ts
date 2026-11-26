@@ -37,6 +37,13 @@ export type PendleMarketConfig = {
   /** The SY (ERC-5115) token contract address */
   syToken: `0x${string}`;
   /**
+   * The SY's rate limiter (its `RATE_LIMITER` constant), for SYs built on
+   * Pendle's `TokenWithRateLimit`. Marks an SY whose burns can be rate limited
+   * and whose supply can be capped; `usePendleSyLimits` reads both. Unset for
+   * an SY without either.
+   */
+  syRateLimiter?: `0x${string}`;
+  /**
    * Pendle's "underlyingAsset" — the SY's wrapped yield-bearing token. Used as
    * tokenMintSy / tokenRedeemSy when the user picks a non-direct token and the
    * call routes through the aggregator.
