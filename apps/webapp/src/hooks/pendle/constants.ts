@@ -1,3 +1,4 @@
+import { parseAbi } from 'viem';
 import { mainnet } from 'wagmi/chains';
 import { TENDERLY_CHAIN_ID, ZERO_ADDRESS } from '../constants';
 import type { PendleMarketConfig } from './pendle';
@@ -360,6 +361,30 @@ export const PENDLE_ALLOWED_SELECTORS = {
   buy: ['swapExactTokenForPt'] as const,
   withdraw: ['swapExactPtForToken', 'exitPostExpToToken'] as const
 };
+
+// ---------------------------------------------------------------------------
+// SY limits — the views usePendleSyLimits reads from an SY, its rate limiter
+// (PendleRateLimiter) and the limiter's price registry.
+// ---------------------------------------------------------------------------
+
+export const PENDLE_RATE_LIMITER_ABI = parseAbi([
+  'function isRateLimited(address token) view returns (bool)',
+  'function availableBurn(address token) view returns (uint256)',
+  'function burnQuota(address token, address account) view returns (uint256)',
+  'struct RateLimitData { int224 netBurn; uint32 lastUpdated; uint192 capacity; uint32 burnDecayWindow; uint32 mintDecayWindow; }',
+  'function getRateLimitData(address token) view returns (RateLimitData)',
+  'function PRICE_REGISTRY() view returns (address)'
+]);
+
+export const PENDLE_PRICE_REGISTRY_ABI = parseAbi([
+  'function tokenPrice(address token) view returns (uint256)'
+]);
+
+export const PENDLE_SY_ABI = parseAbi([
+  'function supplyCap() view returns (uint256)',
+  'function totalSupply() view returns (uint256)',
+  'function exchangeRate() view returns (uint256)'
+]);
 
 // ---------------------------------------------------------------------------
 // Empty-struct constants matching Pendle's StructGen.sol reference.

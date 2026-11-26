@@ -1,5 +1,6 @@
-const WAD = 10n ** 18n;
-const MAX_UINT256 = 2n ** 256n - 1n;
+import { maxUint256 } from 'viem';
+import { math, WAD } from '@/utils';
+import { sharesToAssets } from '../vaults/sharesToAssets';
 
 const min = (a: bigint, b: bigint): bigint => (a < b ? a : b);
 
@@ -77,18 +78,18 @@ export function computePendleSyLimits({
     const metered =
       syPrice > 0n ? min(availableBurn, (aggregateAvailableBurn * WAD) / syPrice) : availableBurn;
     limits.withdraw = {
-      maxPt: ((burnQuota + metered) * exchangeRate) / WAD,
-      rateAssets: (burnCapacity * exchangeRate) / WAD,
+      maxPt: sharesToAssets(burnQuota + metered, exchangeRate),
+      rateAssets: sharesToAssets(burnCapacity, exchangeRate),
       windowSeconds: burnWindowSeconds
     };
   }
 
-  if (supplyCap !== MAX_UINT256) {
+  if (supplyCap !== maxUint256) {
     const shares = supplyCap > totalSupply ? supplyCap - totalSupply : 0n;
     limits.maxSupply = {
       shares,
-      assets: (shares * exchangeRate) / WAD,
-      capAssets: (supplyCap * exchangeRate) / WAD
+      assets: sharesToAssets(shares, exchangeRate),
+      capAssets: sharesToAssets(supplyCap, exchangeRate)
     };
   }
 
@@ -107,8 +108,5 @@ export function maxPendleSupplyInput(
 ): bigint | undefined {
   if (!limits?.maxSupply) return undefined;
   if (input.isVaultToken) return limits.maxSupply.shares;
-  const { assets } = limits.maxSupply;
-  return input.decimals >= input.assetDecimals
-    ? assets * 10n ** BigInt(input.decimals - input.assetDecimals)
-    : assets / 10n ** BigInt(input.assetDecimals - input.decimals);
+  return math.scaleToBaseDecimals(limits.maxSupply.assets, input.assetDecimals, input.decimals);
 }

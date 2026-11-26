@@ -1,28 +1,11 @@
 import { useMemo } from 'react';
-import { parseAbi } from 'viem';
 import { useChainId, useConnection, useReadContract, useReadContracts } from 'wagmi';
 import { familyMainnetId } from '@/utils';
 import { ZERO_ADDRESS } from '../constants';
 import type { ReadHook } from '../hooks';
+import { PENDLE_PRICE_REGISTRY_ABI, PENDLE_RATE_LIMITER_ABI, PENDLE_SY_ABI } from './constants';
 import { computePendleSyLimits, type PendleSyLimits } from './computePendleSyLimits';
 import type { PendleMarketConfig } from './pendle';
-
-const rateLimiterAbi = parseAbi([
-  'function isRateLimited(address token) view returns (bool)',
-  'function availableBurn(address token) view returns (uint256)',
-  'function burnQuota(address token, address account) view returns (uint256)',
-  'struct RateLimitData { int224 netBurn; uint32 lastUpdated; uint192 capacity; uint32 burnDecayWindow; uint32 mintDecayWindow; }',
-  'function getRateLimitData(address token) view returns (RateLimitData)',
-  'function PRICE_REGISTRY() view returns (address)'
-]);
-
-const priceRegistryAbi = parseAbi(['function tokenPrice(address token) view returns (uint256)']);
-
-const syAbi = parseAbi([
-  'function supplyCap() view returns (uint256)',
-  'function totalSupply() view returns (uint256)',
-  'function exchangeRate() view returns (uint256)'
-]);
 
 /** The limits move with every other user's trade and refill by the second. */
 const POLL_MS = 30_000;
@@ -46,8 +29,12 @@ export function usePendleSyLimits(
   const active = enabled && !!limiter;
   const refetchInterval = poll ? POLL_MS : (false as const);
 
-  const limiterContract = { address: limiter ?? ZERO_ADDRESS, abi: rateLimiterAbi, chainId } as const;
-  const syContract = { address: market.syToken, abi: syAbi, chainId } as const;
+  const limiterContract = {
+    address: limiter ?? ZERO_ADDRESS,
+    abi: PENDLE_RATE_LIMITER_ABI,
+    chainId
+  } as const;
+  const syContract = { address: market.syToken, abi: PENDLE_SY_ABI, chainId } as const;
 
   const {
     data: reads,
@@ -82,7 +69,7 @@ export function usePendleSyLimits(
     refetch: refetchPrice
   } = useReadContract({
     address: priceRegistry,
-    abi: priceRegistryAbi,
+    abi: PENDLE_PRICE_REGISTRY_ABI,
     chainId,
     functionName: 'tokenPrice',
     args: [market.syToken],
