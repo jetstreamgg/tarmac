@@ -11,9 +11,14 @@ export function useStUsdsWithdrawBalances() {
   const { data: stUsdsData, isLoading: isDataLoading, error: dataError } = useStUsdsData();
   const userStUsdsBalance = stUsdsData?.userStUsdsBalance ?? 0n;
 
+  const nativeBalance = stUsdsData?.userSuppliedUsds;
+
+  // The route for withdrawing the whole position. A withdraw amount is USDS,
+  // so it is the position's value, not the share balance: the selection sets
+  // it against the native max and liquidity, which are USDS too.
   const providerSelection = useStUsdsProviderSelection({
     direction: StUsdsDirection.WITHDRAW,
-    amount: userStUsdsBalance,
+    amount: nativeBalance ?? 0n,
     userStUsdsBalance
   });
 
@@ -26,7 +31,6 @@ export function useStUsdsWithdrawBalances() {
   });
 
   const curveMaxWithdraw = curveMaxQuote?.usdsAmount;
-  const nativeBalance = stUsdsData?.userSuppliedUsds;
 
   const effectiveBalance = useMemo(() => {
     if (providerSelection.selectedProvider === StUsdsProviderType.CURVE) {

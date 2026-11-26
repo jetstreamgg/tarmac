@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
@@ -43,7 +43,7 @@ async function fetchSkySavingsRateHistoric(url: URL): Promise<SkySavingsRateHist
 
 export function useSkySavingsRateHistoricData(
   props: { daysAgo?: number } = { daysAgo: 30 }
-): ReadHook & { data?: SkySavingsRateHistoricData[] } {
+): ReadHook & { data?: SkySavingsRateHistoricData[]; isPlaceholderData: boolean } {
   const { daysAgo } = props;
   const apiBase = getBaLabsApiUrl() || '';
   // /save/ssr/historic/ lives at the BA Labs root, not under /api/v1
@@ -56,8 +56,11 @@ export function useSkySavingsRateHistoricData(
   const query = useQuery({
     enabled: Boolean(rootBase),
     queryKey: ['sky-savings-rate-historic', url?.href],
-    queryFn: () => (url ? fetchSkySavingsRateHistoric(url) : Promise.resolve([]))
+    queryFn: () => (url ? fetchSkySavingsRateHistoric(url) : Promise.resolve([])),
+    // Only `days_ago` varies: keep the current series on screen while a new
+    // timeframe loads, instead of flashing the skeleton (APP-407).
+    placeholderData: keepPreviousData
   });
 
-  return toReadHook(query, [baLabsDataSource(url)]);
+  return { ...toReadHook(query, [baLabsDataSource(url)]), isPlaceholderData: query.isPlaceholderData };
 }

@@ -1,7 +1,17 @@
 const { readFile } = require('fs/promises');
 
-const deleteVnets = async () => {
-  const file = await readFile('./tenderlyTestnetData.json', 'utf-8');
+// Deletes the vnets listed in a data file: tenderlyTestnetData.json by
+// default, or the file given as the first argument (CI passes
+// tenderlyCreatedVnets.json, the vnets its own fork step created).
+const deleteVnets = async (dataFile = './tenderlyTestnetData.json') => {
+  let file;
+  try {
+    file = await readFile(dataFile, 'utf-8');
+  } catch {
+    // Nothing was forked (or the fork step cleaned up after itself).
+    console.log(`No ${dataFile}, nothing to delete`);
+    return;
+  }
   const testnetsData = JSON.parse(file);
 
   const responses = await Promise.all(
@@ -24,4 +34,4 @@ const deleteVnets = async () => {
   }
 };
 
-deleteVnets();
+deleteVnets(process.argv[2]);

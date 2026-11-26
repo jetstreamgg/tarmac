@@ -219,8 +219,18 @@ describe('useStUsdsLaunch — native supply calldata parity', () => {
     // Byte-for-byte: target, selector + encoded args, value.
     expect(orch.map(normalize)).toEqual(engineCalls.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'deposit']);
-    // deposit(amount, receiver[, referral]) — referral appended only when > 0.
-    expect(orch[1].args.slice(0, 2)).toEqual([AMOUNT, TEST_ADDRESS]);
+    // deposit(amount, receiver, referral) — the referral is always passed (APP-322).
+    expect(orch[1].args).toEqual([AMOUNT, TEST_ADDRESS, REFERRAL_CODE]);
+  });
+
+  it('passes the referral even when the configured code is 0', () => {
+    h.capturedCalls = [];
+    h.nativeAllowance = HAS_ALLOWANCE;
+    const engine = renderHook(() => useBatchStUsdsDeposit({ amount: AMOUNT, referral: 0, enabled: true }));
+    const deposit = h.capturedCalls.find(c => c.functionName === 'deposit');
+    engine.unmount();
+
+    expect(deposit?.args).toEqual([AMOUNT, TEST_ADDRESS, 0]);
   });
 
   it('elides the approve WITH an existing allowance (deposit only)', () => {

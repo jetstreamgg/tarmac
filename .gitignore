@@ -76,6 +76,7 @@ apps/*/stats.html
 
 # used for testing
 tenderlyTestnetData.json
+tenderlyCreatedVnets.json
 apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
 apps/webapp/playwright-report
 apps/webapp/test-results

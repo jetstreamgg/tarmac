@@ -458,6 +458,16 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.enabled).toBe(true);
   });
 
+  it('keeps Confirm disabled when the indexer lists no farm, so the urn never opens un-farmed (APP-474)', () => {
+    h.farms = [];
+    renderTakeover();
+
+    typeStakeAmount('100');
+
+    expect(screen.getByText('No rewards found')).toBeTruthy();
+    expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('runs the screening preflight itself — the takeover is the review (APP-550)', () => {
     preflight.contexts = [];
     renderTakeover();
