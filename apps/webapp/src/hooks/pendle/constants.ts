@@ -390,20 +390,43 @@ export const PENDLE_EMPTY_LIMIT = {
 
 export const PENDLE_MARKETS: PendleMarketConfig[] = [
   {
-    // PT-sUSDS-26NOV2026 — underlying is sUSDS (Pendle's underlyingAsset = SY's
-    // wrapped yield-bearing token). PT redeems to 1 USDS at maturity per
-    // SY.assetInfo (assetType=0 TOKEN, USDS), so usdsEquivalence is 'pegged'.
+    // PT-sUSDS-27MAY2027 — the live market, successor to 26NOV2026. Underlying
+    // is sUSDS (Pendle's underlyingAsset = SY's wrapped yield-bearing token).
+    // PT redeems to 1 USDS at maturity per SY.assetInfo (assetType=0 TOKEN,
+    // USDS), so usdsEquivalence is 'pegged'.
     name: 'Fixed Yield',
     slug: 'pt-susds',
-    marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
-    ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
-    ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
-    syToken: '0xbe3d4ec488a0a042bb86f9176c24f8cd54018ba7',
+    marketAddress: '0x50d24456ed009a1461a159a2b4dcd12adfe6a60b',
+    ptToken: '0x49080d5e26227b5c98e0662a7498a9dd60c56b06',
+    ptSymbol: 'PT-sUSDS-27MAY2027',
+    ytToken: '0xc2de924d686ff2d69a14c85aecb81a33240b7e23',
+    syToken: '0x5e4cecc6676ef448f20822d2449bc1bde1432eb4',
     underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
     underlyingSymbol: 'sUSDS',
     underlyingDecimals: 18,
     // SY-sUSDS.getTokensIn() == getTokensOut() == [DAI, USDS, sUSDS]. USDS and
     // DAI route through SY directly (no aggregator); USDC needs the aggregator.
+    syAcceptedTokens: [
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+      '0xdC035D45d973E3EC169d2276DDab16f1e407384F',
+      '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD'
+    ],
+    expiry: 1811376000, // Thu May 27 2027 00:00:00 UTC
+    usdsEquivalence: 'pegged'
+  },
+  {
+    // PT-sUSDS-26NOV2026 — the previous market, kept so holders can claim.
+    // Same underlying and accepted tokens as its successor, on its own SY.
+    name: 'Fixed Yield',
+    slug: 'pt-susds-26nov2026',
+    marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
+    ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
+    ptSymbol: 'PT-sUSDS-26NOV2026',
+    ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
+    syToken: '0xbe3d4ec488a0a042bb86f9176c24f8cd54018ba7',
+    underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
+    underlyingSymbol: 'sUSDS',
+    underlyingDecimals: 18,
     syAcceptedTokens: [
       '0x6B175474E89094C44Da98b954EedeAC495271d0F',
       '0xdC035D45d973E3EC169d2276DDab16f1e407384F',

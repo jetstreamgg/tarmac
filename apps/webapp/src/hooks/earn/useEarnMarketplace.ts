@@ -24,7 +24,7 @@ import { useMorphoVaultMultipleRateApiData } from '../morpho/useMorphoVaultRateA
 import { useMorphoVaultsTrailingRates } from '../morpho/useMorphoVaultsTrailingRates';
 import { fetchMorphoVaultMarketData } from '../morpho/useMorphoVaultMarketApiData';
 import { useAllMorphoVaultsUserAssets } from '../morpho/useAllMorphoVaultsUserAssets';
-import { isMarketMatured } from '../pendle/helpers';
+import { isMarketMatured, maturedPendleMarketName } from '../pendle/helpers';
 import { PENDLE_MARKETS, getPendleMarketByAddress } from '../pendle/constants';
 import { usePendleMarketsApiData } from '../pendle/usePendleMarketsApiData';
 import { maturedPositionUsd } from '../pendle/computePendleAssetValuations';
@@ -475,6 +475,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
         const valueUsd = market && userMarket ? maturedPositionUsd(market, userMarket) : 0;
         return {
           ...product,
+          name: market ? maturedPendleMarketName(market) : product.name,
           status: 'matured' as const,
           rate: toRate(undefined),
           rate30d: toRate(undefined),

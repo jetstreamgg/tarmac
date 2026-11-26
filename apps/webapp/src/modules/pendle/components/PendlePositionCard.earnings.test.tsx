@@ -91,7 +91,7 @@ const renderCard = () =>
     </I18nProvider>
   );
 
-// Before PT-sUSDS's 26 Nov 2026 expiry, so the live-position card keeps rendering after that date.
+// Before the market's expiry, so the live-position card keeps rendering after that date.
 const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
 
 describe('PendlePositionCard — accrued to date (APP-450)', () => {
