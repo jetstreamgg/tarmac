@@ -1,4 +1,5 @@
 import { msg } from '@lingui/core/macro';
+import { decodeRevert } from '../decodeRevert';
 import { customErrorMessage } from './customError';
 import type { RevertMessageMap } from './types';
 
@@ -21,3 +22,9 @@ export const pendleSyRevertMessages: RevertMessageMap = {
     msg`This market has reached Pendle's deposit cap. Try a smaller amount.`
   )
 };
+
+/** Whether an error is the SY refusing over its burn limit or supply cap. */
+export function isPendleSyLimitRevert(error: unknown): boolean {
+  const reason = decodeRevert(error)?.reason;
+  return reason !== undefined && Object.hasOwn(pendleSyRevertMessages, reason);
+}

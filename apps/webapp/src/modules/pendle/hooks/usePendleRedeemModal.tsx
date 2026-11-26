@@ -39,6 +39,7 @@ import { PendleRedeem } from '../components/PendleRedeem';
 import { pendleClaimErrorMessage, pendleClaimPrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { pendleWithdrawRateLabel } from '../utils/limitCopy';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
+import { useRefetchOnSyLimitRevert } from './useRefetchOnSyLimitRevert';
 
 /**
  * Matured-PT redeem via the global TransactionContext modal. Routes through
@@ -134,6 +135,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
   });
+
+  useRefetchOnSyLimitRevert(writeHook.error, mutateSyLimits);
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
   // modal so users see consistent guidance across all three flows. Only while

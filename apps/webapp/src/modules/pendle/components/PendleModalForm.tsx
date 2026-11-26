@@ -46,6 +46,7 @@ import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmount
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
+import { useRefetchOnSyLimitRevert } from '../hooks/useRefetchOnSyLimitRevert';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -354,6 +355,8 @@ export function PendleModalForm({
     () => (quote ? undefined : pendleQuoteErrorMessage(quoteError?.message)),
     [quote, quoteError]
   );
+  useRefetchOnSyLimitRevert(writeHook.error, mutateSyLimits);
+
   const prepareErrorMessage = useMemo(
     () =>
       !writeHook.prepared

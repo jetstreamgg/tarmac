@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { maxUint256 } from 'viem';
 import { useChainId, useConnection, useReadContract, useReadContracts } from 'wagmi';
 import { familyMainnetId } from '@/utils';
 import { ZERO_ADDRESS } from '../constants';
@@ -9,6 +10,8 @@ import type { PendleMarketConfig } from './pendle';
 
 /** The limits move with every other user's trade and refill by the second. */
 const POLL_MS = 30_000;
+/** While Pendle has both limits off, the poll only has to notice them coming on. */
+const POLL_OFF_MS = 5 * 60_000;
 
 /**
  * What the market's SY currently lets through: its burn rate limit, which
@@ -27,7 +30,6 @@ export function usePendleSyLimits(
   const chainId = familyMainnetId(useChainId());
   const limiter = market.syRateLimiter;
   const active = enabled && !!limiter;
-  const refetchInterval = poll ? POLL_MS : (false as const);
 
   const limiterContract = {
     address: limiter ?? ZERO_ADDRESS,
@@ -55,7 +57,15 @@ export function usePendleSyLimits(
       { ...syContract, functionName: 'exchangeRate' },
       { ...limiterContract, functionName: 'getRateLimitData', args: [market.syToken] }
     ],
-    query: { enabled: active, refetchInterval }
+    query: {
+      enabled: active,
+      refetchInterval: query => {
+        if (!poll) return false;
+        const read = query.state.data;
+        const limitsOff = !!read && !read[0] && read[5] === maxUint256;
+        return limitsOff ? POLL_OFF_MS : POLL_MS;
+      }
+    }
   });
 
   const isRateLimited = reads?.[0];
@@ -73,7 +83,7 @@ export function usePendleSyLimits(
     chainId,
     functionName: 'tokenPrice',
     args: [market.syToken],
-    query: { enabled: needsPrice, refetchInterval }
+    query: { enabled: needsPrice, refetchInterval: poll ? POLL_MS : false }
   });
 
   const data = useMemo<PendleSyLimits | undefined>(() => {

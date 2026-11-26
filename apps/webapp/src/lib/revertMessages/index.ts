@@ -17,6 +17,7 @@ import { vatInputRevertReasons, vatRevertMessages } from './contracts/vat';
 import { decodeRevert, type DecodedRevert } from './decodeRevert';
 
 export { decodeRevert, type DecodedRevert } from './decodeRevert';
+export { isPendleSyLimitRevert } from './contracts/pendleSy';
 
 /**
  * Every contract in `hooks/contracts.ts` (mainnet and L2), with the copy for
