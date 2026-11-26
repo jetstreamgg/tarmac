@@ -9,16 +9,14 @@ const h = vi.hoisted(() => ({
   USER: '0x1111111111111111111111111111111111111111',
   URN: '0x2222222222222222222222222222222222222222',
   STAKE_MODULE: '0x3333333333333333333333333333333333333333',
-  SKY_TOKEN: '0x4444444444444444444444444444444444444444',
   SKY_REWARD: '0x5555555555555555555555555555555555555555',
   SPK_REWARD: '0x6666666666666666666666666666666666666666',
   urnRewards: [] as UrnReward[],
-  skyAllowance: 0n as bigint | undefined,
   prices: {} as Record<string, { price: string }>,
   address: undefined as string | undefined
 }));
 
-const { USER, STAKE_MODULE, SKY_TOKEN, SKY_REWARD, SPK_REWARD } = h;
+const { USER, STAKE_MODULE, SKY_REWARD, SPK_REWARD } = h;
 
 vi.mock('wagmi', () => ({
   useChainId: () => 1,
@@ -31,12 +29,10 @@ vi.mock('@/hooks', () => ({
     data: [{ contractAddress: h.SKY_REWARD }, { contractAddress: h.SPK_REWARD }]
   }),
   useRewardContractsToClaim: () => ({ data: h.urnRewards, isLoading: false }),
-  useStakeSkyAllowance: () => ({ data: h.skyAllowance }),
   usePrices: () => ({ data: h.prices }),
   getWriteContractCall: (params: unknown) => params,
   stakeModuleAddress: { 1: h.STAKE_MODULE },
   stakeModuleAbi: [],
-  skyAddress: { 1: h.SKY_TOKEN },
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000'
 }));
 
@@ -65,7 +61,6 @@ const seed = () => {
     { contractAddress: SKY_REWARD, claimBalance: 3n * 10n ** 18n, rewardSymbol: 'SKY' },
     { contractAddress: SPK_REWARD, claimBalance: 7n * 10n ** 18n, rewardSymbol: 'SPK' }
   ];
-  h.skyAllowance = 0n;
   h.prices = { SKY: { price: '0.05' }, SPK: { price: '0.10' } };
   h.address = USER;
 };
@@ -121,7 +116,7 @@ describe('stakeAdapter', () => {
     });
   });
 
-  describe('useClaimCalls (plain claim)', () => {
+  describe('useClaimCalls', () => {
     it('builds one getReward(owner,index,contract,owner) per selected contract', () => {
       seed();
       const { result } = renderHook(() =>
@@ -168,56 +163,20 @@ describe('stakeAdapter', () => {
         renderHook(() => stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD]))).result.current
       ).toEqual({ calls: [], prepared: false });
     });
-  });
 
-  describe('useClaimCalls (restake)', () => {
-    it('prepends a SKY approve and appends lock when the allowance is short', () => {
+    it('only ever builds getReward — no approve or lock, even for a single-urn SKY selection', () => {
       seed();
-      h.skyAllowance = 0n;
       const { result } = renderHook(() =>
-        stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD, SPK_REWARD]), { restake: true })
+        stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD, SPK_REWARD]))
       );
 
-      const calls = asCalls(result.current.calls);
-      expect(calls.map(c => c.functionName)).toEqual(['approve', 'getReward', 'getReward', 'lock']);
-      // approve(stakeModule, restakeAmount) on the SKY token.
-      expect(calls[0].to).toBe(SKY_TOKEN);
-      expect(calls[0].args).toEqual([STAKE_MODULE, 3n * 10n ** 18n]);
-      // lock(owner, index, restakeAmount, refCode) — the SKY reward folded back.
-      expect(calls[3].to).toBe(STAKE_MODULE);
-      expect(calls[3].args).toEqual([USER, 0n, 3n * 10n ** 18n, 0]);
+      expect(asCalls(result.current.calls).map(c => c.functionName)).toEqual(['getReward', 'getReward']);
     });
 
-    it('skips the approve when the allowance already covers the restake amount', () => {
-      seed();
-      h.skyAllowance = 100n * 10n ** 18n;
-      const { result } = renderHook(() =>
-        stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD, SPK_REWARD]), { restake: true })
-      );
-
-      const calls = asCalls(result.current.calls);
-      expect(calls.map(c => c.functionName)).toEqual(['getReward', 'getReward', 'lock']);
-    });
-
-    it('does not lock when the SKY reward is not in the selection', () => {
+    it('claims a selection spanning urns, one getReward per urn', () => {
       seed();
       const { result } = renderHook(() =>
-        stakeAdapter.useClaimCalls(stakeSelection(0n, [SPK_REWARD]), { restake: true })
-      );
-
-      const calls = asCalls(result.current.calls);
-      expect(calls.map(c => c.functionName)).toEqual(['getReward']);
-    });
-
-    it('drops restake when the selection spans urns, claiming each urn plainly', () => {
-      seed();
-      const { result } = renderHook(() =>
-        stakeAdapter.useClaimCalls(
-          [...stakeSelection(0n, [SKY_REWARD]), ...stakeSelection(3n, [SKY_REWARD])],
-          {
-            restake: true
-          }
-        )
+        stakeAdapter.useClaimCalls([...stakeSelection(0n, [SKY_REWARD]), ...stakeSelection(3n, [SKY_REWARD])])
       );
 
       const calls = asCalls(result.current.calls);

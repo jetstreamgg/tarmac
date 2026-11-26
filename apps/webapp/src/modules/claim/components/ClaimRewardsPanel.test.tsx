@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClaimableReward, ClaimSource } from '../types';
 
@@ -18,8 +18,7 @@ const h = vi.hoisted(() => ({
   analytics: undefined as unknown,
   toast: undefined as { success: string } | undefined,
   steps: undefined as unknown[] | undefined,
-  merklSingleCall: false,
-  restakeSeen: false
+  merklSingleCall: false
 }));
 
 // Each mocked adapter maps its own rewards to a stand-in Call ({ to: id }), so the
@@ -53,13 +52,10 @@ vi.mock('../adapters/stakeAdapter', () => ({
   stakeAdapter: {
     source: 'stake',
     useClaimable: () => ({ rewards: h.stake, isLoading: false }),
-    useClaimCalls: (selected: ClaimableReward[], options?: { restake?: boolean }) => {
-      if (options?.restake) h.restakeSeen = true;
-      return {
-        calls: selected.filter(r => r.source === 'stake').map(r => ({ to: r.id })),
-        prepared: true
-      };
-    }
+    useClaimCalls: (selected: ClaimableReward[]) => ({
+      calls: selected.filter(r => r.source === 'stake').map(r => ({ to: r.id })),
+      prepared: true
+    })
   }
 }));
 
@@ -171,7 +167,6 @@ describe('ClaimRewardsPanel', () => {
     h.screenContents = [];
     h.analytics = undefined;
     h.toast = undefined;
-    h.restakeSeen = false;
   });
   afterEach(() => cleanup());
 
@@ -294,20 +289,11 @@ describe('ClaimRewardsPanel', () => {
     expect(screen.queryByTestId('claim-modal-row-Network')).toBeNull();
   });
 
-  it('offers the restake toggle only in the stake scope with a SKY reward', () => {
+  it('offers no restake toggle, even in the stake scope with a SKY reward (restake lives in StakeClaimModal)', () => {
     h.stake = [reward('stake', '0:0xc', 'SKY')];
     renderPanel({ kind: 'stake', index: 0n });
-
-    const toggle = screen.getByTestId('claim-restake-toggle');
-    expect(toggle).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Restake SKY rewards'));
-    expect(h.restakeSeen).toBe(true);
-  });
-
-  it('shows no restake toggle without a SKY stake reward', () => {
-    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
-    renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
-    expect(screen.queryByTestId('claim-restake-toggle')).toBeNull();
+    expect(screen.queryByRole('switch')).toBeNull();
+    expect(screen.queryByText(/restake/i)).toBeNull();
   });
 
   it('keeps the wallet-screen summary referentially stable across re-renders (loop guard)', () => {
@@ -341,7 +327,6 @@ describe('ClaimRewardsPanel — analytics attribution by scope (APP-444 B4/B8)',
     h.screenContents = [];
     h.analytics = undefined;
     h.toast = undefined;
-    h.restakeSeen = false;
   });
   afterEach(() => cleanup());
 

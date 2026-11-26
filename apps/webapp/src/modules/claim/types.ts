@@ -73,15 +73,6 @@ export type ClaimCallsResult = {
 };
 
 /**
- * Per-build options passed uniformly to every adapter's `useClaimCalls`. Only the
- * stake adapter reads `restake` (SKY-only: fold the SKY reward back via `lock` +
- * conditional approve); merkl/sky ignore it.
- */
-export type ClaimCallOptions = {
-  restake?: boolean;
-};
-
-/**
  * A claim engine normalized to two hooks: read the rewards claimable in a scope,
  * and turn a selected subset into raw `Call[]`. The adapters are a FIXED trio the
  * panel calls unconditionally (rules-of-hooks) — not a runtime registry. The panel
@@ -94,5 +85,5 @@ export type ClaimAdapter = {
   /** Reads the rewards claimable for `scope` (empty when this source has none in scope). */
   useClaimable: (scope: ClaimScope) => ClaimableResult;
   /** Builds the calldata for the `selected` subset belonging to THIS source. */
-  useClaimCalls: (selected: ClaimableReward[], options?: ClaimCallOptions) => ClaimCallsResult;
+  useClaimCalls: (selected: ClaimableReward[]) => ClaimCallsResult;
 };
