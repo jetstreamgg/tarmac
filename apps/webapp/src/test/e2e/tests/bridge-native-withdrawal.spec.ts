@@ -17,6 +17,8 @@ import {
   proveOpStackWithdrawalOnFork,
   setOpStackEscrowAllowance
 } from '../utils/opStackWithdrawalProof';
+import { connectAndVerify } from '../utils/connectAndVerify';
+import { hangBridgeSend, notApprove, restoreLostSignature } from '../utils/lostSignature';
 import { keepPendingBridgesOnLoad } from '../utils/pendingBridgeStore';
 import { shiftPageClock } from '../utils/shiftPageClock';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
@@ -455,5 +457,43 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
       expect((await l1AccountState(account)).usds - before).toBe(parseUnits('3', 18));
       await expect(cardA.getByTestId('pending-bridge-status')).toHaveText('Ready to finalize');
     });
+  });
+
+  test('A withdrawal the page lost to a reload mid-signature comes back from its early read', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    test.setTimeout(240_000);
+    const account = getAddress(testAccount);
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected({ batch: false });
+    await switchWalletNetwork(isolatedPage, tenderlyChainLabel(NetworkName.base));
+    await bridge.expectBalanceLoaded();
+    const before = await l2UsdsBalance('base', account);
+    await bridge.openReview('1');
+    await isolatedPage.getByTestId('bridge-modal-route-toggle').click();
+    const skyLink = isolatedPage.getByTestId('bridge-route-option-native');
+    await expect(skyLink).toBeEnabled({ timeout: 30_000 });
+    await skyLink.click();
+
+    // The withdrawal is mined on Base; the page is still waiting on the wallet and never records the card.
+    const hung = await hangBridgeSend(isolatedPage, notApprove);
+    await bridge.confirmButton().click();
+    await expect.poll(() => hung.hash(), { timeout: 90_000 }).toBeTruthy();
+    await expect
+      .poll(async () => before - (await l2UsdsBalance('base', account)), { timeout: 30_000 })
+      .toBe(parseUnits('1', 18));
+    const intents = await isolatedPage.evaluate(() =>
+      Object.entries(localStorage).filter(([key]) => key.startsWith('bridgeSendIntent:'))
+    );
+    expect(intents).toHaveLength(1);
+
+    await isolatedPage.goto('/convert?tab=bridge');
+    await restoreLostSignature(isolatedPage, intents, 'withdrawal');
+    await connectAndVerify(isolatedPage, { batch: false });
+    await expect(bridge.cards()).toHaveCount(1, { timeout: 60_000 });
+    await expect(bridge.card('Ethereum')).toContainText('1.00');
+    expect(await awaitDepositTxHash(isolatedPage, 'ethereum')).toBe(hung.hash());
+    await hung.stop();
   });
 });
