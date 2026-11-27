@@ -11,7 +11,7 @@ export const pendleProductDefaultContract: TestContract = {
   intent: 'Pendle market detail page renders chart, maturity and transactions at /earn/fixed/:slug',
   preconditions: ['connected wallet', 'known non-matured market slug'],
   steps: [
-    { action: 'goto /earn/fixed/pt-susds', locator: { testId: 'product-detail' } },
+    { action: 'goto /earn/fixed/pt-susds-26nov2026', locator: { testId: 'product-detail' } },
     { action: 'detail chart', locator: { testId: 'pendle-detail-chart' } },
     { action: 'transactions table', locator: { testId: 'pendle-transactions' } },
     { action: 'supply card', locator: { testId: 'pendle-supply-card' } }

@@ -4,7 +4,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PendleMarketConfig } from '@/hooks';
+import { maturedPendleMarketName, type PendleMarketConfig } from '@/hooks';
 import type { PositionEarnings } from '@/modules/portfolio/earnings/earningsForPosition';
 
 i18n.load('en', {});
@@ -13,6 +13,7 @@ i18n.activate('en');
 const MARKET: PendleMarketConfig = {
   name: 'Fixed Yield',
   slug: 'pt-susds',
+  ptSymbol: 'PT-sUSDS-26NOV2026',
   marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
   ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
   ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
@@ -91,7 +92,7 @@ describe('PendleMaturedPositionCard', () => {
 
     const card = screen.getByTestId('pendle-matured-position-card');
     expect(screen.getByTestId('pendle-matured-badge').textContent).toContain('Matured');
-    expect(card.textContent).toContain('Fixed Yield');
+    expect(card.textContent).toContain(maturedPendleMarketName(MARKET));
     expect(card.textContent).toContain("You'll claim");
     expect(card.textContent).toContain('100,184');
     expect(card.textContent).toContain('Your position matured on 18 Jun 2026 and is ready to claim.');

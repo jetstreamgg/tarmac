@@ -78,6 +78,7 @@ import { EXTERNAL_HISTORY_META } from '../../../hooks/constants';
 import { MORPHO_VAULTS, MorphoTransactionType } from '../../../hooks/morpho/constants';
 import type { MorphoUserVaultV2Position, MorphoVaultV2Transaction } from '../../../hooks/morpho/morpho';
 import type { MerklClaimRaw, MerklUserRewardRaw } from '../../../hooks/morpho/merklEarnedClient';
+import { PENDLE_MARKETS } from '../../../hooks/pendle/constants';
 import type { PendlePnlTransactionRaw } from '../../../hooks/pendle/pendle';
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { useWalletEarnings } from './useWalletEarnings';
@@ -93,7 +94,8 @@ const SPK_FARM = usdsSpkRewardAddress[1].toLowerCase();
 const GROVE_FARM = usdsGroveRewardAddress[1].toLowerCase();
 const SPK_FARM_ID = `reward-farm-${SPK_FARM}`;
 const GROVE_FARM_ID = `reward-farm-${GROVE_FARM}`;
-const SOURCE_COUNT = MORPHO_VAULT_IDS.length + 6; // + merkl, the one Pendle market, savings, stusds, SPK and GROVE farms
+// + merkl, savings, stusds, SPK and GROVE farms
+const SOURCE_COUNT = MORPHO_VAULT_IDS.length + PENDLE_MARKETS.length + 5;
 const PENDLE_MARKET = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
 const PENDLE_SOURCE_ID = `pendle-market-${PENDLE_MARKET}`;
 const USDS_TOKEN = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
