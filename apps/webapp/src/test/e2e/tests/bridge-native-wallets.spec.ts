@@ -152,11 +152,19 @@ test.describe('Bridge: wallets', () => {
 
     await expectNoBridge(bridge, isolatedPage, account, before);
     await stop();
+    const sent: Address[] = [];
+    await onSends(isolatedPage, (to, route) => {
+      sent.push(to);
+      return route.fallback();
+    });
     const funds = await watchDeposit({ to: 'optimism', sender: account });
     await dialog.getByRole('button', { name: 'Try again' }).click();
     await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+    // The 4100 refused the approve before it mined, so the retry sends the approve and the deposit once.
+    expect(sent).toEqual([L1_USDS, l1DepositBridge('optimism')]);
     await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
     await funds.expectEscrowed(await awaitDepositTxHash(isolatedPage, 'optimism'), AMOUNT);
+    expect((await l1AccountState(account)).usds).toBe(before.usds - AMOUNT);
   });
 
   test('Disconnecting while the bridge waits in the wallet leaves no half-recorded bridge', async ({

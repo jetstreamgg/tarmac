@@ -18,7 +18,7 @@ import {
   setOpStackEscrowAllowance
 } from '../utils/opStackWithdrawalProof';
 import { connectAndVerify } from '../utils/connectAndVerify';
-import { hangBridgeSend, restoreLostSignature } from '../utils/lostSignature';
+import { hangBridgeSend, notApprove, restoreLostSignature } from '../utils/lostSignature';
 import { keepPendingBridgesOnLoad } from '../utils/pendingBridgeStore';
 import { shiftPageClock } from '../utils/shiftPageClock';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
@@ -477,10 +477,7 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
     await skyLink.click();
 
     // The withdrawal is mined on Base; the page is still waiting on the wallet and never records the card.
-    const hung = await hangBridgeSend(
-      isolatedPage,
-      body => !JSON.parse(body).params[0].data?.startsWith('0x095ea7b3')
-    );
+    const hung = await hangBridgeSend(isolatedPage, notApprove);
     await bridge.confirmButton().click();
     await expect.poll(() => hung.hash(), { timeout: 90_000 }).toBeTruthy();
     await expect

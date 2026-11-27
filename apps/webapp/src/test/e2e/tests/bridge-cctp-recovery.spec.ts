@@ -27,6 +27,7 @@ import { keepPendingBridgesOnLoad } from '../utils/pendingBridgeStore';
 import { setErc20Balance } from '../utils/setBalance';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { awaitDepositTxHash, l1AccountState } from '../utils/bridgeRelay';
+import { hangBridgeSend } from '../utils/lostSignature';
 import { receiveCctpMessage, stubIris } from '../utils/cctpAttester';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 
@@ -486,19 +487,9 @@ test.describe('Bridge: CCTP recovery', () => {
     await setErc20Balance(L1_USDC, '7', 6, NetworkName.mainnet, account);
 
     const wrapper = getAddress(USDS_PSM_WRAPPER);
-    let saleHash: `0x${string}` | undefined;
-    let hung = false;
-    await isolatedPage.route(TENDERLY_RPC, async route => {
-      const send = sendOf(route.request().postData());
-      if (!send || getAddress(send.to) !== wrapper) return route.fallback();
-      if (hung)
-        return route.fulfill({ json: { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'dropped' } } });
-      hung = true;
-      const response = await route.fetch();
-      saleHash = (await response.json()).result;
-    });
+    const hung = await hangBridgeSend(isolatedPage, tx => tx.to?.toLowerCase() === wrapper.toLowerCase());
     await bridge.card('Ethereum').getByTestId('pending-bridge-action').click();
-    await expect.poll(() => saleHash, { timeout: 90_000 }).toBeTruthy();
+    await expect.poll(() => hung.hash(), { timeout: 90_000 }).toBeTruthy();
     const extra = parseUnits('7', 6);
     await expect.poll(() => l1UsdcBalance(account), { timeout: 30_000 }).toBe(extra);
     await expectUsdsDelivered(account, before);
@@ -515,6 +506,7 @@ test.describe('Bridge: CCTP recovery', () => {
     await expect(card.getByTestId('pending-bridge-sale-waiting-note')).toHaveCount(0);
     expect(await l1UsdcBalance(account)).toBe(extra);
     await expect(bridge.cards()).toHaveCount(1);
+    await hung.stop();
   });
 
   test('A claim stays Claiming while its approve is unmined, and a declined sale ends as Arrived as USDC', async ({
@@ -546,20 +538,34 @@ test.describe('Bridge: CCTP recovery', () => {
         return route.fallback();
       }
       if (!releaseReceipts && body.includes('"eth_getTransactionReceipt"')) {
-        const request = JSON.parse(body);
-        const calls = (Array.isArray(request) ? request : [request]) as {
-          id: number;
+        let request: unknown;
+        try {
+          request = JSON.parse(body);
+        } catch {
+          return route.fallback();
+        }
+        const batched = Array.isArray(request);
+        const calls = (batched ? request : [request]) as {
+          id?: number;
           method?: string;
           params?: string[];
         }[];
-        const holdsApprove = calls.every(
-          call =>
-            call.method === 'eth_getTransactionReceipt' &&
-            approveHashes.has(String(call.params?.[0] ?? '').toLowerCase())
-        );
-        if (holdsApprove && calls.length > 0) {
-          const result = calls.map(call => ({ jsonrpc: '2.0', id: call.id, result: null }));
-          return route.fulfill({ json: Array.isArray(request) ? result : result[0] });
+        const holdsApprove = (call: (typeof calls)[number]) =>
+          call.method === 'eth_getTransactionReceipt' &&
+          approveHashes.has(String(call.params?.[0] ?? '').toLowerCase());
+        if (calls.some(holdsApprove)) {
+          const pending = (id: number | undefined) => ({ jsonrpc: '2.0', id, result: null });
+          if (calls.every(holdsApprove)) {
+            const result = calls.map(call => pending(call.id));
+            return route.fulfill({ json: batched ? result : result[0] });
+          }
+          // The approve receipt shares a batch with other calls. Answer those, and keep holding this one.
+          const response = await route.fetch();
+          const json: { id?: number } | { id?: number }[] = await response.json();
+          const replies = Array.isArray(json) ? json : [json];
+          const heldIds = new Set(calls.filter(holdsApprove).map(call => String(call.id)));
+          const answered = replies.map(reply => (heldIds.has(String(reply.id)) ? pending(reply.id) : reply));
+          return route.fulfill({ response, json: Array.isArray(json) ? answered : answered[0] });
         }
       }
       return route.fallback();
@@ -622,7 +628,8 @@ test.describe('Bridge: CCTP recovery', () => {
     const bridgeAmount = isolatedPage.getByTestId('bridge-from-amount');
     await expect(bridgeAmount).toBeAttached();
     await isolatedPage.getByTestId('convert-tab-swap').click();
-    // The Bridge tab stays mounted while the claim it opened is still running, so the sale is still sent.
+    // Wait until Convert has actually rendered, then check the bridge input is still mounted under it.
+    await expect(isolatedPage.getByTestId('convert-form')).toBeVisible();
     await expect(bridgeAmount).toBeAttached();
 
     holding = false;
